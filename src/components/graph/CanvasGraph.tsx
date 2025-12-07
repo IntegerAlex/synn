@@ -6,6 +6,8 @@ import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { setSelectedCommitHash } from '@/store/slices/appSlice';
 import { setCommitLimit } from '@/store/slices/viewportSlice';
 import { GraphRenderer, createPanZoomHandler, type ViewportState } from '@/lib/graph/GraphRenderer';
+import { CommitTooltip } from './CommitTooltip';
+import type { GraphNode } from '@/types/git';
 
 export function CanvasGraph() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -18,6 +20,9 @@ export function CanvasGraph() {
     // Local state
     const [isReady, setIsReady] = useState(false);
     const [viewport, setViewport] = useState<ViewportState>({ x: 0, y: 0, zoom: 1, width: 800, height: 600 });
+    const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
+    const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+    const [isHoveringNode, setIsHoveringNode] = useState(false);
 
     // Redux state
     const dispatch = useAppDispatch();
@@ -201,6 +206,53 @@ export function CanvasGraph() {
         [dispatch]
     );
 
+    // Handle mouse move for hover detection
+    const handleMouseMove = useCallback(
+        (e: React.MouseEvent<HTMLCanvasElement>) => {
+            if (!rendererRef.current || !canvasRef.current || !graphData) return;
+
+            const rect = canvasRef.current.getBoundingClientRect();
+            const canvasX = e.clientX - rect.left;
+            const canvasY = e.clientY - rect.top;
+
+            const hash = rendererRef.current.hitTest(canvasX, canvasY);
+
+            if (hash) {
+                // Find the node data
+                const node = graphData.nodes.find(n => n.hash === hash);
+                if (node) {
+                    setIsHoveringNode(true);
+                    setHoveredNode(node);
+                    setTooltipPosition({ x: e.clientX, y: e.clientY });
+                    rendererRef.current.setHovered(hash);
+                    // Change cursor to pointer
+                    canvasRef.current.style.cursor = 'pointer';
+                }
+            } else {
+                setIsHoveringNode(false);
+                setHoveredNode(null);
+                rendererRef.current.setHovered(null);
+                // Reset cursor to grab
+                if (canvasRef.current) {
+                    canvasRef.current.style.cursor = 'grab';
+                }
+            }
+        },
+        [graphData]
+    );
+
+    // Handle mouse leave to clear hover state
+    const handleMouseLeave = useCallback(() => {
+        if (rendererRef.current) {
+            rendererRef.current.setHovered(null);
+        }
+        setIsHoveringNode(false);
+        setHoveredNode(null);
+        if (canvasRef.current) {
+            canvasRef.current.style.cursor = 'grab';
+        }
+    }, []);
+
     if (error) {
         return (
             <div className="flex flex-col items-center justify-center h-full bg-[#0d1117] text-red-400">
@@ -266,8 +318,18 @@ export function CanvasGraph() {
             <canvas
                 ref={canvasRef}
                 onClick={handleClick}
+                onMouseMove={handleMouseMove}
+                onMouseLeave={handleMouseLeave}
                 className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing bg-[#0d1117]"
                 style={{ touchAction: 'none' }}
+            />
+
+            {/* Commit Tooltip */}
+            <CommitTooltip
+                node={hoveredNode}
+                x={tooltipPosition.x}
+                y={tooltipPosition.y}
+                visible={isHoveringNode}
             />
 
             {/* Debug info */}
