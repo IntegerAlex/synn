@@ -10,7 +10,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
-    title: "Synn — Git Visualization for Modern Developers",
+    title: "Synn",
     description: "Visualize your Git history like never before. Track branches, explore commits, and master your repository with Synn.",
     keywords: ["git", "visualization", "github", "version control", "git graph", "commit history", "branch tracking"],
     authors: [{ name: "Synn" }],
@@ -55,13 +55,14 @@ export const metadata: Metadata = {
     },
     icons: {
         icon: [
+            { url: "/favicon.ico", sizes: "any" },
             { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
             { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-            { url: "/favicon.ico", sizes: "any" },
         ],
         apple: [
             { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
         ],
+        shortcut: "/favicon.ico",
     },
     manifest: "/site.webmanifest",
     verification: {

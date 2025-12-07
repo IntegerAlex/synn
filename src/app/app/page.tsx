@@ -7,6 +7,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { CommitDetails } from '@/components/CommitDetails';
+import { DocumentTitle } from '@/components/DocumentTitle';
 
 export default function Home() {
   const repoInfo = useAppSelector((state) => state.app.repoInfo);
@@ -18,6 +19,9 @@ export default function Home() {
 
   return (
     <div className="h-screen w-screen flex flex-col bg-[#0d1117] overflow-hidden">
+      {/* Document title - uses TanStack Query instead of useEffect */}
+      <DocumentTitle />
+      
       {/* Header */}
       <Header />
 

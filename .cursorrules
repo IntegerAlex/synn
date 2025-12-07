@@ -1,0 +1,39 @@
+# Cursor Rules for Synn Project
+
+## React Hooks and Side Effects
+
+### NEVER use useEffect
+- **Always prefer TanStack Query (React Query) for reactive state management and side effects**
+- Use `useQuery` to observe state changes and derive values
+- Use `useMutation` for async operations that modify state
+- Use `useQueryClient` for cache invalidation and manual cache updates
+- For document title updates, use TanStack Query hooks that observe state and update via component rendering
+
+### When to use TanStack Query
+- Observing Redux state changes → Create a query that observes the state
+- Async data fetching → Use `useQuery`
+- Mutations → Use `useMutation`
+- Cache management → Use `useQueryClient`
+- Derived state → Use `useQuery` with `queryFn` that derives from other state
+
+### Alternatives to useEffect
+- **State observation**: Use `useQuery` with a query key that includes the state you want to observe
+- **Side effects from queries**: Use `onSuccess`, `onError`, or `onSettled` callbacks in mutations
+- **Reactive updates**: Use TanStack Query's reactive system instead of manual effect dependencies
+
+## Code Style
+
+- Use TypeScript strictly
+- Prefer functional components
+- Use TanStack Query for all async operations
+- Use Redux Toolkit for global state management
+- Follow Next.js 13+ App Router conventions
+
+## Architecture
+
+- Backend: Modular, service-oriented architecture
+- API: RESTful endpoints with proper validation
+- Security: JWT authentication, RBAC, data encryption
+- Database: PostgreSQL with Drizzle ORM
+- Frontend: React with TanStack Query for data fetching
+
