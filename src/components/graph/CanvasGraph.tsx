@@ -15,7 +15,7 @@ export function CanvasGraph() {
     const rendererRef = useRef<GraphRenderer | null>(null);
     const cleanupRef = useRef<(() => void) | null>(null);
     const lastDataKeyRef = useRef<string | null>(null);
-    const pendingDataRef = useRef<{ nodes: any[]; edges: any[] } | null>(null);
+    const pendingDataRef = useRef<{ nodes: any[]; edges: any[]; branches: string[]; currentBranch: string } | null>(null);
 
     // Local state
     const [isReady, setIsReady] = useState(false);
@@ -86,16 +86,8 @@ export function CanvasGraph() {
 
         setIsReady(true);
 
-        // Process any pending data
-        if (pendingDataRef.current) {
-            const { nodes, edges } = pendingDataRef.current;
-            pendingDataRef.current = null;
-            console.log('[CanvasGraph] Processing pending data:', nodes.length, 'nodes');
-            rendererRef.current.setLayout(nodes, edges);
-            requestAnimationFrame(() => {
-                rendererRef.current?.forceRender();
-            });
-        }
+        // Process any pending data (will be handled when graphData is available)
+        // We can't process it here without branch info, so it will be handled in the graphData effect
 
         return true;
     }, [isDark]);
@@ -139,15 +131,49 @@ export function CanvasGraph() {
             if (!ensureRenderer()) {
                 // Store data for later processing
                 console.log('[CanvasGraph] Renderer not ready, storing data for later');
-                pendingDataRef.current = { nodes: graphData.nodes, edges: graphData.edges };
+                pendingDataRef.current = { 
+                    nodes: graphData.nodes, 
+                    edges: graphData.edges,
+                    branches: graphData.branches,
+                    currentBranch: graphData.currentBranch,
+                };
                 return;
             }
+        }
+
+        // Process any pending data now that renderer is ready
+        if (pendingDataRef.current) {
+            const pending = pendingDataRef.current;
+            pendingDataRef.current = null;
+            console.log('[CanvasGraph] Processing pending data:', pending.nodes.length, 'nodes');
+            if (rendererRef.current) {
+                rendererRef.current.setLayout(
+                    pending.nodes,
+                    pending.edges,
+                    {
+                        branches: pending.branches || graphData.branches,
+                        currentBranch: pending.currentBranch || graphData.currentBranch,
+                    }
+                );
+                requestAnimationFrame(() => {
+                    rendererRef.current?.forceRender();
+                });
+            }
+            // Don't process current graphData if we just processed pending data
+            return;
         }
 
         // Set layout
         console.log('[CanvasGraph] Setting layout');
         if (rendererRef.current) {
-            rendererRef.current.setLayout(graphData.nodes, graphData.edges);
+            rendererRef.current.setLayout(
+                graphData.nodes,
+                graphData.edges,
+                {
+                    branches: graphData.branches,
+                    currentBranch: graphData.currentBranch,
+                }
+            );
         }
 
         // Force render
@@ -327,6 +353,7 @@ export function CanvasGraph() {
             {/* Commit Tooltip */}
             <CommitTooltip
                 node={hoveredNode}
+                graphData={graphData}
                 x={tooltipPosition.x}
                 y={tooltipPosition.y}
                 visible={isHoveringNode}
