@@ -142,7 +142,7 @@ export function HeroSection() {
                 </h1>
 
                 <p className="hero-subtitle text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed text-pretty">
-                    Import repositories from GitHub or open local repos. Explore branches, commits, and merges
+                    Import repositories from GitHub and explore branches, commits, and merges
                     with a beautiful interactive graph.
                 </p>
 

@@ -4,7 +4,6 @@ import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { useGraph } from '@/hooks/useGitData';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { setSelectedCommitHash } from '@/store/slices/appSlice';
-import { setCommitLimit } from '@/store/slices/viewportSlice';
 import { GraphRenderer, createPanZoomHandler, type ViewportState } from '@/lib/graph/GraphRenderer';
 import { CommitTooltip } from './CommitTooltip';
 import type { GraphNode } from '@/types/git';
@@ -26,12 +25,11 @@ export function CanvasGraph() {
 
     // Redux state
     const dispatch = useAppDispatch();
-    const commitLimit = useAppSelector((state) => state.viewport.commitLimit);
     const selectedCommitHash = useAppSelector((state) => state.app.selectedCommitHash);
     const theme = useAppSelector((state) => state.app.theme);
 
-    const apiLimit = commitLimit === 'all' ? 500 : commitLimit;
-    const { data: graphData, isLoading, error, refetch } = useGraph(apiLimit);
+    // Always fetch all commits (use a very high limit)
+    const { data: graphData, isLoading, error, refetch } = useGraph(10000);
 
     const isDark = useMemo(
         () => !['light', 'solarized-light'].includes(theme),
@@ -320,23 +318,6 @@ export function CanvasGraph() {
                     <span className="font-medium">{graphData.currentBranch}</span>
                     <span className="text-gray-500">•</span>
                     <span className="text-gray-500">{graphData.nodes.length} commits</span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                    <select
-                        className="px-3 py-1 bg-[#21262d] border border-[#30363d] rounded text-sm text-gray-300
-                                 focus:outline-none focus:ring-1 focus:ring-[#ef4444]"
-                        value={commitLimit}
-                        onChange={(e) => {
-                            const value = e.target.value;
-                            dispatch(setCommitLimit(value === 'all' ? 'all' : parseInt(value, 10)));
-                        }}
-                    >
-                        <option value="100">100 commits</option>
-                        <option value="200">200 commits</option>
-                        <option value="500">500 commits</option>
-                        <option value="all">All commits</option>
-                    </select>
                 </div>
             </div>
 
