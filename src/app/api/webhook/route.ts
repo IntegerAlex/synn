@@ -6,6 +6,7 @@ import { usersTable } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { clerkClient } from '@clerk/nextjs/server';
 import { syncUserRepos } from '@/lib/services/githubSync';
+import { encryptToken, encryptRefreshToken } from '@/lib/services/tokenEncryption';
 
 export async function POST(req: Request) {
   // Get the Svix headers for verification
@@ -116,14 +117,18 @@ export async function POST(req: Request) {
         .where(eq(usersTable.clerkUserId, clerkUserId))
         .limit(1);
 
+      // Encrypt tokens before storing in database
+      const encryptedAccessToken = encryptToken(accessToken);
+      const encryptedRefreshToken = encryptRefreshToken(refreshToken);
+
       const userData = {
         clerkUserId,
         name: githubUser.name || githubUser.login,
         email: email_addresses?.[0]?.email_address || githubUser.email,
         githubId: githubUser.id,
         githubUsername: githubUser.login,
-        githubAccessToken: accessToken,
-        githubRefreshToken: refreshToken || null,
+        githubAccessToken: encryptedAccessToken,
+        githubRefreshToken: encryptedRefreshToken,
         githubTokenExpiresAt: expiresAt,
         oauthMetadata,
         updatedAt: new Date(),

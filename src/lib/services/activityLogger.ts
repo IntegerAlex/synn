@@ -1,6 +1,7 @@
 import { db } from '@/db';
 import { activityLogsTable, apiRequestsTable, fingerprintsTable } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { encryptData, isEncryptionAvailable } from './encryption';
 
 interface LogActivityParams {
   userId?: number;
@@ -37,27 +38,66 @@ interface LogApiRequestParams {
   userAgent?: string;
 }
 
+// Fields that should be encrypted for privacy
+const SENSITIVE_ACTIVITY_FIELDS = ['ipAddress', 'userAgent', 'metadata'] as const;
+const SENSITIVE_API_FIELDS = ['ipAddress', 'userAgent', 'queryParams', 'metadata'] as const;
+
 /**
- * Log user activity to the database
+ * Encrypt sensitive data if encryption is available
+ */
+function encryptSensitiveData<T extends Record<string, any>>(
+  data: T,
+  sensitiveFields: readonly string[]
+): T {
+  if (!isEncryptionAvailable()) {
+    return data;
+  }
+
+  const result = { ...data };
+  
+  for (const field of sensitiveFields) {
+    const value = result[field as keyof T];
+    if (value !== undefined && value !== null) {
+      try {
+        if (typeof value === 'string') {
+          (result as any)[field] = encryptData(value);
+        } else if (typeof value === 'object') {
+          (result as any)[field] = encryptData(JSON.stringify(value));
+        }
+      } catch (error) {
+        // If encryption fails, continue with unencrypted data
+        console.warn(`Failed to encrypt field ${field}:`, error);
+      }
+    }
+  }
+  
+  return result;
+}
+
+/**
+ * Log user activity to the database with encrypted sensitive fields
  */
 export async function logActivity(params: LogActivityParams): Promise<void> {
   try {
+    // Encrypt sensitive fields
+    const encryptedParams = encryptSensitiveData(params, SENSITIVE_ACTIVITY_FIELDS);
+    
     await db.insert(activityLogsTable).values({
-      userId: params.userId,
-      fingerprintId: params.fingerprintId,
-      activityType: params.activityType,
-      category: params.category,
-      description: params.description,
-      repoFullName: params.repoFullName,
-      requestMethod: params.requestMethod,
-      requestPath: params.requestPath,
-      responseStatus: params.responseStatus,
-      responseTime: params.responseTime,
-      errorCode: params.errorCode,
-      errorMessage: params.errorMessage,
-      metadata: params.metadata,
-      ipAddress: params.ipAddress,
-      userAgent: params.userAgent,
+      userId: encryptedParams.userId,
+      fingerprintId: encryptedParams.fingerprintId,
+      activityType: encryptedParams.activityType,
+      category: encryptedParams.category,
+      description: encryptedParams.description,
+      repoFullName: encryptedParams.repoFullName,
+      requestMethod: encryptedParams.requestMethod,
+      requestPath: encryptedParams.requestPath,
+      responseStatus: encryptedParams.responseStatus,
+      responseTime: encryptedParams.responseTime,
+      errorCode: encryptedParams.errorCode,
+      errorMessage: encryptedParams.errorMessage,
+      metadata: encryptedParams.metadata,
+      ipAddress: encryptedParams.ipAddress,
+      userAgent: encryptedParams.userAgent,
     });
   } catch (error) {
     // Don't throw - logging should never break the application
@@ -66,25 +106,28 @@ export async function logActivity(params: LogActivityParams): Promise<void> {
 }
 
 /**
- * Log API request to the database
+ * Log API request to the database with encrypted sensitive fields
  */
 export async function logApiRequest(params: LogApiRequestParams): Promise<void> {
   try {
+    // Encrypt sensitive fields
+    const encryptedParams = encryptSensitiveData(params, SENSITIVE_API_FIELDS);
+    
     await db.insert(apiRequestsTable).values({
-      userId: params.userId,
-      fingerprintId: params.fingerprintId,
-      method: params.method,
-      path: params.path,
-      queryParams: params.queryParams,
-      statusCode: params.statusCode,
-      responseTime: params.responseTime,
-      requestSize: params.requestSize,
-      responseSize: params.responseSize,
-      errorCode: params.errorCode,
-      errorMessage: params.errorMessage,
-      metadata: params.metadata,
-      ipAddress: params.ipAddress,
-      userAgent: params.userAgent,
+      userId: encryptedParams.userId,
+      fingerprintId: encryptedParams.fingerprintId,
+      method: encryptedParams.method,
+      path: encryptedParams.path,
+      queryParams: encryptedParams.queryParams,
+      statusCode: encryptedParams.statusCode,
+      responseTime: encryptedParams.responseTime,
+      requestSize: encryptedParams.requestSize,
+      responseSize: encryptedParams.responseSize,
+      errorCode: encryptedParams.errorCode,
+      errorMessage: encryptedParams.errorMessage,
+      metadata: encryptedParams.metadata,
+      ipAddress: encryptedParams.ipAddress,
+      userAgent: encryptedParams.userAgent,
     });
   } catch (error) {
     // Don't throw - logging should never break the application
@@ -93,12 +136,12 @@ export async function logApiRequest(params: LogApiRequestParams): Promise<void> 
 }
 
 /**
- * Store or update fingerprint data
+ * Store or update fingerprint data with encrypted sensitive fields
  */
 export async function storeFingerprint(params: {
   visitorId: string;
   userId?: number;
-  fingerprintData: any; // Accept any structure
+  fingerprintData: any;
   ipAddress?: string;
   userAgent?: string;
 }): Promise<number> {
@@ -112,7 +155,6 @@ export async function storeFingerprint(params: {
         .where(eq(fingerprintsTable.visitorId, params.visitorId))
         .limit(1);
     } catch (dbError: any) {
-      // Table might not exist yet - log and return 0
       if (dbError.message?.includes('does not exist') || dbError.message?.includes('relation') || dbError.message?.includes('fingerprints')) {
         console.warn('Fingerprints table does not exist. Run: pnpm db:push');
         throw new Error('Database table "fingerprints" does not exist. Please run: pnpm db:push');
@@ -121,34 +163,50 @@ export async function storeFingerprint(params: {
     }
 
     // Safely extract data from fingerprint-oss response
-    // Structure: { hash, systemInfo: { browser, os, device, ... }, geolocation: { country, city, ... }, ... }
     const fingerprintData = params.fingerprintData || {};
     const systemInfo = fingerprintData.systemInfo || {};
     const geolocation = fingerprintData.geolocation || {};
     
+    // Encrypt sensitive fingerprint data
+    let encryptedFingerprintData = fingerprintData;
+    let encryptedIpAddress = geolocation.ip || params.ipAddress || null;
+    let encryptedUserAgent = systemInfo.userAgent || params.userAgent || null;
+    
+    if (isEncryptionAvailable()) {
+      try {
+        encryptedFingerprintData = encryptData(JSON.stringify(fingerprintData));
+        if (encryptedIpAddress) {
+          encryptedIpAddress = encryptData(encryptedIpAddress);
+        }
+        if (encryptedUserAgent) {
+          encryptedUserAgent = encryptData(encryptedUserAgent);
+        }
+      } catch (error) {
+        console.warn('Failed to encrypt fingerprint data:', error);
+      }
+    }
+    
     const fingerprintRecord: any = {
       visitorId: params.visitorId,
       userId: params.userId || null,
-      fingerprintData: fingerprintData, // Store the entire response
+      fingerprintData: encryptedFingerprintData,
       browser: systemInfo.browser?.name || systemInfo.browser || null,
       os: systemInfo.os?.name || systemInfo.os || null,
       device: systemInfo.device?.type || systemInfo.device || null,
-      ipAddress: geolocation.ip || params.ipAddress || null,
+      ipAddress: encryptedIpAddress,
       country: geolocation.country?.name || geolocation.country || null,
       city: geolocation.city || null,
-      userAgent: systemInfo.userAgent || params.userAgent || null,
+      userAgent: encryptedUserAgent,
       lastSeenAt: new Date(),
     };
 
     if (existing.length > 0) {
-      // Update existing fingerprint
       await db
         .update(fingerprintsTable)
         .set(fingerprintRecord)
         .where(eq(fingerprintsTable.visitorId, params.visitorId));
       return existing[0].id;
     } else {
-      // Insert new fingerprint
       const result = await db
         .insert(fingerprintsTable)
         .values(fingerprintRecord)
@@ -182,4 +240,3 @@ export function getClientIp(request: Request): string | undefined {
 export function getUserAgent(request: Request): string | undefined {
   return request.headers.get('user-agent') || undefined;
 }
-

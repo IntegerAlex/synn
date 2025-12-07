@@ -166,7 +166,7 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { repo_full_name, default_branch } = SetRepoSchema.parse(body);
         
-        const githubService = await getGitHubService(repo_full_name, default_branch);
+        const githubService = await getGitHubService(repo_full_name, default_branch ?? undefined);
         const fullInfo = await githubService.getRepoInfo();
         
         const responseTime = Date.now() - startTime;

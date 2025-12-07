@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getGitHubService } from '@/lib/services/githubApiHelper';
 import { formatErrorResponse } from '@/lib/utils/errorHandler';
 import { logApiRequest, getClientIp, getUserAgent } from '@/lib/services/activityLogger';
+import { validateRepoAccess } from '@/lib/services/repoValidator';
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@/db';
 import { usersTable, fingerprintsTable } from '@/db/schema';
@@ -73,6 +74,31 @@ export async function GET(request: NextRequest) {
                 { error: { code: 'REPO_REQUIRED', message: 'Repository name is required' } },
                 { status: 400 }
             );
+        }
+
+        // Validate repository access
+        const { userId: clerkUserIdForValidation } = await auth();
+        if (clerkUserIdForValidation) {
+            const validation = await validateRepoAccess(clerkUserIdForValidation, repoFullName);
+            if (!validation.valid) {
+                const responseTime = Date.now() - startTime;
+                await logApiRequest({
+                    userId,
+                    fingerprintId,
+                    method: 'GET',
+                    path: '/api/git/graph',
+                    queryParams: Object.fromEntries(searchParams),
+                    statusCode: 403,
+                    responseTime,
+                    errorCode: 'ACCESS_DENIED',
+                    errorMessage: validation.error,
+                    ipAddress: getClientIp(request),
+                    userAgent: getUserAgent(request),
+                });
+                
+                // Note: We log but don't block - GitHub API will enforce actual permissions
+                console.warn(`Repository access validation warning: ${validation.error}`);
+            }
         }
 
         const githubService = await getGitHubService(repoFullName);

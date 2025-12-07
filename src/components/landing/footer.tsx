@@ -1,6 +1,5 @@
 import Link from "next/link"
 import Image from "next/image"
-import { Github } from "lucide-react"
 
 export function Footer() {
     return (
@@ -15,19 +14,21 @@ export function Footer() {
                             height={32}
                             className="drop-shadow-lg"
                         />
-                        {/* <span className="font-semibold text-foreground">Synn</span> */}
                     </div>
 
                     <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                        {/* <span></span> */}
-                        {/* <Link
-                            href="https://github.com/IntegerAlex"
-                            target="_blank"
-                            className="flex items-center gap-2 hover:text-foreground transition-colors"
+                        <Link
+                            href="/privacy"
+                            className="hover:text-foreground transition-colors"
                         >
-                            <Github className="w-4 h-4" />
-                            GitHub
-                        </Link> */}
+                            Privacy Policy
+                        </Link>
+                        <Link
+                            href="/terms"
+                            className="hover:text-foreground transition-colors"
+                        >
+                            Terms of Service
+                        </Link>
                     </div>
 
                     <p className="text-sm text-muted-foreground">

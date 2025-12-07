@@ -1,6 +1,13 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 
-const isProtectedRoute = createRouteMatcher(['/api/github(.*)', '/api/repo(.*)']);
+// Routes that require authentication
+const isProtectedRoute = createRouteMatcher([
+    '/api/github(.*)',
+    '/api/repo(.*)',
+    '/api/git(.*)',
+    '/api/gdpr(.*)',     // GDPR endpoints require auth
+    '/api/admin(.*)',    // Admin/decrypt endpoints require auth
+]);
 
 export default clerkMiddleware(async (auth, req) => {
     if (isProtectedRoute(req)) await auth.protect();
