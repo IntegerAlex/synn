@@ -1,0 +1,282 @@
+'use client';
+
+import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
+import { useGraph } from '@/hooks/useGitData';
+import { useAppSelector, useAppDispatch } from '@/store/hooks';
+import { setSelectedCommitHash } from '@/store/slices/appSlice';
+import { setCommitLimit } from '@/store/slices/viewportSlice';
+import { GraphRenderer, createPanZoomHandler, type ViewportState } from '@/lib/graph/GraphRenderer';
+
+export function CanvasGraph() {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const rendererRef = useRef<GraphRenderer | null>(null);
+    const cleanupRef = useRef<(() => void) | null>(null);
+    const lastDataKeyRef = useRef<string | null>(null);
+    const pendingDataRef = useRef<{ nodes: any[]; edges: any[] } | null>(null);
+
+    // Local state
+    const [isReady, setIsReady] = useState(false);
+    const [viewport, setViewport] = useState<ViewportState>({ x: 0, y: 0, zoom: 1, width: 800, height: 600 });
+
+    // Redux state
+    const dispatch = useAppDispatch();
+    const commitLimit = useAppSelector((state) => state.viewport.commitLimit);
+    const selectedCommitHash = useAppSelector((state) => state.app.selectedCommitHash);
+    const theme = useAppSelector((state) => state.app.theme);
+
+    const apiLimit = commitLimit === 'all' ? 500 : commitLimit;
+    const { data: graphData, isLoading, error, refetch } = useGraph(apiLimit);
+
+    const isDark = useMemo(
+        () => !['light', 'solarized-light'].includes(theme),
+        [theme]
+    );
+
+    // Create renderer immediately when we have refs
+    const ensureRenderer = useCallback(() => {
+        const canvas = canvasRef.current;
+        const container = containerRef.current;
+
+        if (!canvas || !container) {
+            return false;
+        }
+
+        // If renderer already exists, just return true
+        if (rendererRef.current) {
+            return true;
+        }
+
+        const rect = container.getBoundingClientRect();
+        const width = Math.max(rect.width, 100);
+        const height = Math.max(rect.height, 100);
+
+        // Create renderer
+        rendererRef.current = new GraphRenderer(canvas, { isDark });
+        console.log('[CanvasGraph] Created renderer:', width, 'x', height);
+
+        const initialViewport: ViewportState = {
+            x: 0,
+            y: 0,
+            zoom: 1,
+            width,
+            height,
+        };
+
+        rendererRef.current.setViewport(initialViewport);
+        setViewport(initialViewport);
+
+        // Setup pan/zoom handler
+        if (!cleanupRef.current) {
+            cleanupRef.current = createPanZoomHandler(
+                canvas,
+                (newViewport) => {
+                    setViewport(prev => ({ ...prev, ...newViewport }));
+                    rendererRef.current?.setViewport(newViewport);
+                },
+                () => rendererRef.current,
+                initialViewport
+            );
+        }
+
+        setIsReady(true);
+
+        // Process any pending data
+        if (pendingDataRef.current) {
+            const { nodes, edges } = pendingDataRef.current;
+            pendingDataRef.current = null;
+            console.log('[CanvasGraph] Processing pending data:', nodes.length, 'nodes');
+            rendererRef.current.setLayout(nodes, edges);
+            requestAnimationFrame(() => {
+                rendererRef.current?.forceRender();
+            });
+        }
+
+        return true;
+    }, [isDark]);
+
+    // Initialize on mount via useEffect
+    useEffect(() => {
+        // Try to ensure renderer is ready
+        const tryInit = () => {
+            if (ensureRenderer()) {
+                return;
+            }
+            // Retry if container not ready
+            requestAnimationFrame(tryInit);
+        };
+
+        requestAnimationFrame(tryInit);
+
+        return () => {
+            cleanupRef.current?.();
+            cleanupRef.current = null;
+            rendererRef.current?.destroy();
+            rendererRef.current = null;
+            setIsReady(false);
+        };
+    }, [ensureRenderer]);
+
+    // Handle graph data changes
+    useEffect(() => {
+        if (!graphData) return;
+
+        // Generate a key to detect data changes
+        const dataKey = `${graphData.nodes.length}-${graphData.nodes[0]?.hash || ''}`;
+        if (lastDataKeyRef.current === dataKey) return;
+        lastDataKeyRef.current = dataKey;
+
+        console.log('[CanvasGraph] Data changed:', graphData.nodes.length, 'nodes');
+
+        // Ensure renderer exists
+        if (!rendererRef.current) {
+            // Try to create it now
+            if (!ensureRenderer()) {
+                // Store data for later processing
+                console.log('[CanvasGraph] Renderer not ready, storing data for later');
+                pendingDataRef.current = { nodes: graphData.nodes, edges: graphData.edges };
+                return;
+            }
+        }
+
+        // Set layout
+        console.log('[CanvasGraph] Setting layout');
+        rendererRef.current.setLayout(graphData.nodes, graphData.edges);
+
+        // Force render
+        requestAnimationFrame(() => {
+            if (rendererRef.current) {
+                rendererRef.current.forceRender();
+                const newViewport = rendererRef.current.getViewport();
+                setViewport(newViewport);
+            }
+        });
+    }, [graphData, ensureRenderer]);
+
+    // Handle resize
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const resizeObserver = new ResizeObserver((entries) => {
+            const entry = entries[0];
+            if (!entry) return;
+
+            const { width, height } = entry.contentRect;
+            if (width > 0 && height > 0 && rendererRef.current) {
+                rendererRef.current.setViewport({ width, height });
+                setViewport(prev => ({ ...prev, width, height }));
+            }
+        });
+
+        resizeObserver.observe(container);
+        return () => resizeObserver.disconnect();
+    }, []);
+
+    // Update theme
+    useEffect(() => {
+        rendererRef.current?.updateConfig({ isDark });
+    }, [isDark]);
+
+    // Update selection
+    useEffect(() => {
+        rendererRef.current?.setSelected(selectedCommitHash);
+    }, [selectedCommitHash]);
+
+    // Handle click
+    const handleClick = useCallback(
+        (e: React.MouseEvent<HTMLCanvasElement>) => {
+            if (!rendererRef.current || !canvasRef.current) return;
+
+            const rect = canvasRef.current.getBoundingClientRect();
+            const hash = rendererRef.current.hitTest(
+                e.clientX - rect.left,
+                e.clientY - rect.top
+            );
+
+            dispatch(setSelectedCommitHash(hash));
+        },
+        [dispatch]
+    );
+
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full bg-[#0d1117] text-red-400">
+                <p>Error loading graph</p>
+                <button
+                    onClick={() => refetch()}
+                    className="mt-4 px-4 py-2 bg-[#238636] hover:bg-[#2ea043] text-white rounded-lg"
+                >
+                    Retry
+                </button>
+            </div>
+        );
+    }
+
+    if (isLoading && !graphData) {
+        return (
+            <div className="flex items-center justify-center h-full bg-[#0d1117]">
+                <div className="flex items-center gap-3 text-gray-400">
+                    <div className="w-5 h-5 border-2 border-t-transparent border-[#58a6ff] rounded-full animate-spin" />
+                    <span>Loading commit graph...</span>
+                </div>
+            </div>
+        );
+    }
+
+    if (!graphData || graphData.nodes.length === 0) {
+        return (
+            <div className="flex items-center justify-center h-full bg-[#0d1117] text-gray-400">
+                <span>No commits found</span>
+            </div>
+        );
+    }
+
+    return (
+        <div className="relative w-full h-full overflow-hidden" ref={containerRef}>
+            {/* Header */}
+            <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-2 bg-[#161b22]/80 backdrop-blur-sm border-b border-[#30363d]">
+                <div className="flex items-center gap-2 text-sm text-gray-300">
+                    <span className="font-medium">{graphData.currentBranch}</span>
+                    <span className="text-gray-500">•</span>
+                    <span className="text-gray-500">{graphData.nodes.length} commits</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <select
+                        className="px-3 py-1 bg-[#21262d] border border-[#30363d] rounded text-sm text-gray-300
+                                 focus:outline-none focus:ring-1 focus:ring-[#58a6ff]"
+                        value={commitLimit}
+                        onChange={(e) => {
+                            const value = e.target.value;
+                            dispatch(setCommitLimit(value === 'all' ? 'all' : parseInt(value, 10)));
+                        }}
+                    >
+                        <option value="100">100 commits</option>
+                        <option value="200">200 commits</option>
+                        <option value="500">500 commits</option>
+                        <option value="all">All commits</option>
+                    </select>
+                </div>
+            </div>
+
+            {/* Canvas */}
+            <canvas
+                ref={canvasRef}
+                onClick={handleClick}
+                className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"
+                style={{ touchAction: 'none' }}
+            />
+
+            {/* Debug info */}
+            <div className="absolute top-12 right-4 text-xs text-gray-500 bg-[#0d1117]/80 px-2 py-1 rounded z-10">
+                {isReady ? '✓ Ready' : '⏳'} | {viewport.width}x{viewport.height}
+            </div>
+
+            {/* Controls hint */}
+            <div className="absolute bottom-4 left-4 text-xs text-gray-500 bg-[#0d1117]/80 px-2 py-1 rounded z-10">
+                Scroll to pan • Ctrl+Scroll to zoom • Click to select
+            </div>
+        </div>
+    );
+}
