@@ -201,9 +201,19 @@ export function RepoSelector() {
                                 <p className="text-foreground mb-2 text-lg font-medium">Connect your GitHub</p>
                                 <p className="text-muted-foreground mb-6 text-sm">Sign in to access your repositories</p>
                                 <SignInButton mode="modal">
-                                    <button className="inline-flex items-center gap-2 py-3 px-6 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-all duration-300 shadow-lg shadow-primary/20 hover:shadow-primary/40">
-                                        <Github className="w-5 h-5" />
-                                        Sign In with GitHub
+                                    <button className="relative inline-flex items-center gap-2 py-3.5 px-8 
+                                                 bg-gradient-to-r from-[#dc2626] via-[#ea580c] to-[#f59e0b]
+                                                 hover:from-[#b91c1c] hover:via-[#c2410c] hover:to-[#d97706]
+                                                 text-white font-bold rounded-lg 
+                                                 transition-all duration-300
+                                                 shadow-[0_0_20px_rgba(220,38,38,0.5),0_0_40px_rgba(234,88,12,0.3)]
+                                                 hover:shadow-[0_0_30px_rgba(220,38,38,0.7),0_0_60px_rgba(234,88,12,0.5)]
+                                                 transform hover:scale-[1.05] active:scale-[0.98]
+                                                 overflow-hidden group">
+                                        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent 
+                                                       translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                                        <Github className="w-5 h-5 relative z-10 drop-shadow-[0_0_4px_rgba(0,0,0,0.5)]" />
+                                        <span className="relative z-10 drop-shadow-[0_0_4px_rgba(0,0,0,0.5)]">Sign In with GitHub</span>
                                     </button>
                                 </SignInButton>
                             </div>
@@ -258,25 +268,35 @@ export function RepoSelector() {
                                     <button
                                         onClick={handleGithubSubmit}
                                         disabled={downloading || !selectedRepo || setRepo.isPending}
-                                        className="w-full py-3.5 px-6 bg-primary hover:bg-primary/90 
-                                                 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed
-                                                 text-primary-foreground font-semibold rounded-lg transition-all duration-300
-                                                 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background
-                                                 shadow-lg shadow-primary/20 hover:shadow-primary/40
-                                                 transform hover:scale-[1.02] active:scale-[0.98]"
+                                        className="relative w-full py-4 px-6 
+                                                 bg-gradient-to-r from-[#dc2626] via-[#ea580c] to-[#f59e0b]
+                                                 hover:from-[#b91c1c] hover:via-[#c2410c] hover:to-[#d97706]
+                                                 disabled:from-gray-700 disabled:via-gray-600 disabled:to-gray-700
+                                                 disabled:text-gray-400 disabled:cursor-not-allowed
+                                                 text-white font-bold rounded-lg 
+                                                 transition-all duration-300
+                                                 shadow-[0_0_20px_rgba(220,38,38,0.5),0_0_40px_rgba(234,88,12,0.3)]
+                                                 hover:shadow-[0_0_30px_rgba(220,38,38,0.7),0_0_60px_rgba(234,88,12,0.5)]
+                                                 disabled:shadow-none
+                                                 focus:outline-none focus:ring-2 focus:ring-[#dc2626] focus:ring-offset-2 focus:ring-offset-background
+                                                 transform hover:scale-[1.02] active:scale-[0.98] disabled:transform-none
+                                                 overflow-hidden group"
                                     >
+                                        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent 
+                                                       translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 
+                                                       disabled:translate-x-0" />
                                         {downloading || setRepo.isPending ? (
-                                            <span className="flex items-center justify-center gap-2">
-                                                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <span className="relative z-10 flex items-center justify-center gap-2">
+                                                <svg className="animate-spin h-5 w-5 drop-shadow-[0_0_4px_rgba(0,0,0,0.5)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                                 </svg>
-                                                Opening Repository...
+                                                <span className="drop-shadow-[0_0_4px_rgba(0,0,0,0.5)]">Opening Repository...</span>
                                             </span>
                                         ) : (
-                                            <span className="flex items-center justify-center gap-2">
-                                                <Sparkles className="w-5 h-5" />
-                                                Visualize Repository
+                                            <span className="relative z-10 flex items-center justify-center gap-2">
+                                                <Sparkles className="w-5 h-5 drop-shadow-[0_0_4px_rgba(0,0,0,0.5)]" />
+                                                <span className="drop-shadow-[0_0_4px_rgba(0,0,0,0.5)]">Visualize Repository</span>
                                             </span>
                                         )}
                                     </button>
