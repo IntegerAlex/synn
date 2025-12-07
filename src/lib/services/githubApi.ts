@@ -89,6 +89,11 @@ export class GitHubApiService {
   private owner: string;
   private repo: string;
   private defaultBranch: string = 'main';
+  private lastRateLimitInfo: {
+    remaining: number | null;
+    limit: number | null;
+    reset: number | null;
+  } = { remaining: null, limit: null, reset: null };
 
   constructor(accessToken: string, repoFullName: string, defaultBranch?: string) {
     if (!accessToken) {
@@ -123,22 +128,61 @@ export class GitHubApiService {
       },
     });
 
+    // Always track rate limit info
+    const rateLimitRemaining = response.headers.get('x-ratelimit-remaining');
+    const rateLimitLimit = response.headers.get('x-ratelimit-limit');
+    const rateLimitReset = response.headers.get('x-ratelimit-reset');
+    const rateLimitUsed = response.headers.get('x-ratelimit-used');
+    
+    // Store rate limit info
+    this.lastRateLimitInfo = {
+      remaining: rateLimitRemaining ? parseInt(rateLimitRemaining) : null,
+      limit: rateLimitLimit ? parseInt(rateLimitLimit) : null,
+      reset: rateLimitReset ? parseInt(rateLimitReset) : null,
+    };
+
     if (!response.ok) {
-      // Handle rate limiting
-      if (response.status === 403) {
-        const rateLimitRemaining = response.headers.get('x-ratelimit-remaining');
-        const rateLimitReset = response.headers.get('x-ratelimit-reset');
-        if (rateLimitRemaining === '0') {
+      
+      // Handle rate limiting (403 or 429)
+      if (response.status === 403 || response.status === 429) {
+        const remaining = rateLimitRemaining ? parseInt(rateLimitRemaining) : 0;
+        if (remaining === 0 || response.status === 429) {
           const resetTime = rateLimitReset ? new Date(parseInt(rateLimitReset) * 1000) : null;
+          const timeUntilReset = resetTime ? Math.ceil((resetTime.getTime() - Date.now()) / 1000 / 60) : null;
           throw new Error(
-            `GitHub API rate limit exceeded. ${resetTime ? `Resets at ${resetTime.toISOString()}` : 'Please try again later.'}`
+            `GitHub API rate limit exceeded. ${rateLimitUsed}/${rateLimitLimit} requests used. ${resetTime ? `Resets in ${timeUntilReset} minutes (${resetTime.toLocaleString()})` : 'Please try again later.'}`
           );
         }
       }
       
       // Handle not found
       if (response.status === 404) {
-        throw new Error(`Repository not found: ${this.repoFullName}`);
+        // Check if it's actually a rate limit issue (sometimes GitHub returns 404 for rate limits)
+        if (rateLimitRemaining === '0') {
+          const resetTime = rateLimitReset ? new Date(parseInt(rateLimitReset) * 1000) : null;
+          const timeUntilReset = resetTime ? Math.ceil((resetTime.getTime() - Date.now()) / 1000 / 60) : null;
+          throw new Error(
+            `GitHub API rate limit exceeded (returned as 404). ${rateLimitUsed}/${rateLimitLimit} requests used. Resets in ${timeUntilReset} minutes (${resetTime?.toLocaleString()}).`
+          );
+        }
+        
+        // Try to get more details from the response
+        let errorMessage = `Repository not found or access denied: ${this.repoFullName}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.message) {
+            errorMessage = `${errorData.message}. The repository may be private or not exist.`;
+          }
+        } catch {
+          // If response body is not JSON, use default message
+        }
+        
+        // Add rate limit info if available
+        if (rateLimitRemaining && parseInt(rateLimitRemaining) < 10) {
+          errorMessage += ` (Rate limit: ${rateLimitRemaining}/${rateLimitLimit} remaining)`;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       // Handle unauthorized
@@ -146,8 +190,13 @@ export class GitHubApiService {
         throw new Error('GitHub authentication failed. Please reconnect your GitHub account.');
       }
 
+      // For other errors, include rate limit info
       const errorText = await response.text().catch(() => response.statusText);
-      throw new Error(`GitHub API error (${response.status}): ${errorText}`);
+      let errorMessage = `GitHub API error (${response.status}): ${errorText}`;
+      if (rateLimitRemaining && parseInt(rateLimitRemaining) < 10) {
+        errorMessage += ` [Rate limit: ${rateLimitRemaining}/${rateLimitLimit} remaining]`;
+      }
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -199,37 +248,72 @@ export class GitHubApiService {
   }
 
   async getCommits(branch?: string, limit: number = 100): Promise<Commit[]> {
-    const sha = branch || this.defaultBranch;
-    const commits = await this.fetchGitHub<GitHubCommit[]>(
-      `/commits?sha=${sha}&per_page=${Math.min(limit, 100)}`
-    );
+    try {
+      const sha = branch || this.defaultBranch;
+      const commits = await this.fetchGitHub<GitHubCommit[]>(
+        `/commits?sha=${sha}&per_page=${Math.min(limit, 100)}`
+      );
 
-    if (!Array.isArray(commits)) {
-      return [];
+      if (!Array.isArray(commits)) {
+        return [];
+      }
+
+      return commits.map((commit) => ({
+        hash: commit.sha,
+        shortHash: commit.sha.substring(0, 7),
+        message: commit.commit.message.split('\n')[0],
+        body: commit.commit.message,
+        author: {
+          name: commit.commit.author.name,
+          email: commit.commit.author.email,
+        },
+        committer: {
+          name: commit.commit.committer.name,
+          email: commit.commit.committer.email,
+        },
+        date: commit.commit.author.date,
+        parents: commit.parents.map((p) => p.sha),
+        refs: [],
+      }));
+    } catch (error: any) {
+      // Handle empty repository or branch not found gracefully
+      if (error.message?.includes('Not Found') || error.message?.includes('404')) {
+        console.warn(`No commits found for ${this.repoFullName}${branch ? ` on branch ${branch}` : ''} - repository may be empty or branch doesn't exist`);
+        return [];
+      }
+      // Re-throw other errors
+      throw error;
     }
-
-    return commits.map((commit) => ({
-      hash: commit.sha,
-      shortHash: commit.sha.substring(0, 7),
-      message: commit.commit.message.split('\n')[0],
-      body: commit.commit.message,
-      author: {
-        name: commit.commit.author.name,
-        email: commit.commit.author.email,
-      },
-      committer: {
-        name: commit.commit.committer.name,
-        email: commit.commit.committer.email,
-      },
-      date: commit.commit.author.date,
-      parents: commit.parents.map((p) => p.sha),
-      refs: [],
-    }));
   }
 
   async getGraph(limit: number = 100): Promise<GraphData> {
-    const commits = await this.getCommits(undefined, limit);
+    // First, fetch repo info to get the actual default branch from GitHub
+    // This ensures we use the repository's real default branch, not a hardcoded value
+    const repoInfo = await this.getRepoInfo();
+    const actualDefaultBranch = repoInfo.currentBranch || this.defaultBranch;
+    
+    // Update our internal defaultBranch to the actual one
+    this.defaultBranch = actualDefaultBranch;
+    
+    // Get branches
     const branches = await this.getBranches();
+    
+    // Use the actual default branch
+    const branchToUse = actualDefaultBranch;
+    
+    // Get commits for the default branch
+    const commits = await this.getCommits(branchToUse, limit);
+
+    // Handle empty repository case
+    if (!commits || commits.length === 0) {
+      return {
+        nodes: [],
+        edges: [],
+        columns: 0,
+        branches: branches.local.map((b) => b.name),
+        currentBranch: actualDefaultBranch, // Use the actual default branch from GitHub
+      };
+    }
 
     // Build column assignment for proper branching visualization
     const hashToColumn = new Map<string, number>();
@@ -281,7 +365,8 @@ export class GitHubApiService {
       }
     }
 
-    const maxColumn = Math.max(...Array.from(hashToColumn.values()), 0);
+    const columnValues = Array.from(hashToColumn.values());
+    const maxColumn = columnValues.length > 0 ? Math.max(...columnValues) : 0;
 
     // Create nodes
     const nodes: GraphNode[] = commits.map((commit, idx) => ({
@@ -328,7 +413,7 @@ export class GitHubApiService {
       edges,
       columns: maxColumn + 1,
       branches: branches.local.map((b) => b.name),
-      currentBranch: branches.current,
+      currentBranch: actualDefaultBranch,
     };
   }
 

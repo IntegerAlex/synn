@@ -28,12 +28,32 @@ function getRepoFullName(repoInfo: RepoInfo | null): string {
     return repoInfo.path;
 }
 
+// Helper to get visitor ID from localStorage
+function getVisitorId(): string | null {
+    if (typeof window === 'undefined') return null;
+    try {
+        return localStorage.getItem('visitorId');
+    } catch {
+        return null;
+    }
+}
+
+// Helper to create headers with visitor ID
+function getHeaders(): HeadersInit {
+    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    const visitorId = getVisitorId();
+    if (visitorId) {
+        headers['x-visitor-id'] = visitorId;
+    }
+    return headers;
+}
+
 export const gitApi = {
     // Set repository (now accepts repo_full_name and default_branch)
     setRepo: async (params: { repoFullName: string; defaultBranch?: string }): Promise<RepoInfo> => {
         const response = await fetch(`${API_BASE}/repo`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getHeaders(),
             body: JSON.stringify({ 
                 repo_full_name: params.repoFullName,
                 default_branch: params.defaultBranch 
@@ -45,28 +65,36 @@ export const gitApi = {
     // Get repository info
     getRepoInfo: async (repoInfo: RepoInfo | null): Promise<RepoInfo> => {
         const repoFullName = getRepoFullName(repoInfo);
-        const response = await fetch(`${API_BASE}/repo?repo=${encodeURIComponent(repoFullName)}`);
+        const response = await fetch(`${API_BASE}/repo?repo=${encodeURIComponent(repoFullName)}`, {
+            headers: getHeaders(),
+        });
         return handleResponse(response);
     },
 
     // Get branches
     getBranches: async (repoInfo: RepoInfo | null): Promise<BranchesResponse> => {
         const repoFullName = getRepoFullName(repoInfo);
-        const response = await fetch(`${API_BASE}/branches?repo=${encodeURIComponent(repoFullName)}`);
+        const response = await fetch(`${API_BASE}/branches?repo=${encodeURIComponent(repoFullName)}`, {
+            headers: getHeaders(),
+        });
         return handleResponse(response);
     },
 
     // Get graph
     getGraph: async (repoInfo: RepoInfo | null, limit = 100): Promise<GraphData> => {
         const repoFullName = getRepoFullName(repoInfo);
-        const response = await fetch(`${API_BASE}/graph?repo=${encodeURIComponent(repoFullName)}&limit=${limit}`);
+        const response = await fetch(`${API_BASE}/graph?repo=${encodeURIComponent(repoFullName)}&limit=${limit}`, {
+            headers: getHeaders(),
+        });
         return handleResponse(response);
     },
 
     // Get commit details
     getCommitDetails: async (repoInfo: RepoInfo | null, hash: string): Promise<CommitDetails> => {
         const repoFullName = getRepoFullName(repoInfo);
-        const response = await fetch(`${API_BASE}/commits/${hash}?repo=${encodeURIComponent(repoFullName)}`);
+        const response = await fetch(`${API_BASE}/commits/${hash}?repo=${encodeURIComponent(repoFullName)}`, {
+            headers: getHeaders(),
+        });
         return handleResponse(response);
     },
 
@@ -75,7 +103,7 @@ export const gitApi = {
         const repoFullName = getRepoFullName(repoInfo);
         const response = await fetch(`${API_BASE}/checkout`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getHeaders(),
             body: JSON.stringify({ 
                 branch,
                 repo_full_name: repoFullName 
@@ -87,7 +115,9 @@ export const gitApi = {
     // Search
     search: async (repoInfo: RepoInfo | null, query: string): Promise<SearchResponse> => {
         const repoFullName = getRepoFullName(repoInfo);
-        const response = await fetch(`${API_BASE}/search?repo=${encodeURIComponent(repoFullName)}&q=${encodeURIComponent(query)}`);
+        const response = await fetch(`${API_BASE}/search?repo=${encodeURIComponent(repoFullName)}&q=${encodeURIComponent(query)}`, {
+            headers: getHeaders(),
+        });
         return handleResponse(response);
     },
 };

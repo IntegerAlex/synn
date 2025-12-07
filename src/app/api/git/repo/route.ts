@@ -2,6 +2,11 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { getGitHubService } from '@/lib/services/githubApiHelper';
 import { formatErrorResponse } from '@/lib/utils/errorHandler';
+import { logActivity, logApiRequest, getClientIp, getUserAgent } from '@/lib/services/activityLogger';
+import { auth } from '@clerk/nextjs/server';
+import { db } from '@/db';
+import { usersTable, fingerprintsTable } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 const SetRepoSchema = z.object({
     repo_full_name: z.string()
@@ -12,11 +17,63 @@ const SetRepoSchema = z.object({
 
 // GET /api/git/repo - Get repository info
 export async function GET(request: NextRequest) {
+    const startTime = Date.now();
+    let userId: number | undefined;
+    let fingerprintId: number | undefined;
+    
     try {
+        // Get user ID if authenticated
+        const { userId: clerkUserId } = await auth();
+        if (clerkUserId) {
+            const user = await db
+                .select()
+                .from(usersTable)
+                .where(eq(usersTable.clerkUserId, clerkUserId))
+                .limit(1);
+            if (user.length > 0) {
+                userId = user[0].id;
+            }
+        }
+
+        // Get fingerprint ID from header
+        const visitorId = request.headers.get('x-visitor-id');
+        if (visitorId) {
+            try {
+                const fingerprint = await db
+                    .select()
+                    .from(fingerprintsTable)
+                    .where(eq(fingerprintsTable.visitorId, visitorId))
+                    .limit(1);
+                if (fingerprint.length > 0) {
+                    fingerprintId = fingerprint[0].id;
+                }
+            } catch (dbError: any) {
+                // Table might not exist - just continue without fingerprintId
+                if (dbError.message?.includes('does not exist') || dbError.message?.includes('relation')) {
+                    // Silently continue - fingerprint tracking is optional
+                } else {
+                    throw dbError;
+                }
+            }
+        }
+
         const { searchParams } = new URL(request.url);
         const repoFullName = searchParams.get('repo');
         
         if (!repoFullName) {
+            const responseTime = Date.now() - startTime;
+            await logApiRequest({
+                userId,
+                fingerprintId,
+                method: 'GET',
+                path: '/api/git/repo',
+                statusCode: 400,
+                responseTime,
+                errorCode: 'REPO_REQUIRED',
+                ipAddress: getClientIp(request),
+                userAgent: getUserAgent(request),
+            });
+            
             return NextResponse.json(
                 { error: { code: 'REPO_REQUIRED', message: 'Repository name is required' } },
                 { status: 400 }
@@ -25,24 +82,131 @@ export async function GET(request: NextRequest) {
 
         const githubService = await getGitHubService(repoFullName);
         const info = await githubService.getRepoInfo();
+        
+        const responseTime = Date.now() - startTime;
+        await logActivity({
+            userId,
+            fingerprintId,
+            activityType: 'repo_info_viewed',
+            category: 'repository',
+            description: `Viewed repository info: ${repoFullName}`,
+            repoFullName,
+            requestMethod: 'GET',
+            requestPath: '/api/git/repo',
+            responseStatus: 200,
+            responseTime,
+            ipAddress: getClientIp(request),
+            userAgent: getUserAgent(request),
+        });
+        
         return NextResponse.json({ data: info });
     } catch (error) {
+        const responseTime = Date.now() - startTime;
         const response = formatErrorResponse(error);
+        
+        await logApiRequest({
+            userId,
+            fingerprintId,
+            method: 'GET',
+            path: '/api/git/repo',
+            statusCode: 400,
+            responseTime,
+            errorCode: response.error?.code,
+            errorMessage: response.error?.message,
+            ipAddress: getClientIp(request),
+            userAgent: getUserAgent(request),
+        });
+        
         return NextResponse.json(response, { status: 400 });
     }
 }
 
 // POST /api/git/repo - Set repository (now accepts repo_full_name instead of path)
 export async function POST(request: Request) {
+    const startTime = Date.now();
+    let userId: number | undefined;
+    let fingerprintId: number | undefined;
+    
     try {
+        // Get user ID if authenticated
+        const { userId: clerkUserId } = await auth();
+        if (clerkUserId) {
+            const user = await db
+                .select()
+                .from(usersTable)
+                .where(eq(usersTable.clerkUserId, clerkUserId))
+                .limit(1);
+            if (user.length > 0) {
+                userId = user[0].id;
+            }
+        }
+
+        // Get fingerprint ID from header
+        const visitorId = request.headers.get('x-visitor-id');
+        if (visitorId) {
+            try {
+                const fingerprint = await db
+                    .select()
+                    .from(fingerprintsTable)
+                    .where(eq(fingerprintsTable.visitorId, visitorId))
+                    .limit(1);
+                if (fingerprint.length > 0) {
+                    fingerprintId = fingerprint[0].id;
+                }
+            } catch (dbError: any) {
+                // Table might not exist - just continue without fingerprintId
+                if (dbError.message?.includes('does not exist') || dbError.message?.includes('relation')) {
+                    // Silently continue - fingerprint tracking is optional
+                } else {
+                    throw dbError;
+                }
+            }
+        }
+
         const body = await request.json();
         const { repo_full_name, default_branch } = SetRepoSchema.parse(body);
         
         const githubService = await getGitHubService(repo_full_name, default_branch);
         const fullInfo = await githubService.getRepoInfo();
+        
+        const responseTime = Date.now() - startTime;
+        await logActivity({
+            userId,
+            fingerprintId,
+            activityType: 'repo_selected',
+            category: 'repository',
+            description: `Repository selected: ${repo_full_name}`,
+            repoFullName: repo_full_name,
+            requestMethod: 'POST',
+            requestPath: '/api/git/repo',
+            responseStatus: 200,
+            responseTime,
+            metadata: { defaultBranch: default_branch },
+            ipAddress: getClientIp(request),
+            userAgent: getUserAgent(request),
+        });
+        
         return NextResponse.json({ data: fullInfo });
     } catch (error) {
+        const responseTime = Date.now() - startTime;
         const response = formatErrorResponse(error);
+        
+        await logActivity({
+            userId,
+            fingerprintId,
+            activityType: 'api_error',
+            category: 'error',
+            description: `Failed to set repository: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            requestMethod: 'POST',
+            requestPath: '/api/git/repo',
+            responseStatus: 400,
+            responseTime,
+            errorCode: response.error?.code,
+            errorMessage: response.error?.message,
+            ipAddress: getClientIp(request),
+            userAgent: getUserAgent(request),
+        });
+        
         return NextResponse.json(response, { status: 400 });
     }
 }

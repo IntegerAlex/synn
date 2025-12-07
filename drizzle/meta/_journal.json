@@ -15,6 +15,13 @@
       "when": 1765108454926,
       "tag": "0001_safe_odin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1765112706970,
+      "tag": "0002_steep_rattler",
+      "breakpoints": true
     }
   ]
 }
