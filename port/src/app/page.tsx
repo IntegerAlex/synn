@@ -1,38 +1,17 @@
-'use client';
+import { Header } from "@/components/landing/header"
+import { HeroSection } from "@/components/landing/hero-section"
+import { FeaturesSection } from "@/components/landing/features-section"
+import { CTASection } from "@/components/landing/cta-section"
+import { Footer } from "@/components/landing/footer"
 
-import { useAppSelector } from '@/store/hooks';
-import { RepoSelector } from '@/components/RepoSelector';
-import { CanvasGraph } from '@/components/graph/CanvasGraph';
-import { Sidebar } from '@/components/layout/Sidebar';
-import { Header } from '@/components/layout/Header';
-import { CommitDetails } from '@/components/CommitDetails';
-
-export default function Home() {
-  const repoInfo = useAppSelector((state) => state.app.repoInfo);
-  const selectedCommitHash = useAppSelector((state) => state.app.selectedCommitHash);
-
-  if (!repoInfo) {
-    return <RepoSelector />;
-  }
-
-  return (
-    <div className="h-screen w-screen flex flex-col bg-[#0d1117] overflow-hidden">
-      {/* Header */}
-      <Header />
-
-      {/* Main content */}
-      <div className="flex-1 flex min-h-0">
-        {/* Left sidebar - Branches */}
-        <Sidebar />
-
-        {/* Graph takes remaining space */}
-        <main className="flex-1 min-w-0">
-          <CanvasGraph />
+export default function LandingPage() {
+    return (
+        <main className="min-h-screen bg-background overflow-x-hidden">
+            <Header />
+            <HeroSection />
+            <FeaturesSection />
+            <CTASection />
+            <Footer />
         </main>
-
-        {/* Right panel - Commit details (only when commit selected) */}
-        {selectedCommitHash && <CommitDetails />}
-      </div>
-    </div>
-  );
+    )
 }

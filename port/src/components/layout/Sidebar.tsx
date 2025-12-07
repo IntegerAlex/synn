@@ -50,7 +50,7 @@ export function Sidebar() {
                                     ${branch.isCurrent ? 'font-medium' : ''}`}
                             >
                                 {branch.isCurrent && (
-                                    <span className="w-2 h-2 rounded-full bg-[#3fb950]" />
+                                    <span className="w-2 h-2 rounded-full bg-[#ef4444]" />
                                 )}
                                 <span className="truncate">{branch.name}</span>
                             </button>

@@ -141,7 +141,9 @@ export function CanvasGraph() {
 
         // Set layout
         console.log('[CanvasGraph] Setting layout');
-        rendererRef.current.setLayout(graphData.nodes, graphData.edges);
+        if (rendererRef.current) {
+            rendererRef.current.setLayout(graphData.nodes, graphData.edges);
+        }
 
         // Force render
         requestAnimationFrame(() => {
@@ -217,7 +219,7 @@ export function CanvasGraph() {
         return (
             <div className="flex items-center justify-center h-full bg-[#0d1117]">
                 <div className="flex items-center gap-3 text-gray-400">
-                    <div className="w-5 h-5 border-2 border-t-transparent border-[#58a6ff] rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2 border-t-transparent border-[#ef4444] rounded-full animate-spin" />
                     <span>Loading commit graph...</span>
                 </div>
             </div>
@@ -233,7 +235,7 @@ export function CanvasGraph() {
     }
 
     return (
-        <div className="relative w-full h-full overflow-hidden" ref={containerRef}>
+        <div className="relative w-full h-full overflow-hidden bg-[#0d1117]" ref={containerRef}>
             {/* Header */}
             <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-2 bg-[#161b22]/80 backdrop-blur-sm border-b border-[#30363d]">
                 <div className="flex items-center gap-2 text-sm text-gray-300">
@@ -245,7 +247,7 @@ export function CanvasGraph() {
                 <div className="flex items-center gap-2">
                     <select
                         className="px-3 py-1 bg-[#21262d] border border-[#30363d] rounded text-sm text-gray-300
-                                 focus:outline-none focus:ring-1 focus:ring-[#58a6ff]"
+                                 focus:outline-none focus:ring-1 focus:ring-[#ef4444]"
                         value={commitLimit}
                         onChange={(e) => {
                             const value = e.target.value;
@@ -264,7 +266,7 @@ export function CanvasGraph() {
             <canvas
                 ref={canvasRef}
                 onClick={handleClick}
-                className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"
+                className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing bg-[#0d1117]"
                 style={{ touchAction: 'none' }}
             />
 

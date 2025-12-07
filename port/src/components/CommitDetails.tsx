@@ -113,7 +113,7 @@ export function CommitDetails() {
         return (
             <aside className="w-80 h-full bg-[#161b22] border-l border-[#30363d] flex flex-col">
                 <div className="flex-1 flex items-center justify-center">
-                    <div className="w-5 h-5 border-2 border-t-transparent border-[#58a6ff] rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2 border-t-transparent border-[#ef4444] rounded-full animate-spin" />
                 </div>
             </aside>
         );
@@ -147,7 +147,7 @@ export function CommitDetails() {
                 {/* Commit info */}
                 <div className="p-4 border-b border-[#30363d]">
                     <div className="flex items-center gap-2 mb-2">
-                        <span className="px-2 py-0.5 bg-[#21262d] rounded text-xs font-mono text-[#58a6ff]">
+                        <span className="px-2 py-0.5 bg-[#21262d] rounded text-xs font-mono text-[#ef4444]">
                             {details.shortHash}
                         </span>
                     </div>
@@ -227,7 +227,7 @@ export function CommitDetails() {
                                 )}
                                 <button
                                     onClick={() => setShowFullDiff(!showFullDiff)}
-                                    className="text-xs text-[#58a6ff] hover:text-[#79c0ff]"
+                                    className="text-xs text-[#ef4444] hover:text-[#f87171]"
                                 >
                                     {showFullDiff ? 'Show Summary' : 'Show Full Diff'}
                                 </button>
@@ -262,7 +262,7 @@ function renderDiff(diff: string, showFull: boolean): React.ReactNode {
                 let className = 'text-gray-300';
                 if (isAdded) className = 'text-[#3fb950]';
                 else if (isRemoved) className = 'text-[#f85149]';
-                else if (isHeader) className = 'text-[#58a6ff]';
+                else if (isHeader) className = 'text-[#ef4444]';
                 else if (line.trim() === '') className = 'text-gray-600';
 
                 return (

@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
         const graph = await gitService.getGraph(Math.min(Math.max(limit, 1), 10000));
         return NextResponse.json({ data: graph });
     } catch (error) {
+        console.error('[/api/git/graph] Error:', error);
         const response = formatErrorResponse(error);
         return NextResponse.json(response, { status: 400 });
     }

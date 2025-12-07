@@ -1,20 +1,11 @@
 'use client';
 
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { setTheme, setRepoInfo } from '@/store/slices/appSlice';
-import type { Theme } from '@/types/git';
+import { setRepoInfo } from '@/store/slices/appSlice';
 
 export function Header() {
     const dispatch = useAppDispatch();
     const repoInfo = useAppSelector((state) => state.app.repoInfo);
-    const theme = useAppSelector((state) => state.app.theme);
-
-    const themes: { value: Theme; label: string }[] = [
-        { value: 'github-dark', label: 'GitHub Dark' },
-        { value: 'dark', label: 'Dark' },
-        { value: 'light', label: 'Light' },
-        { value: 'monokai', label: 'Monokai' },
-    ];
 
     return (
         <header className="h-12 bg-[#161b22] border-b border-[#30363d] flex items-center justify-between px-4">
@@ -24,7 +15,7 @@ export function Header() {
                 {repoInfo && (
                     <div className="flex items-center gap-2 text-sm">
                         <span className="text-gray-400">{repoInfo.name}</span>
-                        <span className="px-2 py-0.5 bg-[#21262d] rounded text-xs text-[#58a6ff]">
+                        <span className="px-2 py-0.5 bg-[#21262d] rounded text-xs text-[#ef4444]">
                             {repoInfo.currentBranch}
                         </span>
                         {!repoInfo.isClean && (
@@ -36,18 +27,6 @@ export function Header() {
 
             {/* Right: Actions */}
             <div className="flex items-center gap-3">
-                {/* Theme selector */}
-                <select
-                    value={theme}
-                    onChange={(e) => dispatch(setTheme(e.target.value as Theme))}
-                    className="px-2 py-1 bg-[#21262d] border border-[#30363d] rounded text-xs text-gray-300
-                             focus:outline-none focus:ring-1 focus:ring-[#58a6ff]"
-                >
-                    {themes.map((t) => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
-                    ))}
-                </select>
-
                 {/* Close repo button */}
                 {repoInfo && (
                     <button

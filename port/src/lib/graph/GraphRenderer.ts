@@ -135,12 +135,23 @@ export function getVisibleNodes(
     const graphTop = (-viewport.y - padding) / viewport.zoom;
     const graphBottom = (-viewport.y + viewport.height + padding) / viewport.zoom;
 
+    console.debug('[GraphRenderer] getVisibleNodes() - Calculating visibility', {
+        viewport: { ...viewport },
+        graphBounds: { left: graphLeft, right: graphRight, top: graphTop, bottom: graphBottom },
+        totalNodes: layout.nodes.size
+    });
+
     for (const [hash, pos] of layout.nodes) {
         if (pos.x >= graphLeft && pos.x <= graphRight &&
             pos.y >= graphTop && pos.y <= graphBottom) {
             visible.push(hash);
         }
     }
+
+    console.debug('[GraphRenderer] getVisibleNodes() - Found visible nodes', {
+        visible: visible.length,
+        total: layout.nodes.size
+    });
 
     return visible;
 }
@@ -180,6 +191,12 @@ export class GraphRenderer {
         this.viewport = { x: 0, y: 0, zoom: 1, width: canvas.width, height: canvas.height };
 
         this.setupHiDPI();
+        
+        // Fill canvas with dark background immediately to prevent white flash
+        // Do this after setupHiDPI in case it resizes the canvas
+        // Use logical dimensions since context is already scaled by DPR
+        this.ctx.fillStyle = '#0d1117';
+        this.ctx.fillRect(0, 0, this.viewport.width, this.viewport.height);
     }
 
     private setupHiDPI() {
@@ -213,10 +230,22 @@ export class GraphRenderer {
         if (this.isDestroyed) return;
         this.originalNodes = nodes;  // Store for ref labels
 
+        console.log('[GraphRenderer] setLayout() - Setting new layout', {
+            nodes: nodes.length,
+            edges: edges.length,
+            viewport: { ...this.viewport }
+        });
+
         // Clear previous layout
         const hadPreviousLayout = !!this.layout;
 
         this.layout = calculateLayout(nodes, edges, this.config);
+        console.log('[GraphRenderer] setLayout() - Layout calculated', {
+            nodes: this.layout.nodes.size,
+            edges: this.layout.edges.length,
+            bounds: this.layout.bounds
+        });
+
         this.isDirty = true;
         this.renderStaticLayer();
 
@@ -227,9 +256,18 @@ export class GraphRenderer {
 
             // If fitToContent failed, ensure we still render with default viewport
             if (!fittedViewport) {
+                console.warn('[GraphRenderer] setLayout() - fitToContent failed, using default viewport');
                 // Fallback: set a reasonable default viewport
                 this.setViewport({ x: 0, y: 0, zoom: 1 });
+            } else {
+                console.log('[GraphRenderer] setLayout() - Viewport fitted', fittedViewport);
             }
+        } else {
+            console.warn('[GraphRenderer] setLayout() - Cannot fit viewport', {
+                hasLayout: !!this.layout,
+                viewportWidth: this.viewport.width,
+                viewportHeight: this.viewport.height
+            });
         }
 
         // Force immediate render - ensure graph is visible
@@ -242,14 +280,21 @@ export class GraphRenderer {
      * Returns the target viewport state for external state management
      */
     fitToContent(animate: boolean = true): ViewportState | null {
-        if (!this.layout || !this.viewport.width || !this.viewport.height) return null;
+        if (!this.layout || !this.viewport.width || !this.viewport.height) {
+            console.warn('[GraphRenderer] fitToContent() - Missing layout or viewport', {
+                hasLayout: !!this.layout,
+                viewportWidth: this.viewport.width,
+                viewportHeight: this.viewport.height
+            });
+            return null;
+        }
 
         const { bounds } = this.layout;
 
         // Ensure bounds are valid
         if (!isFinite(bounds.minX) || !isFinite(bounds.maxX) ||
             !isFinite(bounds.minY) || !isFinite(bounds.maxY)) {
-            console.warn('GraphRenderer: Invalid bounds, cannot fit to content');
+            console.warn('[GraphRenderer] fitToContent() - Invalid bounds', bounds);
             return null;
         }
 
@@ -258,8 +303,15 @@ export class GraphRenderer {
         const viewportWidth = this.viewport.width;
         const viewportHeight = this.viewport.height;
 
+        console.debug('[GraphRenderer] fitToContent() - Calculating', {
+            bounds,
+            contentSize: { width: contentWidth, height: contentHeight },
+            viewportSize: { width: viewportWidth, height: viewportHeight }
+        });
+
         // Handle edge case where content has zero size
         if (contentWidth <= 0 || contentHeight <= 0) {
+            console.warn('[GraphRenderer] fitToContent() - Zero content size, using default viewport');
             // Default viewport if content is invalid
             const defaultViewport: ViewportState = {
                 x: 0,
@@ -295,6 +347,13 @@ export class GraphRenderer {
             height: this.viewport.height,
         };
 
+        console.log('[GraphRenderer] fitToContent() - Target viewport', {
+            target: targetViewport,
+            animate,
+            center: { x: centerX, y: centerY },
+            zoom: { zoomX, zoomY, newZoom, finalZoom }
+        });
+
         if (animate) {
             this.animateViewport(targetViewport, 500);
         } else {
@@ -325,6 +384,15 @@ export class GraphRenderer {
             viewport.y !== this.viewport.y ||
             viewport.zoom !== this.viewport.zoom
         );
+
+        console.debug('[GraphRenderer] setViewport() - Updating viewport', {
+            newViewport: viewport,
+            currentViewport: { ...this.viewport },
+            hasDimensionChange,
+            hasPositionChange,
+            positionChanged,
+            hasLayout: !!this.layout
+        });
 
         // Only update dimensions if they actually changed
         if (hasDimensionChange) {
@@ -442,13 +510,22 @@ export class GraphRenderer {
      */
     private scheduleRender() {
         if (this.isDestroyed) return;
-        if (this.animationFrameId) return;
+        if (this.animationFrameId) {
+            console.debug('[GraphRenderer] scheduleRender() - Already scheduled');
+            return;
+        }
 
         // Don't schedule render if layout isn't ready
         if (!this.layout) {
+            console.debug('[GraphRenderer] scheduleRender() - No layout, marking dirty');
             this.isDirty = true; // Mark as dirty so it renders when layout is set
             return;
         }
+
+        console.debug('[GraphRenderer] scheduleRender() - Scheduling render', {
+            isDirty: this.isDirty,
+            hasLayout: !!this.layout
+        });
 
         this.animationFrameId = requestAnimationFrame((timestamp) => {
             this.animationFrameId = null;
@@ -456,9 +533,15 @@ export class GraphRenderer {
 
             // Always render if dirty, don't throttle when layout changes
             if (this.isDirty && this.layout) {
+                console.debug('[GraphRenderer] scheduleRender() - Executing render', { timestamp });
                 this.lastRenderTime = timestamp;
                 this.render();
                 this.isDirty = false;
+            } else {
+                console.debug('[GraphRenderer] scheduleRender() - Skipping render', {
+                    isDirty: this.isDirty,
+                    hasLayout: !!this.layout
+                });
             }
         });
     }
@@ -480,6 +563,7 @@ export class GraphRenderer {
     render() {
         if (!this.layout) {
             // Silently return if layout not ready - this is expected during initialization
+            console.debug('[GraphRenderer] render() - No layout, skipping');
             return;
         }
 
@@ -492,19 +576,28 @@ export class GraphRenderer {
 
         // Validate dimensions
         if (width <= 0 || height <= 0) {
+            console.warn('[GraphRenderer] render() - Invalid dimensions:', width, height);
             return; // Can't render with invalid dimensions
         }
 
         // Validate layout has content
         if (this.layout.nodes.size === 0) {
-            // Still clear canvas even if no nodes
-            ctx.fillStyle = this.config.isDark ? '#0d1117' : '#ffffff';
+            console.debug('[GraphRenderer] render() - No nodes in layout, clearing canvas');
+            // Still clear canvas even if no nodes - always use dark background
+            ctx.fillStyle = '#0d1117';
             ctx.fillRect(0, 0, width, height);
             return;
         }
 
-        // Clear entire canvas
-        ctx.fillStyle = this.config.isDark ? '#0d1117' : '#ffffff';
+        console.debug('[GraphRenderer] render() - Rendering', {
+            nodes: this.layout.nodes.size,
+            edges: this.layout.edges.length,
+            viewport: { ...this.viewport },
+            bounds: this.layout.bounds
+        });
+
+        // Clear entire canvas - always use dark background
+        ctx.fillStyle = '#0d1117';
         ctx.fillRect(0, 0, width, height);
 
         // Apply viewport transform - this is what allows panning/zooming
@@ -521,6 +614,12 @@ export class GraphRenderer {
             // Check if viewport is at default position (0,0) - likely needs fitting
             const isDefaultViewport = this.viewport.x === 0 && this.viewport.y === 0 && this.viewport.zoom === 1;
 
+            console.warn('[GraphRenderer] render() - No visible nodes, using fallback', {
+                isDefaultViewport,
+                viewport: { ...this.viewport },
+                totalNodes: this.layout.nodes.size
+            });
+
             if (isDefaultViewport) {
                 // Viewport hasn't been fitted yet - render all nodes to ensure visibility
                 visibleHashes = Array.from(this.layout.nodes.keys());
@@ -530,6 +629,11 @@ export class GraphRenderer {
                 visibleHashes = Array.from(this.layout.nodes.keys());
             }
         }
+
+        console.debug('[GraphRenderer] render() - Drawing', {
+            visibleNodes: visibleHashes.length,
+            totalNodes: this.layout.nodes.size
+        });
 
         // Draw edges (render all edges for now - optimization can come later)
         this.renderEdges(ctx, visibleHashes);
@@ -550,6 +654,11 @@ export class GraphRenderer {
 
         // Render all edges (not filtered by visible hashes for now)
         // This ensures edges are visible even if viewport calculation is off
+
+        console.debug('[GraphRenderer] renderEdges() - Rendering', {
+            totalEdges: this.layout.edges.length,
+            visibleHashes: _visibleHashes.length
+        });
 
         // Get DPR for proper line width scaling
         const dpr = window.devicePixelRatio || 1;
@@ -574,7 +683,8 @@ export class GraphRenderer {
             // Base width: 2.5px highlighted, 2px normal
             const baseWidth = isHighlighted ? 2.5 : 2;
             ctx.lineWidth = Math.max(1.2, baseWidth / dpr);
-            ctx.globalAlpha = isHighlighted ? 1 : 0.2;
+            // Increase opacity for better visibility - was 0.2, now 0.6 for non-highlighted
+            ctx.globalAlpha = isHighlighted ? 1 : 0.6;
 
             ctx.beginPath();
             ctx.moveTo(edge.sx, edge.sy);
@@ -603,6 +713,11 @@ export class GraphRenderer {
 
     private renderNodes(ctx: CanvasRenderingContext2D, visibleHashes: string[]) {
         if (!this.layout) return;
+
+        console.debug('[GraphRenderer] renderNodes() - Rendering', {
+            visibleNodes: visibleHashes.length,
+            totalNodes: this.layout.nodes.size
+        });
 
         const { nodeRadius, isDark } = this.config;
         const bgColor = isDark ? '#1e1e1e' : '#fafafa';
@@ -641,10 +756,11 @@ export class GraphRenderer {
                 ctx.fill();
             } else {
                 // Hollow node with stroke - GitLens style
-                ctx.fillStyle = bgColor;
+                // Make nodes more visible by using darker fill and thicker stroke
+                ctx.fillStyle = '#0d1117'; // Use canvas background color for better contrast
                 ctx.fill();
                 ctx.strokeStyle = pos.color;
-                ctx.lineWidth = isHighlighted ? 2 : 1.5;
+                ctx.lineWidth = isHighlighted ? 2.5 : 2; // Thicker stroke for better visibility
                 ctx.stroke();
             }
 

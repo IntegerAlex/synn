@@ -1,6 +1,6 @@
 import simpleGit, { type SimpleGit, type BranchSummary } from 'simple-git';
-import { existsSync } from 'fs';
-import { join, basename } from 'path';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { join, basename, dirname } from 'path';
 import type {
     RepoInfo,
     Branch,
@@ -33,6 +33,35 @@ const BRANCH_COLORS = [
     '#f97316', // Orange
     '#14b8a6', // Teal
 ];
+
+// File to persist the repo path across module reloads
+const REPO_PATH_FILE = '/tmp/synn-repo-path.txt';
+
+function persistRepoPath(path: string): void {
+    try {
+        const dir = dirname(REPO_PATH_FILE);
+        if (!existsSync(dir)) {
+            mkdirSync(dir, { recursive: true });
+        }
+        writeFileSync(REPO_PATH_FILE, path, 'utf-8');
+    } catch (e) {
+        console.error('Failed to persist repo path:', e);
+    }
+}
+
+function loadPersistedRepoPath(): string | null {
+    try {
+        if (existsSync(REPO_PATH_FILE)) {
+            const path = readFileSync(REPO_PATH_FILE, 'utf-8').trim();
+            if (path && existsSync(path) && existsSync(join(path, '.git'))) {
+                return path;
+            }
+        }
+    } catch (e) {
+        console.error('Failed to load persisted repo path:', e);
+    }
+    return null;
+}
 
 // Simple in-memory cache
 interface CacheEntry<T> {
@@ -68,6 +97,15 @@ class GitService {
     private repoPath: string | null = null;
     private cache = new Cache();
 
+    constructor() {
+        // Try to restore from persisted path on initialization
+        const persistedPath = loadPersistedRepoPath();
+        if (persistedPath) {
+            this.git = simpleGit(persistedPath);
+            this.repoPath = persistedPath;
+        }
+    }
+
     setRepository(path: string): RepoInfo {
         if (!existsSync(path)) {
             throw Errors.repoNotFound(path);
@@ -81,6 +119,9 @@ class GitService {
         this.git = simpleGit(path);
         this.repoPath = path;
         this.cache.invalidate();
+
+        // Persist for future cold starts
+        persistRepoPath(path);
 
         // Return basic info synchronously
         return {
