@@ -156,7 +156,7 @@ export function HeroSection() {
                             <ArrowRight className="ml-2 w-4 h-4" />
                         </Button>
                     </Link>
-                    <Link href="https://github.com/IntegerAlex" target="_blank">
+                    {/* <Link href="https://github.com/IntegerAlex" target="_blank">
                         <Button
                             variant="outline"
                             size="lg"
@@ -165,7 +165,7 @@ export function HeroSection() {
                             <Github className="mr-2 w-4 h-4" />
                             View Source
                         </Button>
-                    </Link>
+                    </Link> */}
                 </div>
             </div>
 
