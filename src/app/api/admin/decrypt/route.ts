@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
 import { db } from '@/db';
 import { usersTable, activityLogsTable, apiRequestsTable, fingerprintsTable } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { decryptData } from '@/lib/services/encryption';
+import { requireAdmin } from '@/lib/utils/adminAuth';
 import { z } from 'zod';
 
 const DecryptRequestSchema = z.object({
@@ -21,14 +21,8 @@ const DecryptRequestSchema = z.object({
  */
 export async function POST(request: Request) {
   try {
-    const { userId: clerkUserId } = await auth();
-
-    if (!clerkUserId) {
-      return NextResponse.json(
-        { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-        { status: 401 }
-      );
-    }
+    // Verify admin access - throws if not admin
+    const clerkUserId = await requireAdmin();
 
     // Get user from database
     const users = await db

@@ -1,42 +1,18 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
 import { db } from '@/db';
-import { activityLogsTable, apiRequestsTable, usersTable } from '@/db/schema';
+import { activityLogsTable, usersTable } from '@/db/schema';
 import { eq, and, gte, lte, like, or, desc, sql } from 'drizzle-orm';
 import { decryptData } from '@/lib/services/encryption';
-
-/**
- * Check if user is admin
- * For now, check environment variable ADMIN_USER_IDS (comma-separated Clerk user IDs)
- * In production, use Clerk organization roles
- */
-function isAdmin(clerkUserId: string): boolean {
-  const adminUserIds = process.env.ADMIN_USER_IDS?.split(',').map(id => id.trim()) || [];
-  return adminUserIds.includes(clerkUserId);
-}
+import { requireAdmin } from '@/lib/utils/adminAuth';
 
 /**
  * GET /api/admin/logs - Get activity logs with filters
- * Admin-only endpoint
+ * Admin-only endpoint - verified server-side
  */
 export async function GET(request: NextRequest) {
   try {
-    const { userId: clerkUserId } = await auth();
-
-    if (!clerkUserId) {
-      return NextResponse.json(
-        { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-        { status: 401 }
-      );
-    }
-
-    // Check admin access
-    if (!isAdmin(clerkUserId)) {
-      return NextResponse.json(
-        { error: { code: 'FORBIDDEN', message: 'Admin access required' } },
-        { status: 403 }
-      );
-    }
+    // Verify admin access - throws if not admin
+    await requireAdmin();
 
     const { searchParams } = new URL(request.url);
     const privateKey = searchParams.get('privateKey');
