@@ -31,7 +31,7 @@ export default function WhyPage() {
           <section>
             <p className="text-muted-foreground leading-relaxed text-lg">
               I was frustrated with managing multiple branches and working across different environments. 
-              Explaining to the team why we needed GitKraken Pro wasn't worth it—especially when GitHub CLI 
+              Explaining to the team why we needed GitKraken Pro wasn't worth it, especially when GitHub CLI 
               was sufficient for most tasks.
             </p>
           </section>
@@ -53,7 +53,7 @@ export default function WhyPage() {
           <section>
             <h2 className="text-2xl font-semibold mb-4">The Solution</h2>
             <p className="text-muted-foreground leading-relaxed">
-              So I built Synn. I built it in a way where I can control my data, encrypt it, and own my code— 
+              So I built Synn. I built it in a way where I can control my data, encrypt it, and own my code, 
               as well as help others do the same.
             </p>
             <p className="text-muted-foreground leading-relaxed mt-4">
