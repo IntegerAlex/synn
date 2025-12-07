@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Menu, X, Github } from "lucide-react"
@@ -18,8 +19,7 @@ export function Header() {
     }, [])
 
     const navLinks = [
-        { href: "#features", label: "Features" },
-        { href: "#showcase", label: "Product" },
+        { href: "", label: "" },
     ]
 
     return (
@@ -30,18 +30,17 @@ export function Header() {
             <div className="max-w-7xl mx-auto px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
                     {/* Logo */}
-                    <Link href="/" className="flex items-center gap-2 group">
+                    <Link href="/" className="flex items-center gap-3 group">
                         <div className="relative">
-                            <svg
-                                viewBox="0 0 32 32"
-                                className="w-8 h-8 text-primary transition-transform duration-300 group-hover:scale-110"
-                                fill="none"
-                            >
-                                <path d="M16 4L4 28h8l4-8 4 8h8L16 4z" fill="currentColor" />
-                                <circle cx="16" cy="12" r="3" fill="hsl(var(--background))" />
-                            </svg>
+                            <Image
+                                src="/logo.png"
+                                alt="Synn Logo"
+                                width={84}
+                                height={84}
+                                className="transition-transform duration-300 group-hover:scale-110 drop-shadow-lg"
+                                priority
+                            />
                         </div>
-                        <span className="text-xl font-semibold text-foreground tracking-tight">Synn</span>
                     </Link>
 
                     {/* Desktop Navigation */}
@@ -59,7 +58,7 @@ export function Header() {
 
                     {/* Desktop CTA */}
                     <div className="hidden md:flex items-center gap-4">
-                        <Link href="https://github.com/IntegerAlex/cracked" target="_blank">
+                        <Link href="https://github.com/IntegerAlex" target="_blank">
                             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
                                 <Github className="w-4 h-4 mr-2" />
                                 GitHub
@@ -97,7 +96,7 @@ export function Header() {
                                 </Link>
                             ))}
                             <div className="flex flex-col gap-2 pt-4 border-t border-border">
-                                <Link href="https://github.com/IntegerAlex/cracked" target="_blank">
+                                <Link href="https://github.com/IntegerAlex" target="_blank">
                                     <Button variant="ghost" size="sm" className="justify-start w-full">
                                         <Github className="w-4 h-4 mr-2" />
                                         GitHub

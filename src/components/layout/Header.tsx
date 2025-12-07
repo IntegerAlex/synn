@@ -11,7 +11,7 @@ export function Header() {
         <header className="h-12 bg-[#161b22] border-b border-[#30363d] flex items-center justify-between px-4">
             {/* Left: App name and repo */}
             <div className="flex items-center gap-4">
-                <h1 className="text-lg font-bold text-white">GitVis</h1>
+                <h1 className="text-lg font-bold text-white">Synn</h1>
                 {repoInfo && (
                     <div className="flex items-center gap-2 text-sm">
                         <span className="text-gray-400">{repoInfo.name}</span>

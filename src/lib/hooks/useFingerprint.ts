@@ -1,72 +1,60 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import userInfo from 'fingerprint-oss';
 
-let fingerprintCache: { visitorId: string; data: any } | null = null;
-
 /**
- * Hook to get and store user fingerprint
+ * Hook to collect and store device fingerprint data
+ * Runs once on component mount
  */
 export function useFingerprint() {
-  const [fingerprint, setFingerprint] = useState<{ visitorId: string; data: any } | null>(fingerprintCache);
-  const [isLoading, setIsLoading] = useState(!fingerprintCache);
-
   useEffect(() => {
-    if (fingerprintCache) {
-      return;
-    }
-
     const fetchFingerprint = async () => {
       try {
-        setIsLoading(true);
-        const data = await userInfo({
-          transparency: true,
-          message: 'We collect device information to improve your experience and ensure security.',
-        });
-
-        // fingerprint-oss returns: { hash, systemInfo, geolocation, confidenceAssessment }
-        // Use hash as the visitorId (it's the unique fingerprint identifier)
-        const visitorId = data.hash || `fp_${Date.now()}`;
-
-        fingerprintCache = {
-          visitorId,
-          data,
-        };
-
-        setFingerprint(fingerprintCache);
-
-        // Store visitor ID in localStorage for API client
-        try {
-          localStorage.setItem('visitorId', fingerprintCache.visitorId);
-        } catch (error) {
-          console.error('Failed to store visitor ID:', error);
+        // Get fingerprint data from fingerprint-oss
+        const data = await userInfo();
+        
+        // Extract visitor ID from hash (fingerprint-oss returns hash as unique identifier)
+        const visitorId = data.hash;
+        
+        if (!visitorId) {
+          console.warn('No visitor ID found in fingerprint data');
+          return;
         }
 
-        // Send to backend
+        // Store visitor ID in localStorage for API requests
+        localStorage.setItem('visitorId', visitorId);
+
+        // Send fingerprint data to backend
         try {
-          await fetch('/api/fingerprint', {
+          const response = await fetch('/api/fingerprint', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+            },
             body: JSON.stringify({
-              visitorId: fingerprintCache.visitorId,
+              visitorId,
               fingerprintData: data,
             }),
           });
-        } catch (error) {
-          console.error('Failed to store fingerprint:', error);
-          // Don't fail the hook if backend storage fails
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            // Don't log errors if table doesn't exist - it's expected during development
+            if (!errorData.warning) {
+              console.warn('Failed to store fingerprint:', errorData.error?.message || 'Unknown error');
+            }
+          }
+        } catch (fetchError) {
+          // Silently fail - fingerprint tracking is optional
+          console.warn('Failed to send fingerprint data:', fetchError);
         }
       } catch (error) {
-        console.error('Failed to get fingerprint:', error);
-      } finally {
-        setIsLoading(false);
+        // Silently fail - fingerprint tracking is optional
+        console.warn('Failed to collect fingerprint:', error);
       }
     };
 
     fetchFingerprint();
-  }, []);
-
-  return { fingerprint, isLoading };
+  }, []); // Run only once on mount
 }
-

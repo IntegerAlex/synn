@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react"
 import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
-import { GitBranch, GitCommitHorizontal, GitMerge, FolderOpen, Github, Eye } from "lucide-react"
+import { GitBranch, GitCommitHorizontal, GitMerge, Github } from "lucide-react"
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -28,16 +28,6 @@ const features = [
         icon: Github,
         title: "GitHub Import",
         description: "Sign in with GitHub and import any of your repositories directly. No manual cloning required.",
-    },
-    {
-        icon: FolderOpen,
-        title: "Local Repositories",
-        description: "Open any local Git repository by path. Perfect for development and offline work.",
-    },
-    {
-        icon: Eye,
-        title: "Beautiful Interface",
-        description: "A clean, dark-themed UI inspired by modern developer tools. Easy on the eyes, powerful to use.",
     },
 ]
 

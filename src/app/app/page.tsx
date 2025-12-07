@@ -5,6 +5,7 @@ import { RepoSelector } from '@/components/RepoSelector';
 import { CanvasGraph } from '@/components/graph/CanvasGraph';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
 import { CommitDetails } from '@/components/CommitDetails';
 
 export default function Home() {
@@ -33,6 +34,9 @@ export default function Home() {
         {/* Right panel - Commit details (only when commit selected) */}
         {selectedCommitHash && <CommitDetails />}
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
+import Image from "next/image"
 import { gsap } from "gsap"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Github } from "lucide-react"
@@ -111,25 +112,38 @@ export function HeroSection() {
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/5 rounded-full blur-3xl" />
 
             <div className="relative z-10 max-w-5xl mx-auto px-6 lg:px-8 text-center">
-                <div className="hero-badge inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary border border-border mb-8">
+                {/* <div className="hero-badge inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary border border-border mb-8">
                     <span className="relative flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                     </span>
-                    <span className="text-sm text-muted-foreground">Open Source Git Visualizer</span>
+                </div> */}
+
+                {/* Logo */}
+                <div className="hero-title mb-8 flex justify-center">
+                    <div className="relative">
+                        <Image
+                            src="/logo.png"
+                            alt="Synn Logo"
+                            width={280}
+                            height={280}
+                            className="drop-shadow-2xl"
+                            priority
+                        />
+                    </div>
                 </div>
 
                 <h1 className="hero-title text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground tracking-tight mb-6">
                     <span className="text-balance">
                         Visualize your Git history
                         <br />
-                        <span className="text-primary">like never before</span>
+                        <span className="text-primary">like never before (for free)</span>
                     </span>
                 </h1>
 
                 <p className="hero-subtitle text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed text-pretty">
                     Import repositories from GitHub or open local repos. Explore branches, commits, and merges
-                    with a beautiful interactive graph. Free and open source.
+                    with a beautiful interactive graph.
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -142,7 +156,7 @@ export function HeroSection() {
                             <ArrowRight className="ml-2 w-4 h-4" />
                         </Button>
                     </Link>
-                    <Link href="https://github.com/IntegerAlex/cracked" target="_blank">
+                    <Link href="https://github.com/IntegerAlex" target="_blank">
                         <Button
                             variant="outline"
                             size="lg"
