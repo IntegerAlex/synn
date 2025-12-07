@@ -22,6 +22,12 @@
         <priority>0.5</priority>
     </url>
     <url>
+        <loc>https://synn.gossorg.in/why</loc>
+        <lastmod>2025-12-07</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    <url>
         <loc>https://synn.gossorg.in/terms</loc>
         <lastmod>2025-12-07</lastmod>
         <changefreq>monthly</changefreq>
