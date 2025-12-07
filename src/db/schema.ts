@@ -76,12 +76,12 @@ export const fingerprintsTable = pgTable("fingerprints", {
   browser: varchar({ length: 255 }),
   os: varchar({ length: 255 }),
   device: varchar({ length: 255 }),
-  // IP address and location
-  ipAddress: varchar({ length: 45 }), // IPv6 support
+  // IP address and location (encrypted, so using text for longer encrypted values)
+  ipAddress: text(), // Encrypted - can be much longer than original IP
   country: varchar({ length: 100 }),
   city: varchar({ length: 100 }),
-  // User agent
-  userAgent: text(),
+  // User agent (encrypted, so using text)
+  userAgent: text(), // Encrypted - can be much longer than original user agent
   // Timestamps
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
@@ -117,9 +117,9 @@ export const activityLogsTable = pgTable("activity_logs", {
   errorMessage: text(),
   // Additional metadata
   metadata: jsonb(),
-  // IP address and location
-  ipAddress: varchar({ length: 45 }),
-  userAgent: text(),
+  // IP address and location (encrypted, so using text for longer encrypted values)
+  ipAddress: text(), // Encrypted - can be much longer than original IP
+  userAgent: text(), // Encrypted - can be much longer than original user agent
   // Timestamps
   createdAt: timestamp().defaultNow().notNull(),
 }, (table) => ({
@@ -152,9 +152,9 @@ export const apiRequestsTable = pgTable("api_requests", {
   errorMessage: text(),
   // Additional metadata
   metadata: jsonb(),
-  // IP address
-  ipAddress: varchar({ length: 45 }),
-  userAgent: text(),
+  // IP address and user agent (encrypted, so using text for longer encrypted values)
+  ipAddress: text(), // Encrypted - can be much longer than original IP
+  userAgent: text(), // Encrypted - can be much longer than original user agent
   // Timestamps
   createdAt: timestamp().defaultNow().notNull(),
 }, (table) => ({

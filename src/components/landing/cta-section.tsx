@@ -12,8 +12,8 @@ export function CTASection() {
                     Ready to visualize your Git history?
                 </h2>
                 <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-                    Import a GitHub repository or open a local repo. Start exploring your commit history
-                    with a beautiful interactive graph.
+                    Import a GitHub repository and start exploring your commit history
+                    with a beautiful interactive graph (for free).
                 </p>
                 <Link href="/app">
                     <Button

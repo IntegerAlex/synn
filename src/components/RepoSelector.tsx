@@ -269,34 +269,45 @@ export function RepoSelector() {
                                         onClick={handleGithubSubmit}
                                         disabled={downloading || !selectedRepo || setRepo.isPending}
                                         className="relative w-full py-4 px-6 
-                                                 bg-gradient-to-r from-[#dc2626] via-[#ea580c] to-[#f59e0b]
-                                                 hover:from-[#b91c1c] hover:via-[#c2410c] hover:to-[#d97706]
-                                                 disabled:from-gray-700 disabled:via-gray-600 disabled:to-gray-700
-                                                 disabled:text-gray-400 disabled:cursor-not-allowed
-                                                 text-white font-bold rounded-lg 
-                                                 transition-all duration-300
-                                                 shadow-[0_0_20px_rgba(220,38,38,0.5),0_0_40px_rgba(234,88,12,0.3)]
-                                                 hover:shadow-[0_0_30px_rgba(220,38,38,0.7),0_0_60px_rgba(234,88,12,0.5)]
-                                                 disabled:shadow-none
-                                                 focus:outline-none focus:ring-2 focus:ring-[#dc2626] focus:ring-offset-2 focus:ring-offset-background
-                                                 transform hover:scale-[1.02] active:scale-[0.98] disabled:transform-none
+                                                 bg-gradient-to-r from-[#1a0a0a] via-[#2d0f0f] to-[#1a0a0a]
+                                                 hover:from-[#2d0f0f] hover:via-[#3d1515] hover:to-[#2d0f0f]
+                                                 disabled:from-gray-800 disabled:via-gray-700 disabled:to-gray-800
+                                                 disabled:text-gray-500 disabled:cursor-not-allowed
+                                                 text-white font-semibold rounded-lg 
+                                                 border border-[#dc2626]/30 hover:border-[#dc2626]/60
+                                                 transition-all duration-500
+                                                 shadow-[0_0_15px_rgba(220,38,38,0.2),inset_0_1px_0_rgba(255,255,255,0.1)]
+                                                 hover:shadow-[0_0_25px_rgba(220,38,38,0.4),0_0_40px_rgba(139,26,26,0.2),inset_0_1px_0_rgba(255,255,255,0.15)]
+                                                 disabled:shadow-none disabled:border-gray-700
+                                                 focus:outline-none focus:ring-2 focus:ring-[#dc2626]/50 focus:ring-offset-2 focus:ring-offset-background
+                                                 transform hover:scale-[1.01] active:scale-[0.99] disabled:transform-none
                                                  overflow-hidden group"
                                     >
-                                        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent 
+                                        {/* Subtle inner glow */}
+                                        <span className="absolute inset-0 bg-gradient-to-r from-[#dc2626]/0 via-[#dc2626]/10 to-[#dc2626]/0 
+                                                       opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                        
+                                        {/* Shimmer effect */}
+                                        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent 
                                                        translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 
                                                        disabled:translate-x-0" />
+                                        
+                                        {/* Subtle pulsing glow at edges */}
+                                        <span className="absolute inset-0 rounded-lg bg-gradient-to-r from-[#dc2626]/0 via-transparent to-[#dc2626]/0 
+                                                       opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                        
                                         {downloading || setRepo.isPending ? (
                                             <span className="relative z-10 flex items-center justify-center gap-2">
-                                                <svg className="animate-spin h-5 w-5 drop-shadow-[0_0_4px_rgba(0,0,0,0.5)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <svg className="animate-spin h-5 w-5 text-[#dc2626]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                                 </svg>
-                                                <span className="drop-shadow-[0_0_4px_rgba(0,0,0,0.5)]">Opening Repository...</span>
+                                                <span className="text-gray-300">Entering Hell...</span>
                                             </span>
                                         ) : (
                                             <span className="relative z-10 flex items-center justify-center gap-2">
-                                                <Sparkles className="w-5 h-5 drop-shadow-[0_0_4px_rgba(0,0,0,0.5)]" />
-                                                <span className="drop-shadow-[0_0_4px_rgba(0,0,0,0.5)]">Visualize Repository</span>
+                                                {/* <Sparkles className="w-5 h-5 text-[#dc2626] opacity-80" /> */}
+                                                <span className="text-gray-200">Enter</span>
                                             </span>
                                         )}
                                     </button>

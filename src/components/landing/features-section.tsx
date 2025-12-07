@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react"
 import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
-import { GitBranch, GitCommitHorizontal, GitMerge, Github } from "lucide-react"
+import { GitBranch, GitCommitHorizontal, GitMerge, Github, Shield, FileCheck } from "lucide-react"
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -28,6 +28,16 @@ const features = [
         icon: Github,
         title: "GitHub Import",
         description: "Sign in with GitHub and import any of your repositories directly. No manual cloning required.",
+    },
+    {
+        icon: Shield,
+        title: "Enterprise Security",
+        description: "RSA/AES encryption for sensitive data, secure token storage, and comprehensive audit logging for compliance.",
+    },
+    {
+        icon: FileCheck,
+        title: "GDPR Compliant",
+        description: "Full data portability, right to deletion, and transparent privacy controls. Meets international compliance standards.",
     },
 ]
 

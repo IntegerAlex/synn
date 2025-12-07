@@ -38,9 +38,9 @@
   --color-branch-feature: #f87171;
   --color-branch-hotfix: #dc2626;
 
-  /* Font */
-  --font-sans: var(--font-geist-sans), var(--font-inter), system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), var(--font-jetbrains-mono), monospace;
+  /* Font - Plus Jakarta Sans loaded via Next.js font optimization */
+  /* The --font-sans variable is set by Next.js from layout.tsx */
+  --font-mono: var(--font-mono), "JetBrains Mono", monospace;
 }
 
 .dark {
@@ -66,8 +66,8 @@
 }
 
 @theme inline {
-  --font-sans: "Inter", "Inter Fallback", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", "Geist Mono", monospace;
+  --font-sans: var(--font-sans), "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-mono: var(--font-mono), "JetBrains Mono", monospace;
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
   --color-card: hsl(var(--card));
