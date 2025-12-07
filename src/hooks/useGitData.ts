@@ -18,7 +18,7 @@ export function useRepoInfo() {
 
     return useQuery({
         queryKey: queryKeys.repo,
-        queryFn: gitApi.getRepoInfo,
+        queryFn: () => gitApi.getRepoInfo(repoInfo),
         enabled: !!repoInfo,
     });
 }
@@ -43,7 +43,7 @@ export function useBranches() {
 
     return useQuery({
         queryKey: queryKeys.branches,
-        queryFn: gitApi.getBranches,
+        queryFn: () => gitApi.getBranches(repoInfo),
         enabled: !!repoInfo,
     });
 }
@@ -54,7 +54,7 @@ export function useGraph(limit = 100) {
 
     return useQuery({
         queryKey: queryKeys.graph(limit),
-        queryFn: () => gitApi.getGraph(limit),
+        queryFn: () => gitApi.getGraph(repoInfo, limit),
         enabled: !!repoInfo,
         staleTime: 10000,
         placeholderData: (previousData) => previousData,
@@ -63,19 +63,22 @@ export function useGraph(limit = 100) {
 
 // Commit details
 export function useCommitDetails(hash: string | null) {
+    const repoInfo = useAppSelector((state) => state.app.repoInfo);
+    
     return useQuery({
         queryKey: queryKeys.commitDetails(hash || ''),
-        queryFn: () => gitApi.getCommitDetails(hash!),
-        enabled: !!hash,
+        queryFn: () => gitApi.getCommitDetails(repoInfo, hash!),
+        enabled: !!hash && !!repoInfo,
     });
 }
 
 // Checkout
 export function useCheckoutBranch() {
     const queryClient = useQueryClient();
+    const repoInfo = useAppSelector((state) => state.app.repoInfo);
 
     return useMutation({
-        mutationFn: gitApi.checkoutBranch,
+        mutationFn: (branch: string) => gitApi.checkoutBranch(repoInfo, branch),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.repo });
             queryClient.invalidateQueries({ queryKey: queryKeys.branches });
@@ -86,10 +89,12 @@ export function useCheckoutBranch() {
 
 // Search
 export function useSearch(query: string) {
+    const repoInfo = useAppSelector((state) => state.app.repoInfo);
+    
     return useQuery({
         queryKey: queryKeys.search(query),
-        queryFn: () => gitApi.search(query),
-        enabled: query.length > 0,
+        queryFn: () => gitApi.search(repoInfo, query),
+        enabled: query.length > 0 && !!repoInfo,
         staleTime: 5000,
     });
 }

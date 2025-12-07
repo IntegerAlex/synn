@@ -1,13 +1,24 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { gitService } from '@/lib/git/GitService';
+import { getGitHubService } from '@/lib/services/githubApiHelper';
 import { formatErrorResponse } from '@/lib/utils/errorHandler';
 
 // GET /api/git/commits - Get commits list
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
+        const repoFullName = searchParams.get('repo');
+        const branch = searchParams.get('branch');
         const limit = parseInt(searchParams.get('limit') || '100', 10);
-        const commits = await gitService.getCommits(undefined, Math.min(Math.max(limit, 1), 10000));
+        
+        if (!repoFullName) {
+            return NextResponse.json(
+                { error: { code: 'REPO_REQUIRED', message: 'Repository name is required' } },
+                { status: 400 }
+            );
+        }
+
+        const githubService = await getGitHubService(repoFullName);
+        const commits = await githubService.getCommits(branch || undefined, Math.min(Math.max(limit, 1), 10000));
         return NextResponse.json({ data: commits });
     } catch (error) {
         const response = formatErrorResponse(error);

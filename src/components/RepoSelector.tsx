@@ -52,16 +52,6 @@ export function RepoSelector() {
         }
     };
 
-    const loadRepo = async (repoPath: string) => {
-        setError(null);
-        try {
-            const repoInfo = await setRepo.mutateAsync(repoPath);
-            dispatch(setRepoInfo(repoInfo));
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to open repository');
-        }
-    };
-
     const handleGithubSubmit = async () => {
         if (!selectedRepo) return;
 
@@ -71,22 +61,14 @@ export function RepoSelector() {
         setDownloading(true);
         setError(null);
         try {
-            const res = await fetch('/api/repo/download', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    repo_full_name: repo.full_name,
-                    default_branch: repo.default_branch
-                })
+            // Select repository using GitHub API (no download needed)
+            const repoInfo = await setRepo.mutateAsync({ 
+                repoFullName: repo.full_name, 
+                defaultBranch: repo.default_branch || 'main' // Ensure it's always a string
             });
-
-            if (!res.ok) throw new Error('Download failed');
-
-            const data = await res.json();
-            await loadRepo(data.path);
-
+            dispatch(setRepoInfo(repoInfo));
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Download failed');
+            setError(e instanceof Error ? e.message : 'Failed to open repository');
         } finally {
             setDownloading(false);
         }
@@ -149,7 +131,7 @@ export function RepoSelector() {
                                          text-white font-medium rounded-lg transition-colors
                                          focus:outline-none focus:ring-2 focus:ring-[#ef4444]"
                             >
-                                {downloading ? 'Downloading & Extracting...' : setRepo.isPending ? 'Opening...' : 'Visualise Repository'}
+                                {downloading || setRepo.isPending ? 'Opening Repository...' : 'Visualise Repository'}
                             </button>
                         </SignedIn>
                     </div>

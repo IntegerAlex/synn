@@ -1,17 +1,21 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
-import path from 'path';
-import fs from 'fs';
-import simpleGit from 'simple-git';
+import { GitHubApiService } from '@/lib/services/githubApi';
 
-// Ensure Node.js runtime for fs access
-export const runtime = 'nodejs';
-
+/**
+ * Select a repository for visualization
+ * Instead of cloning locally (which doesn't work on Vercel),
+ * we use GitHub API to access repository data
+ */
 export async function POST(req: Request) {
     const { userId } = await auth();
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { repo_full_name, default_branch } = await req.json();
+
+    if (!repo_full_name) {
+        return NextResponse.json({ error: 'Repository name is required' }, { status: 400 });
+    }
 
     // Get Token (use 'github' not 'oauth_github' per deprecation warning)
     const client = await clerkClient();
@@ -20,37 +24,23 @@ export async function POST(req: Request) {
 
     if (!token) return NextResponse.json({ error: 'No GitHub token' }, { status: 400 });
 
-    // Setup Storage
-    const tmpDir = process.env.REPO_STORAGE_PATH || '/tmp';
-
-    // ensure tmpDir exists
-    if (!fs.existsSync(tmpDir)) {
-        fs.mkdirSync(tmpDir, { recursive: true });
-    }
-
-    const safeName = repo_full_name.replace('/', '-');
-    const clonePath = path.join(tmpDir, `${userId}-${safeName}`);
-
-    // Remove existing clone if present
-    if (fs.existsSync(clonePath)) {
-        fs.rmSync(clonePath, { recursive: true, force: true });
-    }
-
-    // Clone using authenticated HTTPS URL
-    // Format: https://<token>@github.com/owner/repo.git
-    const cloneUrl = `https://${token}@github.com/${repo_full_name}.git`;
-
     try {
-        const git = simpleGit();
-        await git.clone(cloneUrl, clonePath, ['--branch', default_branch || 'main', '--single-branch']);
-    } catch (e: any) {
-        console.error('Git clone failed:', e);
-        return NextResponse.json({ error: 'Clone failed: ' + e.message }, { status: 500 });
-    }
+        // Initialize GitHub API service to verify access
+        const githubService = new GitHubApiService(token, repo_full_name, default_branch);
+        const repoInfo = await githubService.getRepoInfo();
 
-    return NextResponse.json({
-        success: true,
-        path: clonePath,
-        message: 'Repository cloned successfully'
-    });
+        // Return repo info instead of local path
+        // The frontend will use this to make API calls
+        return NextResponse.json({
+            success: true,
+            repo_full_name,
+            default_branch: repoInfo.currentBranch,
+            message: 'Repository selected successfully'
+        });
+    } catch (e: any) {
+        console.error('Failed to access repository:', e);
+        return NextResponse.json({ 
+            error: 'Failed to access repository: ' + (e.message || 'Unknown error') 
+        }, { status: 500 });
+    }
 }

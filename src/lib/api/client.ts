@@ -21,54 +21,73 @@ async function handleResponse<T>(response: Response): Promise<T> {
     return json.data as T;
 }
 
+// Helper to get repo_full_name from repoInfo (stored in path field)
+function getRepoFullName(repoInfo: RepoInfo | null): string {
+    if (!repoInfo) throw new Error('Repository not selected');
+    // repoInfo.path now stores repo_full_name (owner/repo)
+    return repoInfo.path;
+}
+
 export const gitApi = {
-    // Set repository path
-    setRepo: async (path: string): Promise<RepoInfo> => {
+    // Set repository (now accepts repo_full_name and default_branch)
+    setRepo: async (params: { repoFullName: string; defaultBranch?: string }): Promise<RepoInfo> => {
         const response = await fetch(`${API_BASE}/repo`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ path }),
+            body: JSON.stringify({ 
+                repo_full_name: params.repoFullName,
+                default_branch: params.defaultBranch 
+            }),
         });
         return handleResponse(response);
     },
 
     // Get repository info
-    getRepoInfo: async (): Promise<RepoInfo> => {
-        const response = await fetch(`${API_BASE}/repo`);
+    getRepoInfo: async (repoInfo: RepoInfo | null): Promise<RepoInfo> => {
+        const repoFullName = getRepoFullName(repoInfo);
+        const response = await fetch(`${API_BASE}/repo?repo=${encodeURIComponent(repoFullName)}`);
         return handleResponse(response);
     },
 
     // Get branches
-    getBranches: async (): Promise<BranchesResponse> => {
-        const response = await fetch(`${API_BASE}/branches`);
+    getBranches: async (repoInfo: RepoInfo | null): Promise<BranchesResponse> => {
+        const repoFullName = getRepoFullName(repoInfo);
+        const response = await fetch(`${API_BASE}/branches?repo=${encodeURIComponent(repoFullName)}`);
         return handleResponse(response);
     },
 
     // Get graph
-    getGraph: async (limit = 100): Promise<GraphData> => {
-        const response = await fetch(`${API_BASE}/graph?limit=${limit}`);
+    getGraph: async (repoInfo: RepoInfo | null, limit = 100): Promise<GraphData> => {
+        const repoFullName = getRepoFullName(repoInfo);
+        const response = await fetch(`${API_BASE}/graph?repo=${encodeURIComponent(repoFullName)}&limit=${limit}`);
         return handleResponse(response);
     },
 
     // Get commit details
-    getCommitDetails: async (hash: string): Promise<CommitDetails> => {
-        const response = await fetch(`${API_BASE}/commits/${hash}`);
+    getCommitDetails: async (repoInfo: RepoInfo | null, hash: string): Promise<CommitDetails> => {
+        const repoFullName = getRepoFullName(repoInfo);
+        const response = await fetch(`${API_BASE}/commits/${hash}?repo=${encodeURIComponent(repoFullName)}`);
         return handleResponse(response);
     },
 
     // Checkout branch
-    checkoutBranch: async (branch: string): Promise<RepoInfo> => {
+    checkoutBranch: async (repoInfo: RepoInfo | null, branch: string): Promise<RepoInfo> => {
+        const repoFullName = getRepoFullName(repoInfo);
         const response = await fetch(`${API_BASE}/checkout`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ branch }),
+            body: JSON.stringify({ 
+                branch,
+                repo_full_name: repoFullName 
+            }),
         });
         return handleResponse(response);
     },
 
     // Search
-    search: async (query: string): Promise<SearchResponse> => {
-        const response = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`);
+    search: async (repoInfo: RepoInfo | null, query: string): Promise<SearchResponse> => {
+        const repoFullName = getRepoFullName(repoInfo);
+        const response = await fetch(`${API_BASE}/search?repo=${encodeURIComponent(repoFullName)}&q=${encodeURIComponent(query)}`);
         return handleResponse(response);
     },
 };

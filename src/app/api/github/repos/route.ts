@@ -49,7 +49,7 @@ export async function GET() {
                         name: r.name,
                         full_name: r.fullName,
                         private: r.isPrivate,
-                        default_branch: r.defaultBranch,
+                        default_branch: r.defaultBranch || 'main', // Ensure it's always a string
                         owner: r.ownerLogin,
                         description: r.description,
                         language: r.language,
