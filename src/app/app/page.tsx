@@ -2,7 +2,7 @@
 
 import { useAppSelector } from '@/store/hooks';
 import { RepoSelector } from '@/components/RepoSelector';
-import { CanvasGraph } from '@/components/graph/CanvasGraph';
+import { CytoscapeGraph } from '@/components/graph/CytoscapeGraph';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -32,7 +32,7 @@ export default function Home() {
 
         {/* Graph takes remaining space */}
         <main className="flex-1 min-w-0">
-          <CanvasGraph />
+          <CytoscapeGraph />
         </main>
 
         {/* Right panel - Commit details (only when commit selected) */}
