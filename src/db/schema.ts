@@ -165,3 +165,61 @@ export const apiRequestsTable = pgTable("api_requests", {
   createdAtIdx: index("api_requests_created_at_idx").on(table.createdAt),
 }));
 
+// Commits table - stores individual commits for contribution tracking
+export const commitsTable = pgTable("commits", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  // Foreign key to users table
+  userId: integer().notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  // Foreign key to repos table
+  repoId: integer().notNull().references(() => reposTable.id, { onDelete: "cascade" }),
+  // Commit hash (SHA)
+  hash: varchar({ length: 40 }).notNull(),
+  // Short hash (first 7 chars)
+  shortHash: varchar({ length: 7 }).notNull(),
+  // Commit message
+  message: text().notNull(),
+  // Author information
+  authorName: varchar({ length: 255 }).notNull(),
+  authorEmail: varchar({ length: 255 }).notNull(),
+  // Commit date (when the commit was made)
+  commitDate: timestamp().notNull(),
+  // Branch information
+  branch: varchar({ length: 255 }),
+  // Additional commit metadata
+  metadata: jsonb(),
+  // Timestamps
+  createdAt: timestamp().defaultNow().notNull(),
+  syncedAt: timestamp().defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("commits_user_id_idx").on(table.userId),
+  repoIdIdx: index("commits_repo_id_idx").on(table.repoId),
+  hashIdx: index("commits_hash_idx").on(table.hash),
+  commitDateIdx: index("commits_commit_date_idx").on(table.commitDate),
+  // Unique constraint: same commit hash per repo per user
+  userRepoHashUnique: index("commits_user_repo_hash_unique").on(table.userId, table.repoId, table.hash),
+}));
+
+// Contributions table - aggregated daily contribution counts (for faster queries)
+export const contributionsTable = pgTable("contributions", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  // Foreign key to users table
+  userId: integer().notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  // Foreign key to repos table (nullable for all-repos aggregation)
+  repoId: integer().references(() => reposTable.id, { onDelete: "cascade" }),
+  // Contribution date (date only, no time)
+  contributionDate: timestamp().notNull(),
+  // Count of commits on this date
+  commitCount: integer().notNull().default(0),
+  // Timestamps
+  createdAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp().defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("contributions_user_id_idx").on(table.userId),
+  repoIdIdx: index("contributions_repo_id_idx").on(table.repoId),
+  contributionDateIdx: index("contributions_contribution_date_idx").on(table.contributionDate),
+  // Unique constraint: one row per user per repo per date
+  userRepoDateUnique: index("contributions_user_repo_date_unique").on(table.userId, table.repoId, table.contributionDate),
+  // Index for querying by user and date range
+  userDateIdx: index("contributions_user_date_idx").on(table.userId, table.contributionDate),
+}));
+

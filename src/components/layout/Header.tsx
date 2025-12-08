@@ -1,6 +1,8 @@
 'use client';
 
 import { useAppStore } from '@/store/useAppStore';
+import Link from 'next/link';
+import { User } from 'lucide-react';
 
 export function Header() {
     const repoInfo = useAppStore((state) => state.repoInfo);
@@ -10,7 +12,9 @@ export function Header() {
         <header className="h-12 bg-[#161b22] border-b border-[#30363d] flex items-center justify-between px-4">
             {/* Left: App name and repo */}
             <div className="flex items-center gap-4">
-                <h1 className="text-lg font-bold text-white">Synn</h1>
+                <Link href="/" className="text-lg font-bold text-white hover:text-[#ef4444] transition-colors">
+                    Synn
+                </Link>
                 {repoInfo && (
                     <div className="flex items-center gap-2 text-sm">
                         <span className="text-gray-400">{repoInfo.name}</span>
@@ -26,6 +30,15 @@ export function Header() {
 
             {/* Right: Actions */}
             <div className="flex items-center gap-3">
+                {/* Profile link */}
+                <Link
+                    href="/profile"
+                    className="p-2 text-gray-400 hover:text-white hover:bg-[#21262d] rounded transition-colors"
+                    title="Profile"
+                >
+                    <User className="w-4 h-4" />
+                </Link>
+                
                 {/* Close repo button */}
                 {repoInfo && (
                     <button
