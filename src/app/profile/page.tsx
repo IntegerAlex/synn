@@ -33,10 +33,63 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0d1117] flex flex-col">
+    <div className="min-h-screen bg-[#0d1117] flex flex-col relative overflow-hidden">
+      {/* Background decorative elements */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        {/* Animated embers/flames */}
+        <div className="absolute top-0 left-0 w-full h-full">
+          {[...Array(20)].map((_, i) => {
+            const delay = Math.random() * 5;
+            const duration = Math.random() * 10 + 10;
+            const left = Math.random() * 100;
+            const top = Math.random() * 100;
+            const size = Math.random() * 4 + 2;
+            
+            return (
+              <div
+                key={i}
+                className="absolute rounded-full opacity-20"
+                style={{
+                  left: `${left}%`,
+                  top: `${top}%`,
+                  width: `${size}px`,
+                  height: `${size}px`,
+                  backgroundColor: '#ef4444',
+                  animation: `float-ember ${duration}s infinite ease-in-out`,
+                  animationDelay: `${delay}s`,
+                }}
+              />
+            );
+          })}
+        </div>
+        
+        {/* Subtle grid pattern */}
+        <div 
+          className="absolute inset-0 opacity-5"
+          style={{
+            backgroundImage: `
+              linear-gradient(#ef4444 1px, transparent 1px),
+              linear-gradient(90deg, #ef4444 1px, transparent 1px)
+            `,
+            backgroundSize: '50px 50px',
+          }}
+        />
+        
+        {/* Radial gradient overlays */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#ef4444]/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#7d1a1a]/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        
+        {/* Decorative text overlay - subtle */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-[0.02]">
+          <div className="text-[#ef4444] text-9xl font-bold select-none" style={{ fontFamily: 'var(--font-mono)' }}>
+            SIN
+          </div>
+        </div>
+      </div>
+
       <Header />
       
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
+      <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl relative z-10">
         {/* Navigation Button */}
         <div className="mb-4">
           <Link
