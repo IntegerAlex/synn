@@ -393,8 +393,15 @@ export function CytoscapeGraph() {
         </div>
       </div>
 
-      {/* Cytoscape Graph */}
-      <div className="flex-1 relative">
+      {/* Cytoscape Graph with Scrollbars */}
+      <div 
+        className="flex-1 relative overflow-auto" 
+        style={{ 
+          scrollbarWidth: 'thin', 
+          scrollbarColor: '#30363d #0d1117',
+        }}
+        id="cytoscape-scroll-container"
+      >
         <CytoscapeComponent
           elements={elements}
           style={{ width: '100%', height: '100%' }}
@@ -414,8 +421,62 @@ export function CytoscapeGraph() {
             cy.on('mouseover', 'node', handleNodeMouseOver);
             cy.on('mouseout', 'node', handleNodeMouseOut);
             
-            // Fit view to show all nodes
-            cy.fit(undefined, 50);
+            // Sync scroll position with Cytoscape pan
+            const container = cy.container();
+            const scrollContainer = container?.closest('#cytoscape-scroll-container') as HTMLElement;
+            
+            if (scrollContainer) {
+              // Update scroll position when Cytoscape pans
+              cy.on('pan', () => {
+                const pan = cy.pan();
+                const zoom = cy.zoom();
+                scrollContainer.scrollLeft = -pan.x * zoom;
+                scrollContainer.scrollTop = -pan.y * zoom;
+              });
+              
+              // Update Cytoscape pan when user scrolls
+              let isScrolling = false;
+              scrollContainer.addEventListener('scroll', () => {
+                if (isScrolling) return;
+                isScrolling = true;
+                const zoom = cy.zoom();
+                cy.pan({
+                  x: -scrollContainer.scrollLeft / zoom,
+                  y: -scrollContainer.scrollTop / zoom,
+                });
+                setTimeout(() => { isScrolling = false; }, 10);
+              });
+              
+              // Set container size for scrolling
+              const updateScrollArea = () => {
+                try {
+                  const bounds = cy.elements().boundingBox();
+                  const zoom = cy.zoom();
+                  const padding = 200;
+                  
+                  const contentWidth = bounds.w + padding * 2;
+                  const contentHeight = bounds.h + padding * 2;
+                  
+                  // Make the scroll container larger than viewport to enable scrolling
+                  if (container) {
+                    container.style.width = `${contentWidth}px`;
+                    container.style.height = `${contentHeight}px`;
+                  }
+                } catch (e) {
+                  // Ignore errors during initialization
+                }
+              };
+              
+              cy.on('ready', () => {
+                setTimeout(() => {
+                  cy.fit(cy.elements(), 50);
+                  updateScrollArea();
+                }, 100);
+              });
+              
+              cy.on('zoom', updateScrollArea);
+              cy.on('layoutstop', updateScrollArea);
+            }
           }}
         />
 
