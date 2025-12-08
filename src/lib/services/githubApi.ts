@@ -331,30 +331,46 @@ export class GitHubApiService {
   }
 
   async getGraph(limit: number = 100): Promise<GraphData> {
-    // First, fetch repo info to get the actual default branch from GitHub
-    // This ensures we use the repository's real default branch, not a hardcoded value
+    // Always respect repo's real default branch
     const repoInfo = await this.getRepoInfo();
     const actualDefaultBranch = repoInfo.currentBranch || this.defaultBranch;
-    
-    // Update our internal defaultBranch to the actual one
     this.defaultBranch = actualDefaultBranch;
-    
-    // Get branches with their head commits
+
     const branches = await this.getBranches();
-    
-    // Create a map of commit SHA to branch names (for labeling)
-    const commitToBranches = new Map<string, string[]>();
-    for (const branch of branches.local) {
-      const existing = commitToBranches.get(branch.commit) || [];
-      existing.push(branch.name);
-      commitToBranches.set(branch.commit, existing);
+    const effectiveLimit = Math.min(Math.max(limit, 1), 10000);
+
+    // Prioritize default branch, then alphabetical for determinism
+    const branchNames = branches.local
+      .map((b) => b.name)
+      .sort((a, b) => {
+        if (a === actualDefaultBranch) return -1;
+        if (b === actualDefaultBranch) return 1;
+        return a.localeCompare(b);
+      });
+
+    // Collect commits across all branch heads so divergent branches appear.
+    const commitMap = new Map<string, Commit>();
+    const commitToBranches = new Map<string, Set<string>>();
+
+    for (const branchName of branchNames) {
+      const remaining = effectiveLimit - commitMap.size;
+      if (remaining <= 0) break;
+
+      const branchCommits = await this.getCommits(branchName, remaining);
+      for (const commit of branchCommits) {
+        if (!commitMap.has(commit.hash)) {
+          commitMap.set(commit.hash, commit);
+        }
+        const refs = commitToBranches.get(commit.hash) ?? new Set<string>();
+        refs.add(branchName);
+        commitToBranches.set(commit.hash, refs);
+      }
     }
-    
-    // Use the actual default branch
-    const branchToUse = actualDefaultBranch;
-    
-    // Get commits for the default branch
-    const commits = await this.getCommits(branchToUse, limit);
+
+    // Sort newest → oldest and cap to effective limit
+    const commits = Array.from(commitMap.values())
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, effectiveLimit);
 
     // Handle empty repository case
     if (!commits || commits.length === 0) {
@@ -363,8 +379,8 @@ export class GitHubApiService {
         edges: [],
         columns: 0,
         branches: branches.local.map((b) => b.name),
-        currentBranch: actualDefaultBranch, // Use the actual default branch from GitHub
-        branchHeads: Object.fromEntries(branches.local.map(b => [b.name, b.commit])),
+        currentBranch: actualDefaultBranch,
+        branchHeads: Object.fromEntries(branches.local.map((b) => [b.name, b.commit])),
       };
     }
 
@@ -372,11 +388,9 @@ export class GitHubApiService {
     const hashToColumn = new Map<string, number>();
     const activeColumns: (string | null)[] = [];
 
-    // Process commits to assign columns
     for (let i = 0; i < commits.length; i++) {
       const commit = commits[i];
 
-      // Check if any active column ends at this commit (merge target)
       let column = -1;
       for (let c = 0; c < activeColumns.length; c++) {
         if (activeColumns[c] === commit.hash) {
@@ -386,7 +400,6 @@ export class GitHubApiService {
         }
       }
 
-      // If no column found, find first empty or create new
       if (column === -1) {
         column = activeColumns.findIndex((c) => c === null);
         if (column === -1) {
@@ -397,12 +410,8 @@ export class GitHubApiService {
 
       hashToColumn.set(commit.hash, column);
 
-      // Set up columns for parents
       if (commit.parents.length > 0) {
-        // First parent continues in same column
         activeColumns[column] = commit.parents[0];
-
-        // Additional parents (merges) get new columns
         for (let p = 1; p < commit.parents.length; p++) {
           const parentHash = commit.parents[p];
           if (!hashToColumn.has(parentHash)) {
@@ -418,14 +427,10 @@ export class GitHubApiService {
       }
     }
 
-    const columnValues = Array.from(hashToColumn.values());
-    const maxColumn = columnValues.length > 0 ? Math.max(...columnValues) : 0;
+    const maxColumn = Math.max(...hashToColumn.values(), 0);
 
-    // Create nodes with branch refs
     const nodes: GraphNode[] = commits.map((commit, idx) => {
-      // Get branch names that point to this commit
-      const branchRefs = commitToBranches.get(commit.hash) || [];
-      
+      const branchRefs = Array.from(commitToBranches.get(commit.hash) || []);
       return {
         id: commit.hash,
         hash: commit.hash,
@@ -435,34 +440,32 @@ export class GitHubApiService {
         date: commit.date,
         column: hashToColumn.get(commit.hash) || 0,
         row: idx,
-        refs: branchRefs, // Include branch names that point to this commit
+        refs: branchRefs,
         color: BRANCH_COLORS[(hashToColumn.get(commit.hash) || 0) % BRANCH_COLORS.length],
         parentHashes: commit.parents,
       };
     });
 
-    // Create edges
     const edges: GraphEdge[] = [];
     const hashToNode = new Map(nodes.map((n) => [n.hash, n]));
 
     for (const commit of commits) {
       for (let pIdx = 0; pIdx < commit.parents.length; pIdx++) {
         const parentHash = commit.parents[pIdx];
-        const parentNode = hashToNode.get(parentHash);
-        if (parentNode) {
-          const childColumn = hashToColumn.get(commit.hash) || 0;
-          const parentColumn = hashToColumn.get(parentHash) || 0;
+        if (!hashToNode.has(parentHash)) continue; // Parent outside current window
 
-          edges.push({
-            id: `${commit.hash}-${parentHash}`,
-            source: commit.hash,
-            target: parentHash,
-            type: commit.parents.length > 1 && pIdx > 0 ? 'merge' : 'normal',
-            color: BRANCH_COLORS[childColumn % BRANCH_COLORS.length],
-            sourceColumn: childColumn,
-            targetColumn: parentColumn,
-          });
-        }
+        const childColumn = hashToColumn.get(commit.hash) || 0;
+        const parentColumn = hashToColumn.get(parentHash) || 0;
+
+        edges.push({
+          id: `${commit.hash}-${parentHash}`,
+          source: commit.hash,
+          target: parentHash,
+          type: commit.parents.length > 1 && pIdx > 0 ? 'merge' : 'normal',
+          color: BRANCH_COLORS[childColumn % BRANCH_COLORS.length],
+          sourceColumn: childColumn,
+          targetColumn: parentColumn,
+        });
       }
     }
 
@@ -472,7 +475,7 @@ export class GitHubApiService {
       columns: maxColumn + 1,
       branches: branches.local.map((b) => b.name),
       currentBranch: actualDefaultBranch,
-      branchHeads: Object.fromEntries(branches.local.map(b => [b.name, b.commit])),
+      branchHeads: Object.fromEntries(branches.local.map((b) => [b.name, b.commit])),
     };
   }
 
