@@ -6,6 +6,7 @@ import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { setSelectedCommitHash } from '@/store/slices/appSlice';
 import { GraphRenderer, createPanZoomHandler, type ViewportState } from '@/lib/graph/GraphRenderer';
 import { CommitTooltip } from './CommitTooltip';
+import { CommitActivityChart } from './CommitActivityChart';
 import type { GraphNode } from '@/types/git';
 
 export function CanvasGraph() {
@@ -311,43 +312,58 @@ export function CanvasGraph() {
     }
 
     return (
-        <div className="relative w-full h-full overflow-hidden bg-[#0d1117]" ref={containerRef}>
+        <div className="relative w-full h-full overflow-hidden bg-[#0d1117] flex flex-col">
             {/* Header */}
-            <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-2 bg-[#161b22]/80 backdrop-blur-sm border-b border-[#30363d]">
+            <div className="flex-none z-10 flex items-center justify-between px-4 py-2 bg-[#161b22] border-b border-[#30363d]">
                 <div className="flex items-center gap-2 text-sm text-gray-300">
-                    <span className="font-medium">{graphData.currentBranch}</span>
+                    <span className="px-2 py-0.5 bg-[#238636]/20 text-[#3fb950] rounded text-xs font-medium">
+                        {graphData.currentBranch}
+                    </span>
                     <span className="text-gray-500">•</span>
                     <span className="text-gray-500">{graphData.nodes.length} commits</span>
+                    <span className="text-gray-500">•</span>
+                    <span className="text-gray-500">{graphData.branches.length} branches</span>
+                </div>
+                <div className="text-xs text-gray-500">
+                    {isReady ? '✓ Ready' : '⏳'} | {viewport.width}x{viewport.height}
                 </div>
             </div>
 
-            {/* Canvas */}
-            <canvas
-                ref={canvasRef}
-                onClick={handleClick}
-                onMouseMove={handleMouseMove}
-                onMouseLeave={handleMouseLeave}
-                className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing bg-[#0d1117]"
-                style={{ touchAction: 'none' }}
-            />
+            {/* Main content area */}
+            <div className="flex-1 relative" ref={containerRef}>
+                {/* Canvas */}
+                <canvas
+                    ref={canvasRef}
+                    onClick={handleClick}
+                    onMouseMove={handleMouseMove}
+                    onMouseLeave={handleMouseLeave}
+                    className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing bg-[#0d1117]"
+                    style={{ touchAction: 'none' }}
+                />
 
-            {/* Commit Tooltip */}
-            <CommitTooltip
-                node={hoveredNode}
-                graphData={graphData}
-                x={tooltipPosition.x}
-                y={tooltipPosition.y}
-                visible={isHoveringNode}
-            />
+                {/* Commit Tooltip */}
+                <CommitTooltip
+                    node={hoveredNode}
+                    graphData={graphData}
+                    x={tooltipPosition.x}
+                    y={tooltipPosition.y}
+                    visible={isHoveringNode}
+                />
 
-            {/* Debug info */}
-            <div className="absolute top-12 right-4 text-xs text-gray-500 bg-[#0d1117]/80 px-2 py-1 rounded z-10">
-                {isReady ? '✓ Ready' : '⏳'} | {viewport.width}x{viewport.height}
+                {/* Controls hint */}
+                <div className="absolute bottom-4 left-4 text-xs text-gray-500 bg-[#0d1117]/80 px-2 py-1 rounded z-10">
+                    Scroll to pan • Ctrl+Scroll to zoom • Click to select
+                </div>
             </div>
 
-            {/* Controls hint */}
-            <div className="absolute bottom-4 left-4 text-xs text-gray-500 bg-[#0d1117]/80 px-2 py-1 rounded z-10">
-                Scroll to pan • Ctrl+Scroll to zoom • Click to select
+            {/* Activity Chart */}
+            <div className="flex-none h-32 border-t border-[#30363d] bg-[#161b22]">
+                <div className="px-4 py-2 border-b border-[#30363d]">
+                    <span className="text-xs font-medium text-gray-400">Commit Activity</span>
+                </div>
+                <div className="h-[calc(100%-28px)] p-2">
+                    <CommitActivityChart nodes={graphData.nodes} />
+                </div>
             </div>
         </div>
     );

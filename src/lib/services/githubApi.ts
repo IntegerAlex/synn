@@ -339,8 +339,16 @@ export class GitHubApiService {
     // Update our internal defaultBranch to the actual one
     this.defaultBranch = actualDefaultBranch;
     
-    // Get branches
+    // Get branches with their head commits
     const branches = await this.getBranches();
+    
+    // Create a map of commit SHA to branch names (for labeling)
+    const commitToBranches = new Map<string, string[]>();
+    for (const branch of branches.local) {
+      const existing = commitToBranches.get(branch.commit) || [];
+      existing.push(branch.name);
+      commitToBranches.set(branch.commit, existing);
+    }
     
     // Use the actual default branch
     const branchToUse = actualDefaultBranch;
@@ -356,6 +364,7 @@ export class GitHubApiService {
         columns: 0,
         branches: branches.local.map((b) => b.name),
         currentBranch: actualDefaultBranch, // Use the actual default branch from GitHub
+        branchHeads: Object.fromEntries(branches.local.map(b => [b.name, b.commit])),
       };
     }
 
@@ -412,20 +421,25 @@ export class GitHubApiService {
     const columnValues = Array.from(hashToColumn.values());
     const maxColumn = columnValues.length > 0 ? Math.max(...columnValues) : 0;
 
-    // Create nodes
-    const nodes: GraphNode[] = commits.map((commit, idx) => ({
-      id: commit.hash,
-      hash: commit.hash,
-      shortHash: commit.shortHash,
-      message: commit.message,
-      author: commit.author.name,
-      date: commit.date,
-      column: hashToColumn.get(commit.hash) || 0,
-      row: idx,
-      refs: [],
-      color: BRANCH_COLORS[(hashToColumn.get(commit.hash) || 0) % BRANCH_COLORS.length],
-      parentHashes: commit.parents,
-    }));
+    // Create nodes with branch refs
+    const nodes: GraphNode[] = commits.map((commit, idx) => {
+      // Get branch names that point to this commit
+      const branchRefs = commitToBranches.get(commit.hash) || [];
+      
+      return {
+        id: commit.hash,
+        hash: commit.hash,
+        shortHash: commit.shortHash,
+        message: commit.message,
+        author: commit.author.name,
+        date: commit.date,
+        column: hashToColumn.get(commit.hash) || 0,
+        row: idx,
+        refs: branchRefs, // Include branch names that point to this commit
+        color: BRANCH_COLORS[(hashToColumn.get(commit.hash) || 0) % BRANCH_COLORS.length],
+        parentHashes: commit.parents,
+      };
+    });
 
     // Create edges
     const edges: GraphEdge[] = [];
@@ -458,6 +472,7 @@ export class GitHubApiService {
       columns: maxColumn + 1,
       branches: branches.local.map((b) => b.name),
       currentBranch: actualDefaultBranch,
+      branchHeads: Object.fromEntries(branches.local.map(b => [b.name, b.commit])),
     };
   }
 

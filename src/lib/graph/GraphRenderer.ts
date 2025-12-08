@@ -892,116 +892,90 @@ export class GraphRenderer {
     }
 
     /**
-     * Render branch names at branch heads (latest commit in each column)
+     * Render branch names at branch heads (commits that are branch tips)
      */
     private renderBranchHeadLabels(ctx: CanvasRenderingContext2D, visibleHashes: string[]) {
-        if (!this.layout || this.branches.length === 0) return;
+        if (!this.layout) return;
 
         const { fontSize, isDark } = this.config;
         const visibleSet = new Set(visibleHashes);
 
-        // Find branch heads: latest commit (highest row) in each column
-        const branchHeads = new Map<number, { hash: string; row: number }>();
+        // Collect all branch labels to render (commit hash -> branch names)
+        const commitBranches = new Map<string, string[]>();
         
+        // Use refs from nodes - these are populated from the API with actual branch names
         for (const node of this.originalNodes) {
             if (!visibleSet.has(node.hash)) continue;
             
-            const existing = branchHeads.get(node.column);
-            if (!existing || node.row < existing.row) {
-                branchHeads.set(node.column, { hash: node.hash, row: node.row });
-            }
-        }
-
-        // Map columns to branch names
-        // Try to match by column index, or find branch name from node refs
-        const columnToBranch = new Map<number, string>();
-        
-        for (const [column, head] of branchHeads) {
-            const node = this.originalNodes.find(n => n.hash === head.hash);
-            if (!node) continue;
-
-            // First, try to find branch name from node refs
-            let branchName: string | null = null;
             if (node.refs && node.refs.length > 0) {
+                const branchNames: string[] = [];
                 for (const ref of node.refs) {
-                    // Extract branch name from ref (remove HEAD ->, origin/, etc.)
-                    const cleanRef = ref.replace('HEAD -> ', '').replace('origin/', '').replace('remote/', '').trim();
+                    // Clean up ref name
+                    const cleanRef = ref
+                        .replace('HEAD -> ', '')
+                        .replace('origin/', '')
+                        .replace('remote/', '')
+                        .trim();
                     if (cleanRef && !cleanRef.includes('tag:')) {
-                        branchName = cleanRef;
-                        break;
+                        branchNames.push(cleanRef);
                     }
                 }
+                if (branchNames.length > 0) {
+                    commitBranches.set(node.hash, branchNames);
+                }
             }
-
-            // If no ref found, try to match by column index with branches array
-            if (!branchName && column < this.branches.length) {
-                branchName = this.branches[column];
-            }
-
-            // If still no branch name, use column number as fallback
-            if (!branchName) {
-                branchName = `branch-${column}`;
-            }
-
-            columnToBranch.set(column, branchName);
         }
 
-        // Render labels for branch heads
+        // Render labels for commits that have branch refs
         const labelHeight = fontSize + 6;
         const labelPadding = 6;
         const cornerRadius = 3;
 
-        for (const [column, branchName] of columnToBranch) {
-            const head = branchHeads.get(column);
-            if (!head) continue;
-
-            const pos = this.layout.nodes.get(head.hash);
+        for (const [hash, branchNames] of commitBranches) {
+            const pos = this.layout.nodes.get(hash);
             if (!pos) continue;
 
-            // Skip if this branch is already shown via refs
-            const node = this.originalNodes.find(n => n.hash === head.hash);
-            if (node && node.refs && node.refs.length > 0) {
-                // Check if branch name is already in refs
-                const hasBranchRef = node.refs.some(ref => {
-                    const cleanRef = ref.replace('HEAD -> ', '').replace('origin/', '').replace('remote/', '').trim();
-                    return cleanRef === branchName || cleanRef.includes(branchName);
-                });
-                if (hasBranchRef) continue; // Skip if already shown
+            let offsetX = 0;
+            
+            // Render each branch name as a separate label
+            for (const branchName of branchNames) {
+                // Measure text
+                ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
+                const textWidth = ctx.measureText(branchName).width;
+                const labelWidth = textWidth + labelPadding * 2;
+
+                // Style based on whether it's the current branch
+                const isCurrentBranch = branchName === this.currentBranch;
+                let bgColor = isDark ? '#2d2d2d' : '#e0e0e0';
+                let textColor = isDark ? '#cccccc' : '#333333';
+
+                if (isCurrentBranch) {
+                    bgColor = isDark ? '#1a3a4a' : '#d0eaff';
+                    textColor = '#4FC3F7';
+                }
+
+                const labelX = pos.x + 12 + offsetX; // Start right of node with offset
+
+                // Draw rounded rectangle background
+                ctx.beginPath();
+                ctx.roundRect(labelX, pos.y - labelHeight / 2, labelWidth, labelHeight, cornerRadius);
+                ctx.fillStyle = bgColor;
+                ctx.fill();
+
+                // Draw subtle border
+                ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Draw text
+                ctx.fillStyle = textColor;
+                ctx.textBaseline = 'middle';
+                ctx.textAlign = 'left';
+                ctx.fillText(branchName, labelX + labelPadding, pos.y);
+                
+                // Update offset for next label
+                offsetX += labelWidth + 4;
             }
-
-            // Measure text
-            ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
-            const textWidth = ctx.measureText(branchName).width;
-            const labelWidth = textWidth + labelPadding * 2;
-
-            // Style based on whether it's the current branch
-            const isCurrentBranch = branchName === this.currentBranch;
-            let bgColor = isDark ? '#2d2d2d' : '#e0e0e0';
-            let textColor = isDark ? '#cccccc' : '#333333';
-
-            if (isCurrentBranch) {
-                bgColor = isDark ? '#1a3a4a' : '#d0eaff';
-                textColor = '#4FC3F7';
-            }
-
-            const labelX = pos.x + 12; // Start right of node
-
-            // Draw rounded rectangle background
-            ctx.beginPath();
-            ctx.roundRect(labelX, pos.y - labelHeight / 2, labelWidth, labelHeight, cornerRadius);
-            ctx.fillStyle = bgColor;
-            ctx.fill();
-
-            // Draw subtle border
-            ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-            ctx.lineWidth = 1;
-            ctx.stroke();
-
-            // Draw text
-            ctx.fillStyle = textColor;
-            ctx.textBaseline = 'middle';
-            ctx.textAlign = 'left';
-            ctx.fillText(branchName, labelX + labelPadding, pos.y);
         }
     }
 

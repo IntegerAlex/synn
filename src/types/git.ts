@@ -103,6 +103,7 @@ export interface GraphData {
     columns: number;
     branches: string[];
     currentBranch: string;
+    branchHeads?: Record<string, string>; // branch name -> commit SHA
 }
 
 // ============ Search Types ============

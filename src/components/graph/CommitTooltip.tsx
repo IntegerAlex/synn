@@ -15,35 +15,22 @@ export function CommitTooltip({ node, graphData, x, y, visible }: CommitTooltipP
     const tooltipRef = useRef<HTMLDivElement>(null);
     const [position, setPosition] = useState({ left: x + 15, top: y - 10, transform: 'translateY(-100%)' });
 
-    // Get branch name for the node
-    const getBranchName = (node: GraphNode): string | null => {
-        if (!graphData || !node) return null;
+    // Get all branch names for the node
+    const getBranchNames = (node: GraphNode): string[] => {
+        if (!graphData || !node) return [];
 
-        // First, try to get branch name from node refs
+        // Get branch names from node refs (these are populated from the API)
         if (node.refs && node.refs.length > 0) {
-            for (const ref of node.refs) {
-                const cleanRef = ref.replace('HEAD -> ', '').replace('origin/', '').replace('remote/', '').replace('tag: ', '').trim();
-                if (cleanRef && !cleanRef.includes('tag:')) {
-                    return cleanRef;
-                }
-            }
+            return node.refs.map(ref => 
+                ref.replace('HEAD -> ', '')
+                   .replace('origin/', '')
+                   .replace('remote/', '')
+                   .replace('tag: ', '')
+                   .trim()
+            ).filter(name => name && !name.includes('tag:'));
         }
 
-        // Try to find branch by checking if this is the latest commit in its column
-        // Find the latest commit (highest row) in this node's column
-        const columnNodes = graphData.nodes.filter(n => n.column === node.column);
-        if (columnNodes.length > 0) {
-            const latestInColumn = columnNodes.reduce((latest, current) => 
-                current.row < latest.row ? current : latest
-            );
-            
-            // If this is the latest commit in the column, try to match with branches
-            if (latestInColumn.hash === node.hash && node.column < graphData.branches.length) {
-                return graphData.branches[node.column];
-            }
-        }
-
-        return null;
+        return [];
     };
 
     // Adjust position to keep tooltip within viewport
@@ -112,27 +99,23 @@ export function CommitTooltip({ node, graphData, x, y, visible }: CommitTooltipP
             }}
         >
             <div className="flex flex-col gap-1.5">
-                {/* Hash and Branch */}
+                {/* Hash and Branches */}
                 <div className="flex items-center gap-2 flex-wrap">
                     <code className="text-xs font-mono text-[#4FC3F7] font-semibold">
                         {node.shortHash}
                     </code>
-                    {(() => {
-                        const branchName = getBranchName(node);
-                        if (branchName) {
-                            return (
-                                <span className="text-xs px-1.5 py-0.5 rounded bg-[#1a3a4a] text-[#4FC3F7]">
-                                    {branchName}
-                                </span>
-                            );
-                        }
-                        return null;
-                    })()}
-                    {node.refs.length > 0 && !getBranchName(node) && (
-                        <span className="text-xs text-gray-400">
-                            {node.refs[0].replace('HEAD -> ', '').replace('origin/', '').replace('remote/', '')}
+                    {getBranchNames(node).map((branchName, idx) => (
+                        <span 
+                            key={idx}
+                            className={`text-xs px-1.5 py-0.5 rounded ${
+                                branchName === graphData?.currentBranch
+                                    ? 'bg-[#238636]/30 text-[#3fb950]'
+                                    : 'bg-[#1a3a4a] text-[#4FC3F7]'
+                            }`}
+                        >
+                            {branchName}
                         </span>
-                    )}
+                    ))}
                 </div>
 
                 {/* Message */}
