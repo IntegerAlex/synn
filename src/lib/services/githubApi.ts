@@ -352,11 +352,18 @@ export class GitHubApiService {
     const commitMap = new Map<string, Commit>();
     const commitToBranches = new Map<string, Set<string>>();
 
-    for (const branchName of branchNames) {
-      const remaining = effectiveLimit - commitMap.size;
-      if (remaining <= 0) break;
+    // Fetch commits for all branches in parallel to avoid slow sequential requests.
+    const branchCommitResults = await Promise.all(
+      branchNames.map(async (branchName) => ({
+        branchName,
+        commits: await this.getCommits(branchName, effectiveLimit),
+      }))
+    );
 
-      const branchCommits = await this.getCommits(branchName, remaining);
+    // Preserve deterministic ordering by iterating in the same branch order.
+    for (const { branchName, commits: branchCommits } of branchCommitResults) {
+      if (commitMap.size >= effectiveLimit) break;
+
       for (const commit of branchCommits) {
         if (!commitMap.has(commit.hash)) {
           commitMap.set(commit.hash, commit);
@@ -364,6 +371,8 @@ export class GitHubApiService {
         const refs = commitToBranches.get(commit.hash) ?? new Set<string>();
         refs.add(branchName);
         commitToBranches.set(commit.hash, refs);
+
+        if (commitMap.size >= effectiveLimit) break;
       }
     }
 
