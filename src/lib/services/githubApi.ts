@@ -250,13 +250,57 @@ export class GitHubApiService {
   async getCommits(branch?: string, limit: number = 100): Promise<Commit[]> {
     try {
       const sha = branch || this.defaultBranch;
-      const commits = await this.fetchGitHub<GitHubCommit[]>(
-        `/commits?sha=${sha}&per_page=${Math.min(limit, 100)}`
-      );
+      const allCommits: GitHubCommit[] = [];
+      const perPage = 100; // GitHub API max per page
+      const totalPages = Math.ceil(limit / perPage);
+      
+      // Fetch all pages needed to get the requested limit
+      for (let page = 1; page <= totalPages && allCommits.length < limit; page++) {
+        const url = `https://api.github.com/repos/${this.repoFullName}/commits?sha=${sha}&per_page=${perPage}&page=${page}`;
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+            Accept: 'application/vnd.github.v3+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+          },
+        });
 
-      if (!Array.isArray(commits)) {
-        return [];
+        // Track rate limit info
+        const rateLimitRemaining = response.headers.get('x-ratelimit-remaining');
+        const rateLimitLimit = response.headers.get('x-ratelimit-limit');
+        const rateLimitReset = response.headers.get('x-ratelimit-reset');
+        
+        this.lastRateLimitInfo = {
+          remaining: rateLimitRemaining ? parseInt(rateLimitRemaining) : null,
+          limit: rateLimitLimit ? parseInt(rateLimitLimit) : null,
+          reset: rateLimitReset ? parseInt(rateLimitReset) : null,
+        };
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            console.warn(`No commits found for ${this.repoFullName}${branch ? ` on branch ${branch}` : ''} - repository may be empty or branch doesn't exist`);
+            return [];
+          }
+          throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+        }
+
+        const pageCommits: GitHubCommit[] = await response.json();
+        
+        if (!Array.isArray(pageCommits) || pageCommits.length === 0) {
+          // No more commits available
+          break;
+        }
+
+        allCommits.push(...pageCommits);
+        
+        // If we got fewer than perPage, we've reached the end
+        if (pageCommits.length < perPage) {
+          break;
+        }
       }
+
+      // Limit to the requested amount
+      const commits = allCommits.slice(0, limit);
 
       return commits.map((commit) => ({
         hash: commit.sha,
