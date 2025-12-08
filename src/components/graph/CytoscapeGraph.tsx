@@ -134,30 +134,30 @@ export function CytoscapeGraph() {
       },
     },
     {
-      selector: 'node.branch-label',
+      selector: 'node[branchLabel]',
       style: {
-        'label': (ele: any) => ele.data('branchName'),
-        'width': 'label',
-        'height': 'label',
-        'shape': 'round-rectangle',
-        'background-color': (ele: any) => {
-          return ele.data('isCurrentBranch') 
-            ? (isDark ? '#1a3a4a' : '#d0eaff')
-            : (isDark ? '#2d2d2d' : '#e0e0e0');
-        },
-        'color': (ele: any) => {
-          return ele.data('isCurrentBranch') 
-            ? '#4FC3F7'
-            : (isDark ? '#cccccc' : '#333333');
-        },
+        'label': 'data(branchLabel)',
+        'text-margin-x': 12,
+        'text-margin-y': 0,
         'text-valign': 'center',
         'text-halign': 'left',
         'font-size': '10px',
-        'font-weight': (ele: any) => ele.data('isCurrentBranch') ? '600' : '400',
-        'padding': '3px 6px',
-        'border-width': 1,
-        'border-color': isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-        'events': 'no',
+        'font-weight': (ele: any) => ele.data('branchLabelIsCurrent') ? '600' : '400',
+        'color': (ele: any) =>
+          ele.data('branchLabelIsCurrent')
+            ? '#4FC3F7'
+            : (isDark ? '#cccccc' : '#333333'),
+        'text-background-color': (ele: any) =>
+          ele.data('branchLabelIsCurrent')
+            ? (isDark ? '#1a3a4a' : '#d0eaff')
+            : (isDark ? '#2d2d2d' : '#e0e0e0'),
+        'text-background-opacity': 0.9,
+        'text-background-shape': 'roundrectangle',
+        'text-background-padding': '3px',
+        'text-border-width': 1,
+        'text-border-color': isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+        'text-wrap': 'wrap',
+        'text-max-width': '140px',
         'text-outline-width': 0,
       },
     },
@@ -283,71 +283,59 @@ export function CytoscapeGraph() {
 
     const cy = cyRef.current;
     
-    // Remove existing labels
-    cy.nodes('[type = "branch-label"]').remove();
-    
-    // Find branch head nodes (commits with refs)
-    const branchHeadNodes = graphData.nodes.filter(node => 
-      node.refs && node.refs.length > 0
-    );
-
-    // Create label nodes for branch heads
-    branchHeadNodes.forEach(node => {
-      const cyNode = cy.getElementById(node.hash);
-      if (cyNode.length > 0) {
-        const pos = cyNode.position();
-        
-        // Create label nodes for each branch name
-        node.refs.forEach((branchName, idx) => {
-          const isCurrentBranch = branchName === graphData.currentBranch;
-          
-          // Add label as a node positioned to the right of the commit
-          const labelNode = cy.add({
-            data: {
-              id: `label-${node.hash}-${idx}`,
-              type: 'branch-label',
-              branchName,
-              isCurrentBranch,
-              parentHash: node.hash,
-            },
-            position: {
-              x: pos.x + 15 + (idx * 80), // Offset for multiple branches
-              y: pos.y,
-            },
-            classes: 'branch-label',
-          });
-          
-          // Make label non-interactive but visible
-          labelNode.style({
-            'events': 'no',
-          });
-        });
-      }
+    // Clear existing label data on nodes
+    cy.nodes().forEach((n) => {
+      n.removeData('branchLabel');
+      n.removeData('branchLabelIsCurrent');
     });
+    
+    // Build branch heads map: prefer branchHeads from API, fallback to refs on nodes
+    const branchEntries: Array<{ branch: string; hash: string }> = [];
 
-    // Update label positions when viewport changes
-    const updateLabels = () => {
-      cy.nodes('[type = "branch-label"]').forEach((labelNode: any) => {
-        const parentHash = labelNode.data('parentHash');
-        const parentNode = cy.getElementById(parentHash);
-        if (parentNode.length > 0) {
-          const parentPos = parentNode.position();
-          const labelIdx = parseInt(labelNode.id().split('-').pop() || '0');
-          labelNode.position({
-            x: parentPos.x + 15 + (labelIdx * 80),
-            y: parentPos.y,
+    if (graphData.branchHeads) {
+      for (const [branch, hash] of Object.entries(graphData.branchHeads)) {
+        branchEntries.push({ branch, hash });
+      }
+    } else {
+      graphData.nodes.forEach((node) => {
+        if (node.refs && node.refs.length > 0) {
+          node.refs.forEach((branch) => {
+            branchEntries.push({ branch, hash: node.hash });
           });
         }
       });
-    };
+    }
 
-    cy.on('pan', updateLabels);
-    cy.on('zoom', updateLabels);
+    // Prepare sorted nodes by row (row 0 = newest)
+    const sortedNodes = cy.nodes().sort((a, b) => {
+      const ra = a.data('row') ?? 0;
+      const rb = b.data('row') ?? 0;
+      return ra - rb;
+    });
 
-    return () => {
-      cy.off('pan', updateLabels);
-      cy.off('zoom', updateLabels);
-    };
+    // Attach labels to head nodes; if head missing (commit not in current graph),
+    // fall back to the newest node (row 0) so the branch still shows a label.
+    branchEntries.forEach(({ branch, hash }) => {
+      let cyNode: cytoscape.NodeSingular | undefined;
+      const head = cy.getElementById(hash);
+      if (head.length > 0) {
+        cyNode = head[0] as cytoscape.NodeSingular;
+      } else if (sortedNodes.length > 0) {
+        cyNode = sortedNodes[0] as cytoscape.NodeSingular; // fallback to newest commit
+      }
+      if (!cyNode) return;
+
+      const isCurrentBranch = branch === graphData.currentBranch;
+      // If multiple labels land on the same node, concatenate
+      const existing = cyNode.data('branchLabel') as string | undefined;
+      const existingCurrent = cyNode.data('branchLabelIsCurrent') as boolean | undefined;
+
+      const newLabel = existing ? `${existing}, ${branch}` : branch;
+      const currentFlag = existingCurrent || isCurrentBranch;
+
+      cyNode.data('branchLabel', newLabel);
+      cyNode.data('branchLabelIsCurrent', currentFlag);
+    });
   }, [graphData]);
 
   if (error) {
