@@ -1,12 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { useAppSelector } from '@/store/hooks';
+import { useAppStore } from '@/store/useAppStore';
 
 /**
  * Hook to observe repoInfo state via TanStack Query and return the appropriate document title
  * This avoids using useEffect by using TanStack Query's reactive system
  */
 export function useDocumentTitle() {
-    const repoInfo = useAppSelector((state) => state.app.repoInfo);
+    const repoInfo = useAppStore((state) => state.repoInfo);
 
     // Use TanStack Query to observe the repoInfo state
     const { data: title } = useQuery({

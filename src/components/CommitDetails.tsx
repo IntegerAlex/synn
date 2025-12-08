@@ -2,12 +2,11 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { useCommitDetails } from '@/hooks/useGitData';
-import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { setSelectedCommitHash } from '@/store/slices/appSlice';
+import { useAppStore } from '@/store/useAppStore';
 
 export function CommitDetails() {
-    const dispatch = useAppDispatch();
-    const selectedHash = useAppSelector((state) => state.app.selectedCommitHash);
+    const selectedHash = useAppStore((state) => state.selectedCommitHash);
+    const setSelectedCommitHash = useAppStore((state) => state.setSelectedCommitHash);
     const { data: details, isLoading, error } = useCommitDetails(selectedHash);
     const [selectedFile, setSelectedFile] = useState<string | null>(null);
     const [showFullDiff, setShowFullDiff] = useState(false);
@@ -135,7 +134,7 @@ export function CommitDetails() {
             <div className="px-4 py-3 border-b border-[#30363d] flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-gray-200">Commit Details</h2>
                 <button
-                    onClick={() => dispatch(setSelectedCommitHash(null))}
+                    onClick={() => setSelectedCommitHash(null)}
                     className="text-gray-400 hover:text-white"
                 >
                     ✕

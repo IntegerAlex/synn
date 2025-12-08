@@ -1,6 +1,6 @@
 'use client';
 
-import { useAppSelector } from '@/store/hooks';
+import { useAppStore } from '@/store/useAppStore';
 import { RepoSelector } from '@/components/RepoSelector';
 import { CytoscapeGraph } from '@/components/graph/CytoscapeGraph';
 import { Sidebar } from '@/components/layout/Sidebar';
@@ -10,8 +10,8 @@ import { CommitDetails } from '@/components/CommitDetails';
 import { DocumentTitle } from '@/components/DocumentTitle';
 
 export default function Home() {
-  const repoInfo = useAppSelector((state) => state.app.repoInfo);
-  const selectedCommitHash = useAppSelector((state) => state.app.selectedCommitHash);
+  const repoInfo = useAppStore((state) => state.repoInfo);
+  const selectedCommitHash = useAppStore((state) => state.selectedCommitHash);
 
   if (!repoInfo) {
     return <RepoSelector />;

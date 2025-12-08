@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { gitApi } from '@/lib/api/client';
-import { useAppSelector } from '@/store/hooks';
+import { useAppStore } from '@/store/useAppStore';
 
 // Query keys
 export const queryKeys = {
@@ -14,7 +14,7 @@ export const queryKeys = {
 
 // Repo info
 export function useRepoInfo() {
-    const repoInfo = useAppSelector((state) => state.app.repoInfo);
+    const repoInfo = useAppStore((state) => state.repoInfo);
 
     return useQuery({
         queryKey: queryKeys.repo,
@@ -39,7 +39,7 @@ export function useSetRepo() {
 
 // Branches
 export function useBranches() {
-    const repoInfo = useAppSelector((state) => state.app.repoInfo);
+    const repoInfo = useAppStore((state) => state.repoInfo);
 
     return useQuery({
         queryKey: queryKeys.branches,
@@ -50,7 +50,7 @@ export function useBranches() {
 
 // Graph - simplified, TanStack Query v5 doesn't support onSuccess
 export function useGraph(limit = 100) {
-    const repoInfo = useAppSelector((state) => state.app.repoInfo);
+    const repoInfo = useAppStore((state) => state.repoInfo);
 
     return useQuery({
         queryKey: queryKeys.graph(limit),
@@ -63,7 +63,7 @@ export function useGraph(limit = 100) {
 
 // Commit details
 export function useCommitDetails(hash: string | null) {
-    const repoInfo = useAppSelector((state) => state.app.repoInfo);
+    const repoInfo = useAppStore((state) => state.repoInfo);
     
     return useQuery({
         queryKey: queryKeys.commitDetails(hash || ''),
@@ -75,7 +75,7 @@ export function useCommitDetails(hash: string | null) {
 // Checkout
 export function useCheckoutBranch() {
     const queryClient = useQueryClient();
-    const repoInfo = useAppSelector((state) => state.app.repoInfo);
+    const repoInfo = useAppStore((state) => state.repoInfo);
 
     return useMutation({
         mutationFn: (branch: string) => gitApi.checkoutBranch(repoInfo, branch),
@@ -89,7 +89,7 @@ export function useCheckoutBranch() {
 
 // Search
 export function useSearch(query: string) {
-    const repoInfo = useAppSelector((state) => state.app.repoInfo);
+    const repoInfo = useAppStore((state) => state.repoInfo);
     
     return useQuery({
         queryKey: queryKeys.search(query),

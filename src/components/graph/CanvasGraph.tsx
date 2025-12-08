@@ -2,8 +2,7 @@
 
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { useGraph } from '@/hooks/useGitData';
-import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { setSelectedCommitHash } from '@/store/slices/appSlice';
+import { useAppStore } from '@/store/useAppStore';
 import { GraphRenderer, createPanZoomHandler, type ViewportState } from '@/lib/graph/GraphRenderer';
 import { CommitTooltip } from './CommitTooltip';
 import { CommitActivityChart } from './CommitActivityChart';
@@ -25,9 +24,9 @@ export function CanvasGraph() {
     const [isHoveringNode, setIsHoveringNode] = useState(false);
 
     // Redux state
-    const dispatch = useAppDispatch();
-    const selectedCommitHash = useAppSelector((state) => state.app.selectedCommitHash);
-    const theme = useAppSelector((state) => state.app.theme);
+    const selectedCommitHash = useAppStore((state) => state.selectedCommitHash);
+    const setSelectedCommitHash = useAppStore((state) => state.setSelectedCommitHash);
+    const theme = useAppStore((state) => state.theme);
 
     // Always fetch all commits (use a very high limit)
     const { data: graphData, isLoading, error, refetch } = useGraph(10000);
@@ -226,9 +225,9 @@ export function CanvasGraph() {
                 e.clientY - rect.top
             );
 
-            dispatch(setSelectedCommitHash(hash));
+            setSelectedCommitHash(hash);
         },
-        [dispatch]
+        [setSelectedCommitHash]
     );
 
     // Handle mouse move for hover detection

@@ -1,18 +1,17 @@
 'use client';
 
 import { useBranches, useCheckoutBranch } from '@/hooks/useGitData';
-import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { setSelectedBranch } from '@/store/slices/appSlice';
+import { useAppStore } from '@/store/useAppStore';
 
 export function Sidebar() {
-    const dispatch = useAppDispatch();
+    const setSelectedBranch = useAppStore((state) => state.setSelectedBranch);
     const { data: branches, isLoading } = useBranches();
     const checkout = useCheckoutBranch();
-    const selectedBranch = useAppSelector((state) => state.app.selectedBranch);
-    const repoInfo = useAppSelector((state) => state.app.repoInfo);
+    const selectedBranch = useAppStore((state) => state.selectedBranch);
+    const repoInfo = useAppStore((state) => state.repoInfo);
 
     const handleBranchClick = (branchName: string) => {
-        dispatch(setSelectedBranch(branchName));
+        setSelectedBranch(branchName);
     };
 
     const handleCheckout = async (branchName: string) => {

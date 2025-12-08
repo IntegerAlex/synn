@@ -5,8 +5,7 @@ import CytoscapeComponent from 'react-cytoscapejs';
 import type cytoscape from 'cytoscape';
 import { ZoomIn, ZoomOut, Maximize2, RotateCcw } from 'lucide-react';
 import { useGraph } from '@/hooks/useGitData';
-import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { setSelectedCommitHash } from '@/store/slices/appSlice';
+import { useAppStore } from '@/store/useAppStore';
 import { CommitTooltip } from './CommitTooltip';
 import { CommitActivityChart } from './CommitActivityChart';
 import type { GraphNode, GraphData } from '@/types/git';
@@ -31,9 +30,9 @@ export function CytoscapeGraph() {
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [isHoveringNode, setIsHoveringNode] = useState(false);
 
-  const dispatch = useAppDispatch();
-  const selectedCommitHash = useAppSelector((state) => state.app.selectedCommitHash);
-  const theme = useAppSelector((state) => state.app.theme);
+  const selectedCommitHash = useAppStore((state) => state.selectedCommitHash);
+  const setSelectedCommitHash = useAppStore((state) => state.setSelectedCommitHash);
+  const theme = useAppStore((state) => state.theme);
   const { data: graphData, isLoading, error, refetch } = useGraph(10000);
 
   const isDark = useMemo(
@@ -205,9 +204,9 @@ export function CytoscapeGraph() {
     const node = evt.target;
     if (node.isNode()) {
       const hash = node.data('hash');
-      dispatch(setSelectedCommitHash(hash));
+      setSelectedCommitHash(hash);
     }
-  }, [dispatch]);
+  }, [setSelectedCommitHash]);
 
   // Handle node hover
   const handleNodeMouseOver = useCallback((evt: any) => {

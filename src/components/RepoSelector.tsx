@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useSetRepo } from '@/hooks/useGitData';
-import { useAppDispatch } from '@/store/hooks';
-import { setRepoInfo } from '@/store/slices/appSlice';
+import { useAppStore } from '@/store/useAppStore';
 import { SignedIn, SignedOut, SignInButton, useAuth, UserButton } from '@clerk/nextjs';
 import { Github, Sparkles } from 'lucide-react';
 
@@ -27,7 +26,7 @@ export function RepoSelector() {
     const [selectedRepo, setSelectedRepo] = useState('');
     const [downloading, setDownloading] = useState(false);
 
-    const dispatch = useAppDispatch();
+    const setRepoInfoStore = useAppStore((state) => state.setRepoInfo);
     const setRepo = useSetRepo();
     const { isLoaded, isSignedIn } = useAuth();
 
@@ -149,7 +148,7 @@ export function RepoSelector() {
                 repoFullName: repo.full_name, 
                 defaultBranch: repo.default_branch || 'main'
             });
-            dispatch(setRepoInfo(repoInfo));
+            setRepoInfoStore(repoInfo);
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Failed to open repository');
         } finally {

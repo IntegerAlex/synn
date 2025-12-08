@@ -1,11 +1,10 @@
 'use client';
 
-import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { setRepoInfo } from '@/store/slices/appSlice';
+import { useAppStore } from '@/store/useAppStore';
 
 export function Header() {
-    const dispatch = useAppDispatch();
-    const repoInfo = useAppSelector((state) => state.app.repoInfo);
+    const repoInfo = useAppStore((state) => state.repoInfo);
+    const closeRepo = useAppStore((state) => state.closeRepo);
 
     return (
         <header className="h-12 bg-[#161b22] border-b border-[#30363d] flex items-center justify-between px-4">
@@ -30,7 +29,7 @@ export function Header() {
                 {/* Close repo button */}
                 {repoInfo && (
                     <button
-                        onClick={() => dispatch(setRepoInfo(null))}
+                        onClick={() => closeRepo()}
                         className="px-3 py-1 text-xs text-gray-400 hover:text-white hover:bg-[#21262d] rounded transition-colors"
                     >
                         Close Repo
