@@ -43,11 +43,11 @@ export const useAppStore = create<AppStore>()(
     (set) => ({
       ...initialState,
       setRepoInfo: (repo) =>
-        set((state) => ({
+        set(() => ({
           repoInfo: repo,
-          // When switching repos, clear selection to avoid stale hashes
-          selectedCommitHash: repo ? state.selectedCommitHash : null,
-          selectedBranch: repo ? state.selectedBranch : null,
+          // Clear selections on repo change to avoid stale hashes
+          selectedCommitHash: null,
+          selectedBranch: null,
         })),
       closeRepo: () =>
         set({

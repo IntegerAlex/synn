@@ -131,7 +131,6 @@ export function CytoscapeGraph() {
         'color': isDark ? '#cccccc' : '#333333',
         'text-outline-width': 1,
         'text-outline-color': isDark ? '#0d1117' : '#ffffff',
-        'cursor': 'pointer',
       },
     },
     {
@@ -158,7 +157,6 @@ export function CytoscapeGraph() {
         'padding': '3px 6px',
         'border-width': 1,
         'border-color': isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-        'cursor': 'default',
         'events': 'no',
         'text-outline-width': 0,
       },
@@ -266,9 +264,17 @@ export function CytoscapeGraph() {
     }).run();
 
     // Fit view after layout completes
-    setTimeout(() => {
-      cy.fit(undefined, 50);
+    const timeout = setTimeout(() => {
+      if (!cy.destroyed()) {
+        try {
+          cy.fit(cy.elements(), 50);
+        } catch {
+          // ignore fit errors
+        }
+      }
     }, 100);
+
+    return () => clearTimeout(timeout);
   }, [elements, graphData]);
 
   // Add branch labels and render them on the graph
@@ -392,15 +398,8 @@ export function CytoscapeGraph() {
         </div>
       </div>
 
-      {/* Cytoscape Graph with Scrollbars */}
-      <div 
-        className="flex-1 relative overflow-auto" 
-        style={{ 
-          scrollbarWidth: 'thin', 
-          scrollbarColor: '#30363d #0d1117',
-        }}
-        id="cytoscape-scroll-container"
-      >
+      {/* Cytoscape Graph */}
+      <div className="flex-1 relative overflow-hidden">
         <CytoscapeComponent
           elements={elements}
           style={{ width: '100%', height: '100%' }}
@@ -420,62 +419,14 @@ export function CytoscapeGraph() {
             cy.on('mouseover', 'node', handleNodeMouseOver);
             cy.on('mouseout', 'node', handleNodeMouseOut);
             
-            // Sync scroll position with Cytoscape pan
-            const container = cy.container();
-            const scrollContainer = container?.closest('#cytoscape-scroll-container') as HTMLElement;
-            
-            if (scrollContainer) {
-              // Update scroll position when Cytoscape pans
-              cy.on('pan', () => {
-                const pan = cy.pan();
-                const zoom = cy.zoom();
-                scrollContainer.scrollLeft = -pan.x * zoom;
-                scrollContainer.scrollTop = -pan.y * zoom;
-              });
-              
-              // Update Cytoscape pan when user scrolls
-              let isScrolling = false;
-              scrollContainer.addEventListener('scroll', () => {
-                if (isScrolling) return;
-                isScrolling = true;
-                const zoom = cy.zoom();
-                cy.pan({
-                  x: -scrollContainer.scrollLeft / zoom,
-                  y: -scrollContainer.scrollTop / zoom,
-                });
-                setTimeout(() => { isScrolling = false; }, 10);
-              });
-              
-              // Set container size for scrolling
-              const updateScrollArea = () => {
-                try {
-                  const bounds = cy.elements().boundingBox();
-                  const zoom = cy.zoom();
-                  const padding = 200;
-                  
-                  const contentWidth = bounds.w + padding * 2;
-                  const contentHeight = bounds.h + padding * 2;
-                  
-                  // Make the scroll container larger than viewport to enable scrolling
-                  if (container) {
-                    container.style.width = `${contentWidth}px`;
-                    container.style.height = `${contentHeight}px`;
-                  }
-                } catch (e) {
-                  // Ignore errors during initialization
-                }
-              };
-              
-              cy.on('ready', () => {
-                setTimeout(() => {
-                  cy.fit(cy.elements(), 50);
-                  updateScrollArea();
-                }, 100);
-              });
-              
-              cy.on('zoom', updateScrollArea);
-              cy.on('layoutstop', updateScrollArea);
-            }
+            cy.on('ready', () => {
+              if (cy.destroyed()) return;
+              try {
+                cy.fit(cy.elements(), 50);
+              } catch {
+                // ignore fit errors
+              }
+            });
           }}
         />
 
