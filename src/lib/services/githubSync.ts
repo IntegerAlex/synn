@@ -149,6 +149,7 @@ export async function syncUserRepos(userId: number, accessToken: string): Promis
 /**
  * Ensures a user exists in the database, creating them if needed
  * This is useful when the webhook hasn't fired yet or failed
+ * Handles cases where user exists by githubId but has different clerkUserId
  * @param clerkUserId - Clerk user ID
  * @param accessToken - GitHub OAuth access token (will be encrypted before storage)
  * @returns The database user ID
@@ -157,18 +158,18 @@ export async function ensureUserExists(
   clerkUserId: string,
   accessToken: string
 ): Promise<number> {
-  // Check if user exists
-  const existingUser = await db
+  // Check if user exists by clerkUserId
+  const existingUserByClerkId = await db
     .select()
     .from(usersTable)
     .where(eq(usersTable.clerkUserId, clerkUserId))
     .limit(1);
 
-  if (existingUser.length > 0) {
-    return existingUser[0].id;
+  if (existingUserByClerkId.length > 0) {
+    return existingUserByClerkId[0].id;
   }
 
-  // Fetch user data from GitHub to create the user
+  // Fetch user data from GitHub
   const githubUserResponse = await fetch('https://api.github.com/user', {
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -182,10 +183,58 @@ export async function ensureUserExists(
 
   const githubUser = await githubUserResponse.json();
 
+  // Check if user exists by githubId (might have different clerkUserId)
+  const existingUserByGithubId = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.githubId, githubUser.id))
+    .limit(1);
+
   // Encrypt token before storing
   const encryptedAccessToken = encryptToken(accessToken);
 
-  // Create user in database
+  if (existingUserByGithubId.length > 0) {
+    // User exists with same GitHub ID but different Clerk ID - update the record
+    console.log(`Updating existing user with githubId ${githubUser.id} to use clerkUserId ${clerkUserId}`);
+    
+    try {
+      await db
+        .update(usersTable)
+        .set({
+          clerkUserId,
+          name: githubUser.name || githubUser.login,
+          email: githubUser.email,
+          githubUsername: githubUser.login,
+          githubAccessToken: encryptedAccessToken,
+          oauthMetadata: {
+            provider: 'github',
+            providerAccountId: githubUser.id.toString(),
+          },
+          updatedAt: new Date(),
+        })
+        .where(eq(usersTable.githubId, githubUser.id));
+
+      // Return the updated user's ID
+      return existingUserByGithubId[0].id;
+    } catch (updateError: any) {
+      // Handle case where clerkUserId might be taken (race condition)
+      if (updateError?.code === '23505' && updateError?.constraint === 'users_clerkUserId_unique') {
+        // Another user already has this clerkUserId - fetch that user instead
+        const userWithClerkId = await db
+          .select()
+          .from(usersTable)
+          .where(eq(usersTable.clerkUserId, clerkUserId))
+          .limit(1);
+        
+        if (userWithClerkId.length > 0) {
+          return userWithClerkId[0].id;
+        }
+      }
+      throw updateError;
+    }
+  }
+
+  // Create new user in database
   const newUser = await db
     .insert(usersTable)
     .values({

@@ -1,32 +1,31 @@
 import crypto from 'crypto';
-import fs from 'fs';
-import path from 'path';
 
 /**
  * Encryption service using RSA public/private key pairs
  * Uses hybrid encryption: RSA for key exchange, AES for data
  */
 
-const PUBLIC_KEY_PATH = path.join(process.cwd(), 'key', 'public.pem');
-
-// Cache the public key
-let cachedPublicKey: string | null = null;
+// Embedded public key (public keys are safe to include in application code)
+const EMBEDDED_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
+MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAnv8YfXH5qOKrj1YyhYqm
+nsj7ZKVAXksQxKigYMaNnam77rP8PoXfIFsvirissRjKgh3aiKWqnwL1wLkPTz7C
+M9w6fMVV8QvWtC14GpN1BLklJRWPrcTDDVY5QXiBZ1t0ixynIWQkZ0/30ocLqwox
+2fRVntb43SDAahUpFPVXV2dycg55z5Wli5wguoFZcKEe9yH0ftDg3C6pR9t8RFTX
+2blm2rFthtrORa4bBsIKj9ng8Ef7kpgwFIFTWKB+1LjFzSlCZmUvNDlL2AkOcX4z
++vMbdk5fQl0DDP+yQs26IZbSuuFqUYivqnAa+mD225dq5l+up3fWZtpYeeZbIw0J
+rOKpw0E/DTPBa9XjO9oMN5CleY+xplegBKvb5GgeoIxuCuA0iGBJuwQrOxPjbJDr
+buLQuvwNvU2H7ijYipgaqjAeQlPlcT/S1u7jEAVvV9r10g5pP3C7aDiZo4frC5/R
+Jq8scXQuXmmtOXDd5nfJN5ha0iB3JQu7sQJ7NMA7BkgzgwuA1vBNsDFhlL+ChAxQ
+n5ICzoLe864ZGXNORKxymeZRyM5DjOWo5DOJEgI9ESwdhlKa8HveuXedCUB6d3rJ
+NfRpihQZjTl3O+SqONKFEP49kavxrM2u/uZc+o6sm5v8Yv+dMblk7vvTTG7CgnfU
+UwUuBVTrqO/g0kMqgRO5kBECAwEAAQ==
+-----END PUBLIC KEY-----`;
 
 /**
- * Load public key from file system
+ * Load public key (embedded in application code)
  */
 function loadPublicKey(): string {
-  if (cachedPublicKey) {
-    return cachedPublicKey;
-  }
-
-  try {
-    cachedPublicKey = fs.readFileSync(PUBLIC_KEY_PATH, 'utf8');
-    return cachedPublicKey;
-  } catch (error) {
-    console.error('Failed to load public key:', error);
-    throw new Error('Public key not found. Ensure key/public.pem exists.');
-  }
+  return EMBEDDED_PUBLIC_KEY;
 }
 
 /**
@@ -184,14 +183,10 @@ export function decryptSensitiveFields<T extends Record<string, any>>(
 
 /**
  * Check if public key is available
+ * Always returns true since the key is embedded in the code
  */
 export function isEncryptionAvailable(): boolean {
-  try {
-    loadPublicKey();
-    return true;
-  } catch {
-    return false;
-  }
+  return true;
 }
 
 /**
