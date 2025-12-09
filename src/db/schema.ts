@@ -223,3 +223,13 @@ export const contributionsTable = pgTable("contributions", {
   userDateIdx: index("contributions_user_date_idx").on(table.userId, table.contributionDate),
 }));
 
+// Roasts table - stores one-time AI roast per user to avoid repeated calls
+export const roastsTable = pgTable("roasts", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  userId: integer().notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  content: text().notNull(),
+  createdAt: timestamp().defaultNow().notNull(),
+}, (table) => ({
+  userIdUnique: index("roasts_user_id_unique").on(table.userId),
+}));
+

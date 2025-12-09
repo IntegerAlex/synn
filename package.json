@@ -14,6 +14,8 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@azure/openai": "^2.0.0",
+    "@azure/core-auth": "^1.7.2",
     "@clerk/nextjs": "^6.36.0",
     "@neondatabase/serverless": "^1.0.2",
     "@radix-ui/react-slot": "^1.2.4",

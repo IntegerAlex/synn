@@ -56,7 +56,7 @@ async function syncRepoCommits(
       };
     });
 
-    // Batch insert commits (handle duplicates gracefully)
+    // Batch insert commits (handle duplicates gracefully, handle timeouts)
     let insertedCount = 0;
     
     // Insert in batches to avoid overwhelming the database
@@ -67,6 +67,10 @@ async function syncRepoCommits(
         await db.insert(commitsTable).values(batch);
         insertedCount += batch.length;
       } catch (error: any) {
+        if (isDbTimeout(error)) {
+          console.error('DB timeout while inserting commits batch; aborting batch and retry later.');
+          throw error;
+        }
         // If batch fails due to duplicates, try individual inserts
         const isDuplicateError = error.code === '23505' || 
           error.cause?.code === '23505' ||
@@ -80,6 +84,10 @@ async function syncRepoCommits(
               await db.insert(commitsTable).values(commit);
               insertedCount++;
             } catch (err: any) {
+              if (isDbTimeout(err)) {
+                console.error('DB timeout while inserting single commit; aborting.');
+                throw err;
+              }
               // Silently skip duplicates (PostgreSQL error code 23505)
               const isCommitDuplicate = err.code === '23505' || 
                 err.cause?.code === '23505' ||
@@ -161,7 +169,11 @@ async function updateContributions(
           updatedAt: new Date(),
         });
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (isDbTimeout(error)) {
+        console.error(`DB timeout updating contribution for ${dateStr}; will retry on next sync.`);
+        throw error;
+      }
       console.error(`Error updating contribution for ${dateStr}:`, error);
     }
   }
@@ -293,6 +305,10 @@ export async function getContributionsFromDB(
       
       return result;
     }
+    if (isDbTimeout(error)) {
+      console.warn('DB timeout in getContributionsFromDB; returning empty data placeholder.');
+      return [];
+    }
     throw error;
   }
 }
@@ -311,6 +327,10 @@ export async function getTotalCommitsCount(userId: number): Promise<number> {
   } catch (error: any) {
     // If table doesn't exist yet, return 0
     if (error.message?.includes('does not exist') || error.code === '42P01') {
+      return 0;
+    }
+    if (isDbTimeout(error)) {
+      console.warn('DB timeout in getTotalCommitsCount; returning 0.');
       return 0;
     }
     throw error;
@@ -343,6 +363,16 @@ export async function needsSync(userId: number): Promise<boolean> {
     if (error.message?.includes('does not exist') || error.code === '42P01') {
       return true;
     }
+    if (isDbTimeout(error)) {
+      console.warn('DB timeout in needsSync; returning true to trigger sync later.');
+      return true;
+    }
     throw error;
   }
+}
+
+function isDbTimeout(error: any) {
+  const code = error?.code || error?.cause?.code || '';
+  const msg = error?.message || '';
+  return code === 'ETIMEDOUT' || msg.includes('ETIMEDOUT');
 }

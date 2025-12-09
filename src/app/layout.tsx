@@ -80,7 +80,7 @@ export default function RootLayout({
         <html lang="en" className="dark">
             <body className={`font-sans antialiased ${plusJakartaSans.variable} ${jetbrainsMono.variable}`}>
                 <Providers>
-                    {children}
+                {children}
                 </Providers>
             </body>
         </html>
