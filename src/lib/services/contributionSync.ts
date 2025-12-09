@@ -244,21 +244,22 @@ export async function getContributionsFromDB(
     startDate.setDate(startDate.getDate() - days);
     startDate.setHours(0, 0, 0, 0);
 
-    // Query contributions table - aggregate across all repos (repoId can be null)
+    // Query commits table directly - count DISTINCT commit hashes per day
+    // This matches GitHub's contribution graph which counts unique commits across all repos/branches
     const contributions = await db
       .select({
-        date: sql<string>`DATE(${contributionsTable.contributionDate})`,
-        count: sql<number>`COALESCE(SUM(${contributionsTable.commitCount}), 0)`,
+        date: sql<string>`DATE(${commitsTable.commitDate})`,
+        count: sql<number>`COUNT(DISTINCT ${commitsTable.hash})`,
       })
-      .from(contributionsTable)
+      .from(commitsTable)
       .where(
         and(
-          eq(contributionsTable.userId, userId),
-          gte(contributionsTable.contributionDate, startDate)
+          eq(commitsTable.userId, userId),
+          gte(commitsTable.commitDate, startDate)
         )
       )
-      .groupBy(sql`DATE(${contributionsTable.contributionDate})`)
-      .orderBy(sql`DATE(${contributionsTable.contributionDate})`);
+      .groupBy(sql`DATE(${commitsTable.commitDate})`)
+      .orderBy(sql`DATE(${commitsTable.commitDate})`);
 
     // Convert to map for easy lookup
     const contributionsMap = new Map<string, number>();
@@ -283,7 +284,7 @@ export async function getContributionsFromDB(
   } catch (error: any) {
     // If table doesn't exist yet, return empty array
     if (error.message?.includes('does not exist') || error.code === '42P01') {
-      console.warn('Contributions table does not exist yet. Please run migrations.');
+      console.warn('Commits table does not exist yet. Please run migrations.');
       // Return empty contributions for all dates
       const endDate = new Date();
       endDate.setHours(23, 59, 59, 999);
@@ -314,12 +315,13 @@ export async function getContributionsFromDB(
 }
 
 /**
- * Get total commit count for a user
+ * Get total commit count for a user (deduplicated by commit hash)
+ * This matches GitHub's contribution count which counts unique commits across all repos/branches
  */
 export async function getTotalCommitsCount(userId: number): Promise<number> {
   try {
     const result = await db
-      .select({ count: sql<number>`COUNT(*)` })
+      .select({ count: sql<number>`COUNT(DISTINCT ${commitsTable.hash})` })
       .from(commitsTable)
       .where(eq(commitsTable.userId, userId));
 
