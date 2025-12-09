@@ -5,10 +5,14 @@ import { useQuery } from '@tanstack/react-query';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { GitHubContributionGraph } from '@/components/profile/GitHubContributionGraph';
+import { ShareModal } from '@/components/profile/ShareModal';
 import { Flame, Mail, Calendar, Skull, HelpCircle } from 'lucide-react';
+import { useState, useRef } from 'react';
 
 export default function ProfilePage() {
   const { user, isLoaded } = useUser();
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const profileContentRef = useRef<HTMLDivElement>(null);
 
   const {
     data: roastData,
@@ -25,6 +29,21 @@ export default function ProfilePage() {
       return json;
     },
     staleTime: 10 * 60 * 1000,
+    enabled: isLoaded && !!user,
+  });
+
+  const {
+    data: contributionsData,
+  } = useQuery({
+    queryKey: ['contributions'],
+    queryFn: async () => {
+      const res = await fetch('/api/contributions?days=371');
+      if (!res.ok) {
+        throw new Error('Failed to fetch contributions');
+      }
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
     enabled: isLoaded && !!user,
   });
 
@@ -107,7 +126,7 @@ export default function ProfilePage() {
 
       <Header />
       
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl relative z-10">
+      <main ref={profileContentRef} className="flex-1 container mx-auto px-4 py-8 max-w-6xl relative z-10">
         <div className="grid gap-6 lg:grid-cols-[2fr_1fr] items-stretch">
           <div className="flex flex-col gap-6 h-full">
             {/* Profile Header */}
@@ -191,7 +210,7 @@ export default function ProfilePage() {
               <p className="text-gray-400 text-sm mb-6">
                 Your transgressions across all repositories over the past year
               </p>
-              <GitHubContributionGraph />
+              <GitHubContributionGraph onShareClick={() => setIsShareModalOpen(true)} />
             </div>
           </div>
 
@@ -226,6 +245,15 @@ export default function ProfilePage() {
       </main>
 
       <Footer />
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        contributionsData={contributionsData}
+        roastData={roastData}
+        profileContentRef={profileContentRef}
+      />
     </div>
   );
 }

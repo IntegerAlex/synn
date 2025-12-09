@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState, useEffect } from 'react';
-import { TrendingUp, RefreshCw, HelpCircle } from 'lucide-react';
+import { TrendingUp, RefreshCw, HelpCircle, Share2 } from 'lucide-react';
 
 interface ContributionDay {
   date: string;
@@ -68,7 +68,11 @@ interface ContributionsResponse {
   shouldSync: boolean;
 }
 
-export function GitHubContributionGraph() {
+interface GitHubContributionGraphProps {
+  onShareClick?: () => void;
+}
+
+export function GitHubContributionGraph({ onShareClick }: GitHubContributionGraphProps) {
   const [hoveredDay, setHoveredDay] = useState<ContributionDay | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [isSyncing, setIsSyncing] = useState(false);
@@ -306,15 +310,27 @@ export function GitHubContributionGraph() {
             <span className="text-sm font-semibold text-[#ef4444]">{contributionData.maxCount}</span>
           </div>
         </div>
-        <button
-          onClick={handleSync}
-          disabled={isSyncing}
-          className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-400 hover:text-[#ef4444] hover:bg-[#ef4444]/10 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-transparent hover:border-[#ef4444]/30"
-          title="Sync contributions from GitHub"
-        >
-          <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
-          {isSyncing ? 'Syncing...' : 'Sync'}
-        </button>
+        <div className="flex items-center gap-2">
+          {onShareClick && (
+            <button
+              onClick={onShareClick}
+              className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-400 hover:text-[#ef4444] hover:bg-[#ef4444]/10 rounded transition-colors border border-transparent hover:border-[#ef4444]/30"
+              title="Share profile"
+            >
+              <Share2 className="w-3 h-3" />
+              Share
+            </button>
+          )}
+          <button
+            onClick={handleSync}
+            disabled={isSyncing}
+            className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-400 hover:text-[#ef4444] hover:bg-[#ef4444]/10 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-transparent hover:border-[#ef4444]/30"
+            title="Sync contributions from GitHub"
+          >
+            <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+            {isSyncing ? 'Syncing...' : 'Sync'}
+          </button>
+        </div>
       </div>
 
       {/* Graph */}
