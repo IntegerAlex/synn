@@ -5,8 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { GitHubContributionGraph } from '@/components/profile/GitHubContributionGraph';
-import { Flame, Mail, Calendar, Skull, HelpCircle, Code } from 'lucide-react';
-import Link from 'next/link';
+import { Flame, Mail, Calendar, Skull, HelpCircle } from 'lucide-react';
 
 export default function ProfilePage() {
   const { user, isLoaded } = useUser();
@@ -109,17 +108,6 @@ export default function ProfilePage() {
       <Header />
       
       <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl relative z-10">
-        {/* Navigation Button */}
-        <div className="mb-4">
-          <Link
-            href="/app"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-400 hover:text-[#ef4444] hover:bg-[#21262d] rounded-lg border border-[#30363d] hover:border-[#ef4444]/30 transition-colors"
-          >
-            <Code className="w-4 h-4" />
-            <span>Back to App</span>
-          </Link>
-        </div>
-
         <div className="grid gap-6 lg:grid-cols-[2fr_1fr] items-stretch">
           <div className="flex flex-col gap-6 h-full">
             {/* Profile Header */}

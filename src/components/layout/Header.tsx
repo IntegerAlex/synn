@@ -3,11 +3,17 @@
 import { useAppStore } from '@/store/useAppStore';
 import Link from 'next/link';
 import Image from 'next/image';
-import { User } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { User, ChevronLeft } from 'lucide-react';
 
 export function Header() {
     const repoInfo = useAppStore((state) => state.repoInfo);
     const closeRepo = useAppStore((state) => state.closeRepo);
+    const pathname = usePathname();
+    
+    // Hide repo info on profile page
+    const isProfilePage = pathname === '/profile';
+    const showRepoInfo = repoInfo && !isProfilePage;
 
     return (
         <header className="h-12 bg-[#161b22] border-b border-[#30363d] flex items-center justify-between px-4">
@@ -25,7 +31,7 @@ export function Header() {
                         Synn
                     </span> */}
                 </Link>
-                {repoInfo && (
+                {showRepoInfo && (
                     <div className="flex items-center gap-2 text-sm">
                         <span className="text-gray-400">{repoInfo.name}</span>
                         <span className="px-2 py-0.5 bg-[#21262d] rounded text-xs text-[#ef4444]">
@@ -40,20 +46,34 @@ export function Header() {
 
             {/* Right: Actions */}
             <div className="flex items-center gap-3">
-                {/* Profile link */}
-                <Link
-                    href="/profile"
-                    className="p-2 text-gray-400 hover:text-white hover:bg-[#21262d] rounded transition-colors"
-                    title="Profile"
-                >
-                    <User className="w-4 h-4" />
-                </Link>
+                {/* Back to App button - show on profile page */}
+                {isProfilePage && (
+                    <Link
+                        href="/app"
+                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-[#21262d] rounded-lg border border-[#30363d] hover:border-[#ef4444]/50 bg-[#0d1117]/50 backdrop-blur-sm transition-all duration-200 hover:shadow-lg hover:shadow-[#ef4444]/10 group"
+                    >
+                        <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+                        <span>Back to App</span>
+                    </Link>
+                )}
+                
+                {/* Profile link - hide on profile page */}
+                {!isProfilePage && (
+                    <Link
+                        href="/profile"
+                        className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-[#21262d] rounded-lg border border-[#30363d] hover:border-[#ef4444]/50 bg-[#0d1117]/50 backdrop-blur-sm transition-all duration-200 hover:shadow-lg hover:shadow-[#ef4444]/10 group"
+                        title="View Profile"
+                    >
+                        <User className="w-4 h-4 transition-transform group-hover:scale-110" />
+                        <span>Profile</span>
+                    </Link>
+                )}
                 
                 {/* Close repo button */}
-                {repoInfo && (
+                {showRepoInfo && (
                     <button
                         onClick={() => closeRepo()}
-                        className="px-3 py-1 text-xs text-gray-400 hover:text-white hover:bg-[#21262d] rounded transition-colors"
+                        className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-[#21262d] rounded-lg border border-[#30363d] hover:border-[#ef4444]/50 bg-[#0d1117]/50 backdrop-blur-sm transition-all duration-200 hover:shadow-lg hover:shadow-[#ef4444]/10"
                     >
                         Close Repo
                     </button>
