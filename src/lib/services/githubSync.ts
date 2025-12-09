@@ -1,6 +1,7 @@
 import { db } from '@/db';
 import { reposTable, usersTable } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { encryptToken } from './tokenEncryption';
 
 interface GitHubRepo {
   id: number;
@@ -148,8 +149,11 @@ export async function syncUserRepos(userId: number, accessToken: string): Promis
 /**
  * Ensures a user exists in the database, creating them if needed
  * This is useful when the webhook hasn't fired yet or failed
+ * @param clerkUserId - Clerk user ID
+ * @param accessToken - GitHub OAuth access token (will be encrypted before storage)
+ * @returns The database user ID
  */
-async function ensureUserExists(
+export async function ensureUserExists(
   clerkUserId: string,
   accessToken: string
 ): Promise<number> {
@@ -173,10 +177,13 @@ async function ensureUserExists(
   });
 
   if (!githubUserResponse.ok) {
-    throw new Error('Failed to fetch GitHub user data');
+    throw new Error(`Failed to fetch GitHub user data: ${githubUserResponse.statusText}`);
   }
 
   const githubUser = await githubUserResponse.json();
+
+  // Encrypt token before storing
+  const encryptedAccessToken = encryptToken(accessToken);
 
   // Create user in database
   const newUser = await db
@@ -187,11 +194,13 @@ async function ensureUserExists(
       email: githubUser.email,
       githubId: githubUser.id,
       githubUsername: githubUser.login,
-      githubAccessToken: accessToken,
+      githubAccessToken: encryptedAccessToken,
       oauthMetadata: {
         provider: 'github',
         providerAccountId: githubUser.id.toString(),
       },
+      createdAt: new Date(),
+      updatedAt: new Date(),
     })
     .returning();
 
