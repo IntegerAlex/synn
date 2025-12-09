@@ -14,8 +14,8 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@azure/openai": "^2.0.0",
     "@azure/core-auth": "^1.7.2",
+    "@azure/openai": "^2.0.0",
     "@clerk/nextjs": "^6.36.0",
     "@neondatabase/serverless": "^1.0.2",
     "@radix-ui/react-slot": "^1.2.4",
@@ -31,6 +31,8 @@
     "fingerprint-oss": "^0.9.0",
     "framer-motion": "^12.23.25",
     "gsap": "^3.13.0",
+    "html-to-image": "^1.11.13",
+    "jspdf": "^3.0.4",
     "lucide-react": "^0.556.0",
     "next": "16.0.7",
     "pg": "^8.16.3",

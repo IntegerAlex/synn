@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState, useEffect } from 'react';
 import { TrendingUp, RefreshCw, HelpCircle, Share2 } from 'lucide-react';
+import { SharePopover } from './SharePopover';
 
 interface ContributionDay {
   date: string;
@@ -70,12 +71,14 @@ interface ContributionsResponse {
 
 interface GitHubContributionGraphProps {
   onShareClick?: () => void;
+  profileContentRef?: React.RefObject<HTMLDivElement | null>;
 }
 
-export function GitHubContributionGraph({ onShareClick }: GitHubContributionGraphProps) {
+export function GitHubContributionGraph({ onShareClick, profileContentRef }: GitHubContributionGraphProps) {
   const [hoveredDay, setHoveredDay] = useState<ContributionDay | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [isSyncing, setIsSyncing] = useState(false);
+  const [showSharePopover, setShowSharePopover] = useState(false);
 
   // Fetch contributions from database
   const { data: contributionsData, isLoading, refetch } = useQuery<ContributionsResponse>({
@@ -311,16 +314,22 @@ export function GitHubContributionGraph({ onShareClick }: GitHubContributionGrap
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {onShareClick && (
+          <div className="relative">
             <button
-              onClick={onShareClick}
+              onClick={() => setShowSharePopover(!showSharePopover)}
               className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-400 hover:text-[#ef4444] hover:bg-[#ef4444]/10 rounded transition-colors border border-transparent hover:border-[#ef4444]/30"
               title="Share profile"
             >
               <Share2 className="w-3 h-3" />
               Share
             </button>
-          )}
+            {showSharePopover && (
+              <SharePopover
+                profileContentRef={profileContentRef}
+                onClose={() => setShowSharePopover(false)}
+              />
+            )}
+          </div>
           <button
             onClick={handleSync}
             disabled={isSyncing}

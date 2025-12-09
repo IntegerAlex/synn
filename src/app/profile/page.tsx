@@ -5,13 +5,11 @@ import { useQuery } from '@tanstack/react-query';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { GitHubContributionGraph } from '@/components/profile/GitHubContributionGraph';
-import { ShareModal } from '@/components/profile/ShareModal';
 import { Flame, Mail, Calendar, Skull, HelpCircle } from 'lucide-react';
 import { useState, useRef } from 'react';
 
 export default function ProfilePage() {
   const { user, isLoaded } = useUser();
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const profileContentRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -210,7 +208,7 @@ export default function ProfilePage() {
               <p className="text-gray-400 text-sm mb-6">
                 Your transgressions across all repositories over the past year
               </p>
-              <GitHubContributionGraph onShareClick={() => setIsShareModalOpen(true)} />
+              <GitHubContributionGraph profileContentRef={profileContentRef} />
             </div>
           </div>
 
@@ -245,15 +243,6 @@ export default function ProfilePage() {
       </main>
 
       <Footer />
-
-      {/* Share Modal */}
-      <ShareModal
-        isOpen={isShareModalOpen}
-        onClose={() => setIsShareModalOpen(false)}
-        contributionsData={contributionsData}
-        roastData={roastData}
-        profileContentRef={profileContentRef}
-      />
     </div>
   );
 }
