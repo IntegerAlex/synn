@@ -207,11 +207,11 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Satan's Thoughts */}
+          {/* My Thoughts */}
           <div className="bg-[#161b22] border border-[#30363d] rounded-lg p-6 h-full flex flex-col">
             <div className="flex items-center gap-2 mb-3">
               <Flame className="w-4 h-4 text-[#ef4444]" />
-              <h3 className="text-lg font-semibold text-white">Satan's Thoughts</h3>
+              <h3 className="text-lg font-semibold text-white">I know what you've done</h3>
             </div>
 
             {roastLoading && (
@@ -219,12 +219,12 @@ export default function ProfilePage() {
             )}
 
             {roastError && (
-              <div className="text-red-400 text-sm">Failed to summon the roast.</div>
+              <div className="text-red-400 text-sm">Failed to summon my thoughts.</div>
             )}
 
             {!roastLoading && !roastError && roastData?.needsSync && (
               <div className="text-gray-400 text-sm">
-                Sync your contributions first. Satan awaits fresh sins.
+                Sync your contributions first. I await fresh sins.
               </div>
             )}
 
