@@ -493,7 +493,10 @@ export async function syncContributions(options: SyncOptions): Promise<{
           continue;
         }
 
-        const githubService = new GitHubApiService(githubToken, repo.fullName, repo.defaultBranch || 'main');
+        const githubService = new GitHubApiService(githubToken, repo.fullName, repo.defaultBranch || 'main', {
+          userId,
+          clerkUserId,
+        });
         const commitCount = await syncRepoCommits(userId, repo.id, githubService);
         totalCommits += commitCount;
         reposSynced++;

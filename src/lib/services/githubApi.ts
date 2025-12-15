@@ -9,6 +9,7 @@ import type {
   GraphEdge,
   FileChange,
 } from '@/types/git';
+import { recordGitHubUsage } from '@/lib/services/githubUsage';
 
 // Color palette for branch visualization
 const BRANCH_COLORS = [
@@ -89,13 +90,20 @@ export class GitHubApiService {
   private owner: string;
   private repo: string;
   private defaultBranch: string = 'main';
+  private clerkUserId?: string;
+  private userId?: number;
   private lastRateLimitInfo: {
     remaining: number | null;
     limit: number | null;
     reset: number | null;
   } = { remaining: null, limit: null, reset: null };
 
-  constructor(accessToken: string, repoFullName: string, defaultBranch?: string) {
+  constructor(
+    accessToken: string,
+    repoFullName: string,
+    defaultBranch?: string,
+    options?: { clerkUserId?: string; userId?: number }
+  ) {
     if (!accessToken) {
       throw new Error('GitHub access token is required');
     }
@@ -116,6 +124,22 @@ export class GitHubApiService {
     if (defaultBranch) {
       this.defaultBranch = defaultBranch;
     }
+    this.clerkUserId = options?.clerkUserId;
+    this.userId = options?.userId;
+  }
+
+  private async trackUsage(endpoint: string, statusCode: number) {
+    try {
+      await recordGitHubUsage({
+        clerkUserId: this.clerkUserId,
+        userId: this.userId,
+        endpoint,
+        statusCode,
+      });
+    } catch (err) {
+      // Do not block GitHub calls on usage tracking failures
+      console.warn('Failed to record GitHub usage', err);
+    }
   }
 
   private async fetchGitHub<T>(endpoint: string): Promise<T> {
@@ -127,6 +151,9 @@ export class GitHubApiService {
         'X-GitHub-Api-Version': '2022-11-28',
       },
     });
+
+    // Record usage for this endpoint
+    await this.trackUsage(endpoint || '/', response.status);
 
     // Always track rate limit info
     const rateLimitRemaining = response.headers.get('x-ratelimit-remaining');
@@ -256,8 +283,8 @@ export class GitHubApiService {
       
       // Fetch all pages needed to get the requested limit
       for (let page = 1; page <= totalPages && allCommits.length < limit; page++) {
-        const url = `https://api.github.com/repos/${this.repoFullName}/commits?sha=${sha}&per_page=${perPage}&page=${page}`;
-        const response = await fetch(url, {
+      const url = `https://api.github.com/repos/${this.repoFullName}/commits?sha=${sha}&per_page=${perPage}&page=${page}`;
+      const response = await fetch(url, {
           headers: {
             Authorization: `Bearer ${this.accessToken}`,
             Accept: 'application/vnd.github.v3+json',
@@ -275,6 +302,9 @@ export class GitHubApiService {
           limit: rateLimitLimit ? parseInt(rateLimitLimit) : null,
           reset: rateLimitReset ? parseInt(rateLimitReset) : null,
         };
+
+      // Track usage for commits endpoint (paginated)
+      await this.trackUsage('/commits', response.status);
 
         if (!response.ok) {
           if (response.status === 404) {
@@ -559,6 +589,8 @@ export class GitHubApiService {
         },
       }
     );
+
+    await this.trackUsage('/search/commits', response.status);
 
     if (!response.ok) {
       return { query, results: [], totalCount: 0 };

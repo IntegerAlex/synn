@@ -26,7 +26,9 @@ export async function POST(req: Request) {
 
     try {
         // Initialize GitHub API service to verify access
-        const githubService = new GitHubApiService(token, repo_full_name, default_branch);
+        const githubService = new GitHubApiService(token, repo_full_name, default_branch, {
+            clerkUserId: userId,
+        });
         const repoInfo = await githubService.getRepoInfo();
 
         // Return repo info instead of local path

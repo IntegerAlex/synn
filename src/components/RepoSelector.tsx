@@ -122,7 +122,7 @@ export function RepoSelector() {
             if (!res.ok) {
                 throw new Error('Failed to fetch repositories');
             }
-            const data = await res.json();
+                const data = await res.json();
             return Array.isArray(data) ? data : [];
         },
         enabled: isLoaded && isSignedIn,

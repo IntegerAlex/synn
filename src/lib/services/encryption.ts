@@ -125,7 +125,7 @@ export function decryptData(encryptedPackage: string, privateKeyPem: string): st
     
     return decryptedData;
   } catch (error) {
-    console.error('Decryption failed:', error);
+    // Downstream callers often want best-effort; rethrow to let them handle
     throw new Error('Failed to decrypt data. Invalid key or corrupted data.');
   }
 }

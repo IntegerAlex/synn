@@ -2,15 +2,11 @@
 
 import { QueryProvider } from '@/components/providers/QueryProvider';
 
-export default function AdminLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <QueryProvider>
-      {children}
-    </QueryProvider>
-  );
+  return <QueryProvider>{children}</QueryProvider>;
 }
 

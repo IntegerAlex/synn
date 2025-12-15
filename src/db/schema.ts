@@ -165,6 +165,26 @@ export const apiRequestsTable = pgTable("api_requests", {
   createdAtIdx: index("api_requests_created_at_idx").on(table.createdAt),
 }));
 
+// GitHub API usage table - aggregates per-user GitHub API usage by endpoint and day
+export const githubApiUsageTable = pgTable("github_api_usage", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  // User identifiers (Clerk ID preferred; userId optional if available)
+  clerkUserId: varchar({ length: 255 }),
+  userId: integer().references(() => usersTable.id, { onDelete: "set null" }),
+  // Endpoint and status
+  endpoint: varchar({ length: 255 }).notNull(),
+  statusCode: integer(),
+  // Daily bucket (UTC date)
+  bucketDate: timestamp().defaultNow().notNull(),
+  // Usage counters
+  count: integer().default(1).notNull(),
+  lastSeenAt: timestamp().defaultNow().notNull(),
+}, (table) => ({
+  usageBucketIdx: index("github_api_usage_bucket_idx").on(table.clerkUserId, table.endpoint, table.bucketDate),
+  endpointIdx: index("github_api_usage_endpoint_idx").on(table.endpoint),
+  userIdx: index("github_api_usage_user_idx").on(table.userId),
+}));
+
 // Commits table - stores individual commits for contribution tracking
 export const commitsTable = pgTable("commits", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),

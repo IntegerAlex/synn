@@ -28,6 +28,8 @@ export async function getGitHubService(
     throw new Error('No GitHub token found. Please reconnect your GitHub account.');
   }
 
-  return new GitHubApiService(token, repoFullName, defaultBranch);
+  return new GitHubApiService(token, repoFullName, defaultBranch, {
+    clerkUserId: userId,
+  });
 }
 
