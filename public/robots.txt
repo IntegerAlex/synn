@@ -1,5 +1,11 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://synn.gossorg.in/sitemap.xml
+# Block internal/admin and API routes
+Disallow: /dashboard
+Disallow: /dashboard/
+Disallow: /dashboard/*
+Disallow: /api/
+Disallow: /api/*
 
+Sitemap: https://synn.gossorg.in/sitemap.xml

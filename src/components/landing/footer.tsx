@@ -52,6 +52,12 @@ export function Footer() {
                                     >
                                         Terms of Service
                                     </Link>
+                                    <Link
+                                        href="/roadmap"
+                                        className="text-sm text-muted-foreground hover:text-primary transition-colors duration-200 hover:translate-x-1 inline-block w-fit"
+                                    >
+                                        Roadmap
+                                    </Link>
                                 </div>
                             </div>
                         </div>
