@@ -26,10 +26,10 @@ const securityHeaders = [
     key: 'Referrer-Policy',
     value: 'strict-origin-when-cross-origin'
   },
-  // Permissions policy
+  // Permissions policy (removed speaker to avoid warning)
   {
     key: 'Permissions-Policy',
-    value: 'camera=(), microphone=(), geolocation=(), gyroscope=(), speaker=(), payment=()'
+    value: 'camera=(), microphone=(), geolocation=(), gyroscope=(), payment=()'
   },
   // HSTS (HTTP Strict Transport Security) - only enable in production
   ...(process.env.NODE_ENV === 'production' ? [{
@@ -41,15 +41,16 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.com https://*.clerk.accounts.dev",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https:",
       "font-src 'self'",
-      "connect-src 'self'",
+      "connect-src 'self' https://*.clerk.com https://*.clerk.accounts.dev https://fingerprint-proxy.gossorg.in",
       "frame-src 'none'",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
+      "worker-src 'self' blob:"
     ].join('; ')
   },
 ];
