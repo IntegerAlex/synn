@@ -2,17 +2,14 @@ import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from './schema';
-
-// Ensure DATABASE_URL is set
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL environment variable is not set');
-}
+import { env } from '@/lib/env';
 
 // Create connection pool
 // Note: Make sure your DATABASE_URL includes the database name 'synn'
 // Format: postgresql://user:password@host:port/synn?sslmode=require
+// DATABASE_URL is validated at startup via env.ts
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL!,
+  connectionString: env.DATABASE_URL,
 });
 
 // Initialize Drizzle with the pool and schema

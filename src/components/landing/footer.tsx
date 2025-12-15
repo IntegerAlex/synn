@@ -18,6 +18,7 @@ export function Footer() {
                                     alt="Synn Logo"
                                     width={100}
                                     height={38}
+                                    sizes="100px"
                                     className="drop-shadow-lg"
                                 />
                             </div>

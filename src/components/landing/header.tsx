@@ -37,6 +37,7 @@ export function Header() {
                                 alt="Synn Logo"
                                 width={84}
                                 height={84}
+                                sizes="84px"
                                 className="transition-transform duration-300 group-hover:scale-110 drop-shadow-lg"
                                 priority
                             />

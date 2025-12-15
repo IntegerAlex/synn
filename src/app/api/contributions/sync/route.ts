@@ -4,6 +4,7 @@ import { syncContributions } from '@/lib/services/contributionSync';
 import { db } from '@/db';
 import { usersTable } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { logger } from '@/lib/utils/logger';
 
 // Track ongoing syncs to prevent duplicate syncs for the same user
 const ongoingSyncs = new Map<string, Promise<void>>();
@@ -52,14 +53,14 @@ export async function POST(request: Request) {
     // Start sync in background - don't await, let it run independently
     const syncPromise = (async () => {
       try {
-        console.log(`[Sync] Starting background sync for user ${clerkUserId}`);
+        logger.info('Starting background sync for user', { clerkUserId });
         const result = await syncContributions({
           userId: user[0].id,
           clerkUserId,
           githubToken: token,
           repoFullName,
         });
-        console.log(`[Sync] Completed for user ${clerkUserId}: ${result.reposSynced} repos, ${result.totalCommits} commits`);
+        logger.info('Completed sync for user', { clerkUserId, reposSynced: result.reposSynced, totalCommits: result.totalCommits });
       } catch (error: any) {
         console.error(`[Sync] Error for user ${clerkUserId}:`, error.message);
       } finally {

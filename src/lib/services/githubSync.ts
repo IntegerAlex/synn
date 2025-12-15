@@ -2,6 +2,7 @@ import { db } from '@/db';
 import { reposTable, usersTable } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { encryptToken } from './tokenEncryption';
+import { logger } from '@/lib/utils/logger';
 
 interface GitHubRepo {
   id: number;
@@ -195,7 +196,7 @@ export async function ensureUserExists(
 
   if (existingUserByGithubId.length > 0) {
     // User exists with same GitHub ID but different Clerk ID - update the record
-    console.log(`Updating existing user with githubId ${githubUser.id} to use clerkUserId ${clerkUserId}`);
+    logger.info('Updating existing user to use new clerkUserId', { githubId: githubUser.id, clerkUserId });
     
     try {
       await db

@@ -4,12 +4,36 @@ import { syncReposByClerkUserId } from '@/lib/services/githubSync';
 import { db } from '@/db';
 import { usersTable, reposTable } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { githubRateLimiter } from '@/lib/rateLimit';
 
 export async function GET() {
     const { userId } = await auth();
 
     if (!userId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Rate limiting check for GitHub API calls
+    const rateLimitResult = githubRateLimiter.check(`github:repos:${userId}`);
+
+    if (!rateLimitResult.success) {
+        return NextResponse.json(
+            {
+                error: {
+                    code: 'RATE_LIMIT_EXCEEDED',
+                    message: 'GitHub API rate limit exceeded. Please try again later.'
+                }
+            },
+            {
+                status: 429,
+                headers: {
+                    'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+                    'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+                    'X-RateLimit-Reset': new Date(rateLimitResult.reset).toISOString(),
+                    'Retry-After': Math.ceil((rateLimitResult.reset - Date.now()) / 1000).toString(),
+                },
+            }
+        );
     }
 
     // Retrieve the OAuth Access Token

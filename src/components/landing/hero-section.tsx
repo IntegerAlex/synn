@@ -127,6 +127,7 @@ export function HeroSection() {
                             alt="Synn Logo"
                             width={280}
                             height={280}
+                            sizes="(max-width: 768px) 200px, 280px"
                             className="drop-shadow-2xl"
                             priority
                         />

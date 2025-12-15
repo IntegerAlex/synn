@@ -7,6 +7,7 @@ import { GraphRenderer, createPanZoomHandler, type ViewportState } from '@/lib/g
 import { CommitTooltip } from './CommitTooltip';
 import { CommitActivityChart } from './CommitActivityChart';
 import type { GraphNode } from '@/types/git';
+import { logger } from '@/lib/utils/logger';
 
 export function CanvasGraph() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -56,7 +57,7 @@ export function CanvasGraph() {
 
         // Create renderer
         rendererRef.current = new GraphRenderer(canvas, { isDark });
-        console.log('[CanvasGraph] Created renderer:', width, 'x', height);
+        logger.debug('Created renderer', { width, height });
 
         const initialViewport: ViewportState = {
             x: 0,
@@ -121,14 +122,14 @@ export function CanvasGraph() {
         if (lastDataKeyRef.current === dataKey) return;
         lastDataKeyRef.current = dataKey;
 
-        console.log('[CanvasGraph] Data changed:', graphData.nodes.length, 'nodes');
+        logger.debug('Data changed', { nodeCount: graphData.nodes.length });
 
         // Ensure renderer exists
         if (!rendererRef.current) {
             // Try to create it now
             if (!ensureRenderer()) {
                 // Store data for later processing
-                console.log('[CanvasGraph] Renderer not ready, storing data for later');
+                logger.debug('Renderer not ready, storing data for later');
                 pendingDataRef.current = { 
                     nodes: graphData.nodes, 
                     edges: graphData.edges,
@@ -143,7 +144,7 @@ export function CanvasGraph() {
         if (pendingDataRef.current) {
             const pending = pendingDataRef.current;
             pendingDataRef.current = null;
-            console.log('[CanvasGraph] Processing pending data:', pending.nodes.length, 'nodes');
+            logger.debug('Processing pending data', { nodeCount: pending.nodes.length });
             if (rendererRef.current) {
                 rendererRef.current.setLayout(
                     pending.nodes,
@@ -162,7 +163,7 @@ export function CanvasGraph() {
         }
 
         // Set layout
-        console.log('[CanvasGraph] Setting layout');
+        logger.debug('Setting layout');
         if (rendererRef.current) {
             rendererRef.current.setLayout(
                 graphData.nodes,

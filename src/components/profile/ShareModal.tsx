@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { X, Download, Image as ImageIcon, Linkedin, Twitter, MessageSquare, Circle } from 'lucide-react';
 import { useUser } from '@clerk/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 interface ShareModalProps {
   isOpen: boolean;
@@ -191,7 +192,7 @@ export function ShareModal({ isOpen, onClose, contributionsData, roastData, prof
         throw new Error('Wrapper has no dimensions');
       }
 
-      console.log('Capturing wrapper:', fullWidth, 'x', fullHeight);
+      logger.debug('Capturing wrapper', { fullWidth, fullHeight });
 
       // Ensure wrapper has enough space
       wrapper.style.width = `${fullWidth}px`;
@@ -220,7 +221,7 @@ export function ShareModal({ isOpen, onClose, contributionsData, roastData, prof
         throw new Error('Generated image appears to be empty');
       }
       
-      console.log('Image generated, length:', dataUrl.length);
+      logger.debug('Image generated', { length: dataUrl.length });
       
       const link = document.createElement('a');
       link.download = `synn-profile-${user?.username || 'user'}-${new Date().toISOString().split('T')[0]}.png`;

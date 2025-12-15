@@ -3,6 +3,7 @@ import { getGitHubService } from '@/lib/services/githubApiHelper';
 import { formatErrorResponse } from '@/lib/utils/errorHandler';
 import { logApiRequest, getClientIp, getUserAgent } from '@/lib/services/activityLogger';
 import { validateRepoAccess } from '@/lib/services/repoValidator';
+import { checkRateLimit } from '@/lib/rateLimit';
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@/db';
 import { usersTable, fingerprintsTable } from '@/db/schema';
@@ -13,7 +14,31 @@ export async function GET(request: NextRequest) {
     const startTime = Date.now();
     let userId: number | undefined;
     let fingerprintId: number | undefined;
-    
+
+    // Rate limiting check
+    const clientIp = getClientIp(request);
+    const rateLimitResult = checkRateLimit(`api:graph:${clientIp}`);
+
+    if (!rateLimitResult.success) {
+        return NextResponse.json(
+            {
+                error: {
+                    code: 'RATE_LIMIT_EXCEEDED',
+                    message: 'Too many requests. Please try again later.'
+                }
+            },
+            {
+                status: 429,
+                headers: {
+                    'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+                    'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+                    'X-RateLimit-Reset': new Date(rateLimitResult.reset).toISOString(),
+                    'Retry-After': Math.ceil((rateLimitResult.reset - Date.now()) / 1000).toString(),
+                },
+            }
+        );
+    }
+
     try {
         // Get user ID if authenticated
         const { userId: clerkUserId } = await auth();

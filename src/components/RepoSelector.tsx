@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
 import { useSetRepo } from '@/hooks/useGitData';
 import { useAppStore } from '@/store/useAppStore';
@@ -21,8 +22,6 @@ export function RepoSelector() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     // GitHub State
-    const [repos, setRepos] = useState<Repo[]>([]);
-    const [loadingRepos, setLoadingRepos] = useState(false);
     const [selectedRepo, setSelectedRepo] = useState('');
     const [downloading, setDownloading] = useState(false);
 
@@ -111,29 +110,25 @@ export function RepoSelector() {
         };
     }, []);
 
-    // Fetch repos when signed in
-    useEffect(() => {
-        if (isLoaded && isSignedIn) {
-            fetchRepos();
-        }
-    }, [isLoaded, isSignedIn]);
-
-    const fetchRepos = async () => {
-        setLoadingRepos(true);
-        try {
+    // Fetch repos using TanStack Query
+    const {
+        data: repos = [],
+        isLoading: loadingRepos,
+        error: reposError,
+    } = useQuery({
+        queryKey: ['repos'],
+        queryFn: async () => {
             const res = await fetch('/api/github/repos');
-            if (res.ok) {
-                const data = await res.json();
-                if (Array.isArray(data)) {
-                    setRepos(data);
-                }
+            if (!res.ok) {
+                throw new Error('Failed to fetch repositories');
             }
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoadingRepos(false);
-        }
-    };
+            const data = await res.json();
+            return Array.isArray(data) ? data : [];
+        },
+        enabled: isLoaded && isSignedIn,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        retry: 2,
+    });
 
     const handleGithubSubmit = async () => {
         if (!selectedRepo) return;

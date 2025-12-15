@@ -5,6 +5,7 @@ import { db } from '@/db';
 import { usersTable } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { ensureUserExists } from '@/lib/services/githubSync';
+import { logger } from '@/lib/utils/logger';
 
 export async function GET(request: Request) {
   try {
@@ -36,7 +37,7 @@ export async function GET(request: Request) {
 
     // If user doesn't exist, try to create them using GitHub token from Clerk
     if (user.length === 0) {
-      console.warn(`User not found in database for clerkUserId: ${clerkUserId}. Attempting to create user...`);
+      logger.warn('User not found in database, attempting to create user', { clerkUserId });
       
       try {
         // Get GitHub OAuth token from Clerk
@@ -45,7 +46,7 @@ export async function GET(request: Request) {
         const githubToken = tokenResponse.data[0]?.token;
 
         if (!githubToken) {
-          console.error(`GitHub token not found for clerkUserId: ${clerkUserId}`);
+          logger.error('GitHub token not found for user', { clerkUserId });
           return NextResponse.json(
             { error: 'User not found. Please ensure you have connected your GitHub account.' },
             { status: 404 }
@@ -63,16 +64,16 @@ export async function GET(request: Request) {
           .limit(1);
 
         if (user.length === 0) {
-          console.error(`Failed to retrieve user after creation for clerkUserId: ${clerkUserId}`);
+          logger.error('Failed to retrieve user after creation', { clerkUserId });
           return NextResponse.json(
             { error: 'User creation failed. Please try again.' },
             { status: 500 }
           );
         }
 
-        console.log(`Successfully created user for clerkUserId: ${clerkUserId}`);
+        logger.info('Successfully created user', { clerkUserId });
       } catch (createError: any) {
-        console.error(`Error creating user for clerkUserId: ${clerkUserId}:`, createError);
+        logger.error('Error creating user', { clerkUserId, error: createError });
         return NextResponse.json(
           { error: `User not found: ${createError.message || 'Failed to create user'}` },
           { status: 404 }
@@ -111,7 +112,7 @@ export async function GET(request: Request) {
       shouldSync, // Indicates if a sync is recommended
     });
   } catch (error: any) {
-    console.error('Error fetching contributions:', error);
+    logger.error('Error fetching contributions', { error });
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }

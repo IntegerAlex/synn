@@ -4,6 +4,8 @@ import { usersTable, activityLogsTable, apiRequestsTable, fingerprintsTable } fr
 import { eq } from 'drizzle-orm';
 import { decryptData } from '@/lib/services/encryption';
 import { requireAdmin } from '@/lib/utils/adminAuth';
+import { adminRateLimiter } from '@/lib/rateLimit';
+import { getClientIp } from '@/lib/services/activityLogger';
 import { z } from 'zod';
 
 const DecryptRequestSchema = z.object({
@@ -21,6 +23,30 @@ const DecryptRequestSchema = z.object({
  */
 export async function POST(request: Request) {
   try {
+    // Rate limiting check for admin endpoints
+    const clientIp = getClientIp(request);
+    const rateLimitResult = adminRateLimiter.check(`admin:decrypt:${clientIp}`);
+
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'RATE_LIMIT_EXCEEDED',
+            message: 'Admin endpoint rate limit exceeded. Please try again later.'
+          }
+        },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': new Date(rateLimitResult.reset).toISOString(),
+            'Retry-After': Math.ceil((rateLimitResult.reset - Date.now()) / 1000).toString(),
+          },
+        }
+      );
+    }
+
     // Verify admin access - throws if not admin
     const clerkUserId = await requireAdmin();
 

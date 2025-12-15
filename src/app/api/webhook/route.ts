@@ -7,8 +7,28 @@ import { eq } from 'drizzle-orm';
 import { clerkClient } from '@clerk/nextjs/server';
 import { syncUserRepos } from '@/lib/services/githubSync';
 import { encryptToken, encryptRefreshToken } from '@/lib/services/tokenEncryption';
+import { webhookRateLimiter } from '@/lib/rateLimit';
+import { logger } from '@/lib/utils/logger';
 
 export async function POST(req: Request) {
+  // Rate limiting check for webhook endpoint
+  const clientIp = req.headers.get('x-forwarded-for') ||
+                   req.headers.get('x-real-ip') ||
+                   'unknown';
+  const rateLimitResult = webhookRateLimiter.check(`webhook:${clientIp}`);
+
+  if (!rateLimitResult.success) {
+    return new Response('Webhook rate limit exceeded', {
+      status: 429,
+      headers: {
+        'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+        'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+        'X-RateLimit-Reset': new Date(rateLimitResult.reset).toISOString(),
+        'Retry-After': Math.ceil((rateLimitResult.reset - Date.now()) / 1000).toString(),
+      },
+    });
+  }
+
   // Get the Svix headers for verification
   const headerPayload = await headers();
   const svix_id = headerPayload.get('svix-id');
@@ -68,7 +88,7 @@ export async function POST(req: Request) {
       );
 
       if (!githubAccount) {
-        console.log(`No GitHub OAuth account found for user ${clerkUserId}`);
+        logger.info('No GitHub OAuth account found for user', { clerkUserId });
         return new Response('No GitHub account linked', { status: 200 });
       }
 
