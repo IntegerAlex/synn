@@ -4,6 +4,7 @@ import type {
     GraphData,
     CommitDetails,
     SearchResponse,
+    FileHistoryEntry,
 } from '@/types/git';
 
 const API_BASE = '/api/git';
@@ -81,11 +82,14 @@ export const gitApi = {
     },
 
     // Get graph
-    getGraph: async (repoInfo: RepoInfo | null, limit = 100): Promise<GraphData> => {
+    getGraph: async (repoInfo: RepoInfo | null, limit = 100, offset = 0): Promise<GraphData> => {
         const repoFullName = getRepoFullName(repoInfo);
-        const response = await fetch(`${API_BASE}/graph?repo=${encodeURIComponent(repoFullName)}&limit=${limit}`, {
+        const response = await fetch(
+            `${API_BASE}/graph?repo=${encodeURIComponent(repoFullName)}&limit=${limit}&offset=${offset}`,
+            {
             headers: getHeaders(),
-        });
+            }
+        );
         return handleResponse(response);
     },
 
@@ -118,6 +122,40 @@ export const gitApi = {
         const response = await fetch(`${API_BASE}/search?repo=${encodeURIComponent(repoFullName)}&q=${encodeURIComponent(query)}`, {
             headers: getHeaders(),
         });
+        return handleResponse(response);
+    },
+
+    // List files
+    getFiles: async (repoInfo: RepoInfo | null, ref?: string): Promise<string[]> => {
+        const repoFullName = getRepoFullName(repoInfo);
+        const response = await fetch(
+            `${API_BASE}/files?repo=${encodeURIComponent(repoFullName)}${
+                ref ? `&ref=${encodeURIComponent(ref)}` : ''
+            }`,
+            {
+            headers: getHeaders(),
+            }
+        );
+        return handleResponse(response);
+    },
+
+    // File history
+    getFileHistory: async (
+        repoInfo: RepoInfo | null,
+        filepath: string,
+        options?: { ref?: string; limit?: number }
+    ): Promise<FileHistoryEntry[]> => {
+        const repoFullName = getRepoFullName(repoInfo);
+        const ref = options?.ref;
+        const limit = options?.limit;
+        const response = await fetch(
+            `${API_BASE}/file-history?repo=${encodeURIComponent(repoFullName)}&filepath=${encodeURIComponent(filepath)}${
+                ref ? `&ref=${encodeURIComponent(ref)}` : ''
+            }${typeof limit === 'number' ? `&limit=${encodeURIComponent(String(limit))}` : ''}`,
+            {
+                headers: getHeaders(),
+            }
+        );
         return handleResponse(response);
     },
 };

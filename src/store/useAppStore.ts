@@ -12,6 +12,11 @@ export interface AppStoreState {
   sidebarCollapsed: boolean;
   sidebarWidth: number;
   detailsPanelWidth: number;
+  graphFilters: {
+    showMergeCommits: boolean;
+    showTags: boolean;
+    highlightedBranches: Set<string>;
+  };
 }
 
 export interface AppStoreActions {
@@ -24,6 +29,12 @@ export interface AppStoreActions {
   setSidebarWidth: (width: number) => void;
   setDetailsPanelWidth: (width: number) => void;
   resetLayout: () => void;
+  setShowMergeCommits: (show: boolean) => void;
+  toggleShowMergeCommits: () => void;
+  setShowTags: (show: boolean) => void;
+  toggleShowTags: () => void;
+  toggleBranchHighlight: (branch: string) => void;
+  clearBranchHighlights: () => void;
 }
 
 const initialState: AppStoreState = {
@@ -34,6 +45,11 @@ const initialState: AppStoreState = {
   sidebarCollapsed: false,
   sidebarWidth: 250,
   detailsPanelWidth: 400,
+  graphFilters: {
+    showMergeCommits: true,
+    showTags: true,
+    highlightedBranches: new Set<string>(),
+  },
 };
 
 export type AppStore = AppStoreState & AppStoreActions;
@@ -68,6 +84,36 @@ export const useAppStore = create<AppStore>()(
           sidebarWidth: initialState.sidebarWidth,
           detailsPanelWidth: initialState.detailsPanelWidth,
         }),
+      setShowMergeCommits: (show) =>
+        set((state) => ({
+          graphFilters: { ...state.graphFilters, showMergeCommits: show },
+        })),
+      toggleShowMergeCommits: () =>
+        set((state) => ({
+          graphFilters: {
+            ...state.graphFilters,
+            showMergeCommits: !state.graphFilters.showMergeCommits,
+          },
+        })),
+      setShowTags: (show) =>
+        set((state) => ({
+          graphFilters: { ...state.graphFilters, showTags: show },
+        })),
+      toggleShowTags: () =>
+        set((state) => ({
+          graphFilters: { ...state.graphFilters, showTags: !state.graphFilters.showTags },
+        })),
+      toggleBranchHighlight: (branch) =>
+        set((state) => {
+          const next = new Set(state.graphFilters.highlightedBranches);
+          if (next.has(branch)) next.delete(branch);
+          else next.add(branch);
+          return { graphFilters: { ...state.graphFilters, highlightedBranches: next } };
+        }),
+      clearBranchHighlights: () =>
+        set((state) => ({
+          graphFilters: { ...state.graphFilters, highlightedBranches: new Set<string>() },
+        })),
     }),
     {
       name: 'app-store',
@@ -87,7 +133,26 @@ export const useAppStore = create<AppStore>()(
         sidebarCollapsed: state.sidebarCollapsed,
         sidebarWidth: state.sidebarWidth,
         detailsPanelWidth: state.detailsPanelWidth,
+        graphFilters: {
+          showMergeCommits: state.graphFilters.showMergeCommits,
+          showTags: state.graphFilters.showTags,
+          highlightedBranches: Array.from(state.graphFilters.highlightedBranches),
+        },
       }),
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as any;
+        const merged = { ...currentState, ...persisted } as any;
+        if (persisted?.graphFilters) {
+          merged.graphFilters = {
+            ...currentState.graphFilters,
+            ...persisted.graphFilters,
+            highlightedBranches: new Set<string>(
+              persisted.graphFilters.highlightedBranches || []
+            ),
+          };
+        }
+        return merged;
+      },
     }
   )
 );

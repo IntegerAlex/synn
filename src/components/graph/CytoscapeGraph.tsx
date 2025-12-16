@@ -3,12 +3,40 @@
 import { useMemo, useCallback, useEffect, useRef, useState } from 'react';
 import CytoscapeComponent from 'react-cytoscapejs';
 import type cytoscape from 'cytoscape';
-import { ZoomIn, ZoomOut, Maximize2, RotateCcw } from 'lucide-react';
+import {
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  RotateCcw,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 import { useGraph } from '@/hooks/useGitData';
 import { useAppStore } from '@/store/useAppStore';
 import { CommitTooltip } from './CommitTooltip';
 import { CommitActivityChart } from './CommitActivityChart';
+import { GraphFilters } from './GraphFilters';
 import type { GraphNode, GraphData } from '@/types/git';
+
+function normalizeBranchLabel(branch: string): string {
+  return branch
+    .replace('HEAD -> ', '')
+    .replace('origin/', '')
+    .replace('remote/', '')
+    .replace('tag: ', '')
+    .trim();
+}
+
+function nodeMatchesHighlightedBranches(node: GraphNode, highlighted: Set<string>): boolean {
+  if (highlighted.size === 0) return false;
+  const refs = node.refs || [];
+  for (const ref of refs) {
+    if (ref.includes('tag:')) continue;
+    const label = normalizeBranchLabel(ref);
+    if (label && highlighted.has(label)) return true;
+  }
+  return false;
+}
 
 // GitLens-style color palette
 const BRANCH_COLORS = [
@@ -29,27 +57,61 @@ export function CytoscapeGraph() {
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [isHoveringNode, setIsHoveringNode] = useState(false);
+  const [activityCollapsed, setActivityCollapsed] = useState(false);
+  const [graphLimit, setGraphLimit] = useState(500);
 
   const selectedCommitHash = useAppStore((state) => state.selectedCommitHash);
   const setSelectedCommitHash = useAppStore((state) => state.setSelectedCommitHash);
   const theme = useAppStore((state) => state.theme);
-  const { data: graphData, isLoading, error, refetch } = useGraph(10000);
+  const showMergeCommits = useAppStore((state) => state.graphFilters.showMergeCommits);
+  const showTags = useAppStore((state) => state.graphFilters.showTags);
+  const highlightedBranches = useAppStore((state) => state.graphFilters.highlightedBranches);
+  const { data: graphData, isLoading, error, refetch, isFetching } = useGraph(graphLimit, 0);
 
   const isDark = useMemo(
     () => !['light', 'solarized-light'].includes(theme),
     [theme]
   );
 
+  const filteredGraphData = useMemo((): GraphData | null => {
+    if (!graphData) return null;
+
+    const isMergeNode = (n: GraphNode) => (n.parentHashes?.length ?? 0) > 1;
+    const isTagRef = (ref: string) => ref.includes('tag:');
+
+    const nodes = graphData.nodes
+      .filter((n) => (showMergeCommits ? true : !isMergeNode(n)))
+      .map((n) => ({
+        ...n,
+        refs: showTags ? n.refs : (n.refs || []).filter((r) => !isTagRef(r)),
+      }));
+
+    const allowed = new Set(nodes.map((n) => n.hash));
+    const edges = graphData.edges.filter((e) => {
+      if (!allowed.has(e.source) || !allowed.has(e.target)) return false;
+      if (!showMergeCommits && e.type === 'merge') return false;
+      return true;
+    });
+
+    return { ...graphData, nodes, edges };
+  }, [graphData, showMergeCommits, showTags]);
+
   // Convert graph data to Cytoscape format
   const elements = useMemo(() => {
-    if (!graphData || graphData.nodes.length === 0) return [];
+    if (!filteredGraphData || filteredGraphData.nodes.length === 0) return [];
 
     const laneWidth = 30;
     const rowHeight = 25;
     const paddingX = 50;
     const paddingY = 30;
 
-    const nodes = graphData.nodes.map((node) => ({
+    const dimMode = highlightedBranches.size > 0;
+    const nodeIsHighlighted = new Map<string, boolean>();
+
+    const nodes = filteredGraphData.nodes.map((node) => {
+      const isHighlighted = dimMode ? nodeMatchesHighlightedBranches(node, highlightedBranches) : false;
+      nodeIsHighlighted.set(node.hash, isHighlighted);
+      return {
       data: {
         id: node.hash,
         label: node.shortHash,
@@ -62,16 +124,19 @@ export function CytoscapeGraph() {
         row: node.row,
         refs: node.refs,
         color: node.color,
+        __dim: dimMode ? '1' : '0',
+        __highlight: isHighlighted ? '1' : '0',
       },
       position: {
         x: paddingX + node.column * laneWidth,
         y: paddingY + node.row * rowHeight,
       },
-    }));
+      };
+    });
 
-    const edges = graphData.edges.map((edge) => {
-      const sourceNode = graphData.nodes.find(n => n.hash === edge.source);
-      const targetNode = graphData.nodes.find(n => n.hash === edge.target);
+    const edges = filteredGraphData.edges.map((edge) => {
+      const sourceNode = filteredGraphData.nodes.find((n) => n.hash === edge.source);
+      const targetNode = filteredGraphData.nodes.find((n) => n.hash === edge.target);
       
       // Improved bezier curve control for merges
       let controlPointDistance = 0;
@@ -106,12 +171,17 @@ export function CytoscapeGraph() {
           targetColumn: edge.targetColumn,
           controlPointDistance,
           controlPointWeight,
+          __dim: dimMode ? '1' : '0',
+          __highlight:
+            dimMode && (nodeIsHighlighted.get(edge.source) || nodeIsHighlighted.get(edge.target))
+              ? '1'
+              : '0',
         },
       };
     });
 
     return [...nodes, ...edges];
-  }, [graphData]);
+  }, [filteredGraphData, highlightedBranches]);
 
   // Cytoscape stylesheet
   const stylesheet = useMemo(() => [
@@ -171,6 +241,20 @@ export function CytoscapeGraph() {
       },
     },
     {
+      selector: 'node[__dim = "1"][__highlight = "0"]',
+      style: {
+        'opacity': 0.18,
+      },
+    },
+    {
+      selector: 'node[__highlight = "1"]',
+      style: {
+        'opacity': 1,
+        'border-width': 3,
+        'border-color': '#8ab4ff',
+      },
+    },
+    {
       selector: 'edge',
       style: {
         'width': 2,
@@ -185,6 +269,19 @@ export function CytoscapeGraph() {
           return ele.data('controlPointWeight') || 0.5;
         },
         'opacity': 0.6,
+      },
+    },
+    {
+      selector: 'edge[__dim = "1"][__highlight = "0"]',
+      style: {
+        'opacity': 0.08,
+      },
+    },
+    {
+      selector: 'edge[__highlight = "1"]',
+      style: {
+        'opacity': 0.8,
+        'width': 2.5,
       },
     },
     {
@@ -211,7 +308,8 @@ export function CytoscapeGraph() {
     const node = evt.target;
     if (node.isNode() && graphData && cyRef.current) {
       const hash = node.data('hash');
-      const graphNode = graphData.nodes.find(n => n.hash === hash);
+      const source = filteredGraphData ?? graphData;
+      const graphNode = source.nodes.find((n) => n.hash === hash);
       if (graphNode) {
         setHoveredNode(graphNode);
         setIsHoveringNode(true);
@@ -228,7 +326,7 @@ export function CytoscapeGraph() {
         }
       }
     }
-  }, [graphData]);
+  }, [graphData, filteredGraphData]);
 
   const handleNodeMouseOut = useCallback(() => {
     setIsHoveringNode(false);
@@ -297,7 +395,8 @@ export function CytoscapeGraph() {
         branchEntries.push({ branch, hash });
       }
     } else {
-      graphData.nodes.forEach((node) => {
+      const source = filteredGraphData ?? graphData;
+      source.nodes.forEach((node) => {
         if (node.refs && node.refs.length > 0) {
           node.refs.forEach((branch) => {
             branchEntries.push({ branch, hash: node.hash });
@@ -336,7 +435,7 @@ export function CytoscapeGraph() {
       cyNode.data('branchLabel', newLabel);
       cyNode.data('branchLabelIsCurrent', currentFlag);
     });
-  }, [graphData]);
+  }, [graphData, filteredGraphData]);
 
   if (error) {
     return (
@@ -380,9 +479,27 @@ export function CytoscapeGraph() {
             {graphData.currentBranch}
           </span>
           <span className="text-gray-500">•</span>
-          <span className="text-gray-500">{graphData.nodes.length} commits</span>
+          <span className="text-gray-500">
+            {(filteredGraphData ?? graphData).nodes.length} commits
+          </span>
           <span className="text-gray-500">•</span>
           <span className="text-gray-500">{graphData.branches.length} branches</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {graphData.hasMore ? (
+            <button
+              type="button"
+              onClick={() => setGraphLimit((v) => Math.min(10000, v + 500))}
+              className="px-2 py-1 rounded-md text-xs border border-[#30363d] hover:bg-[#21262d] text-gray-200 transition-colors"
+              disabled={isFetching}
+              title="Load more commits"
+            >
+              {isFetching ? 'Loading…' : 'Load more'}
+            </button>
+          ) : (
+            <span className="text-xs text-gray-500">All loaded</span>
+          )}
+          <GraphFilters branches={graphData.branches} currentBranch={graphData.currentBranch} />
         </div>
       </div>
 
@@ -479,13 +596,30 @@ export function CytoscapeGraph() {
       </div>
 
       {/* Activity Chart */}
-      <div className="flex-none h-32 border-t border-[#30363d] bg-[#161b22]">
-        <div className="px-4 py-2 border-b border-[#30363d]">
+      <div
+        className={`flex-none border-t border-[#30363d] bg-[#161b22] transition-all duration-200 overflow-hidden ${
+          activityCollapsed ? 'h-10' : 'h-32'
+        }`}
+      >
+        <div className="px-4 py-2 border-b border-[#30363d] flex items-center justify-between">
           <span className="text-xs font-medium text-gray-400">Commit Activity</span>
+          <button
+            aria-label="Toggle commit activity"
+            className="p-1.5 rounded hover:bg-[#21262d] transition-colors"
+            onClick={() => setActivityCollapsed((prev) => !prev)}
+          >
+            {activityCollapsed ? (
+              <ChevronDown className="w-4 h-4 text-gray-400" />
+            ) : (
+              <ChevronUp className="w-4 h-4 text-gray-400" />
+            )}
+          </button>
         </div>
-        <div className="h-[calc(100%-28px)] p-2">
-          <CommitActivityChart nodes={graphData.nodes} />
-        </div>
+        {!activityCollapsed && (
+          <div className="h-[calc(100%-28px)] p-2 overflow-hidden min-h-0">
+            <CommitActivityChart nodes={(filteredGraphData ?? graphData).nodes} />
+          </div>
+        )}
       </div>
     </div>
   );

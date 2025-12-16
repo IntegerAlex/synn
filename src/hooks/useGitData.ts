@@ -6,10 +6,11 @@ import { useAppStore } from '@/store/useAppStore';
 export const queryKeys = {
     repo: ['repo'] as const,
     branches: ['branches'] as const,
-    graph: (limit: number) => ['graph', limit] as const,
+    graph: (limit: number, offset: number) => ['graph', limit, offset] as const,
     commits: (limit: number) => ['commits', limit] as const,
     commitDetails: (hash: string) => ['commitDetails', hash] as const,
     search: (query: string) => ['search', query] as const,
+    files: (ref?: string) => ['files', ref || 'HEAD'] as const,
 };
 
 // Repo info
@@ -49,12 +50,12 @@ export function useBranches() {
 }
 
 // Graph - simplified, TanStack Query v5 doesn't support onSuccess
-export function useGraph(limit = 100) {
+export function useGraph(limit = 100, offset = 0) {
     const repoInfo = useAppStore((state) => state.repoInfo);
 
     return useQuery({
-        queryKey: queryKeys.graph(limit),
-        queryFn: () => gitApi.getGraph(repoInfo, limit),
+        queryKey: queryKeys.graph(limit, offset),
+        queryFn: () => gitApi.getGraph(repoInfo, limit, offset),
         enabled: !!repoInfo,
         staleTime: 10000,
         placeholderData: (previousData) => previousData,
@@ -96,5 +97,17 @@ export function useSearch(query: string) {
         queryFn: () => gitApi.search(repoInfo, query),
         enabled: query.length > 0 && !!repoInfo,
         staleTime: 5000,
+    });
+}
+
+// Repo files
+export function useRepoFiles(ref?: string) {
+    const repoInfo = useAppStore((state) => state.repoInfo);
+
+    return useQuery({
+        queryKey: queryKeys.files(ref),
+        queryFn: () => gitApi.getFiles(repoInfo, ref),
+        enabled: !!repoInfo,
+        staleTime: 60_000,
     });
 }

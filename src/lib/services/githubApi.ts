@@ -274,6 +274,54 @@ export class GitHubApiService {
     };
   }
 
+  async getFiles(ref?: string): Promise<string[]> {
+    const branch = ref || this.defaultBranch;
+    // Fetch branch to get tree SHA
+    const branchInfo = await this.fetchGitHub<any>(
+      `/branches/${encodeURIComponent(branch)}`
+    );
+
+    const treeSha: string | undefined =
+      branchInfo?.commit?.commit?.tree?.sha || branchInfo?.commit?.sha;
+
+    if (!treeSha) return [];
+
+    const tree = await this.fetchGitHub<any>(`/git/trees/${treeSha}?recursive=1`);
+    const entries: Array<{ path: string; type: string }> = Array.isArray(tree?.tree)
+      ? tree.tree
+      : [];
+
+    return entries
+      .filter((e) => e.type === 'blob' && typeof e.path === 'string')
+      .map((e) => e.path)
+      .filter(Boolean);
+  }
+
+  async getFileHistory(
+    filePath: string,
+    ref?: string,
+    limit: number = 50
+  ): Promise<Array<{ hash: string; shortHash: string; author: { name: string; email: string }; date: string; message: string }>> {
+    const sha = ref || this.defaultBranch;
+    const perPage = Math.max(1, Math.min(100, limit));
+    const commits = await this.fetchGitHub<any[]>(
+      `/commits?sha=${encodeURIComponent(sha)}&path=${encodeURIComponent(filePath)}&per_page=${perPage}`
+    );
+
+    if (!Array.isArray(commits)) return [];
+
+    return commits.map((c: any) => ({
+      hash: c.sha,
+      shortHash: String(c.sha).substring(0, 7),
+      author: {
+        name: c?.commit?.author?.name || 'Unknown',
+        email: c?.commit?.author?.email || '',
+      },
+      date: c?.commit?.author?.date || '',
+      message: String(c?.commit?.message || '').split('\n')[0],
+    }));
+  }
+
   async getCommits(branch?: string, limit: number = 100): Promise<Commit[]> {
     try {
       const sha = branch || this.defaultBranch;
@@ -360,7 +408,7 @@ export class GitHubApiService {
     }
   }
 
-  async getGraph(limit: number = 100): Promise<GraphData> {
+  async getGraph(limit: number = 100, offset: number = 0): Promise<GraphData> {
     // Always respect repo's real default branch
     const repoInfo = await this.getRepoInfo();
     const actualDefaultBranch = repoInfo.currentBranch || this.defaultBranch;
@@ -368,6 +416,8 @@ export class GitHubApiService {
 
     const branches = await this.getBranches();
     const effectiveLimit = Math.min(Math.max(limit, 1), 10000);
+    const effectiveOffset = Math.max(0, offset);
+    const effectiveWindow = Math.min(Math.max(effectiveLimit + effectiveOffset, 1), 10000);
 
     // Prioritize default branch, then alphabetical for determinism
     const branchNames = branches.local
@@ -386,13 +436,13 @@ export class GitHubApiService {
     const branchCommitResults = await Promise.all(
       branchNames.map(async (branchName) => ({
         branchName,
-        commits: await this.getCommits(branchName, effectiveLimit),
+        commits: await this.getCommits(branchName, effectiveWindow),
       }))
     );
 
     // Preserve deterministic ordering by iterating in the same branch order.
     for (const { branchName, commits: branchCommits } of branchCommitResults) {
-      if (commitMap.size >= effectiveLimit) break;
+      if (commitMap.size >= effectiveWindow) break;
 
       for (const commit of branchCommits) {
         if (!commitMap.has(commit.hash)) {
@@ -402,14 +452,17 @@ export class GitHubApiService {
         refs.add(branchName);
         commitToBranches.set(commit.hash, refs);
 
-        if (commitMap.size >= effectiveLimit) break;
+        if (commitMap.size >= effectiveWindow) break;
       }
     }
 
-    // Sort newest → oldest and cap to effective limit
-    const commits = Array.from(commitMap.values())
+    // Sort newest → oldest and apply window (offset/limit)
+    const allCommits = Array.from(commitMap.values())
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, effectiveLimit);
+      .slice(0, effectiveWindow);
+
+    const commits = allCommits.slice(effectiveOffset, effectiveOffset + effectiveLimit);
+    const hasMore = commitMap.size >= effectiveWindow;
 
     // Handle empty repository case
     if (!commits || commits.length === 0) {
@@ -420,6 +473,9 @@ export class GitHubApiService {
         branches: branches.local.map((b) => b.name),
         currentBranch: actualDefaultBranch,
         branchHeads: Object.fromEntries(branches.local.map((b) => [b.name, b.commit])),
+        hasMore,
+        offset: effectiveOffset,
+        limit: effectiveLimit,
       };
     }
 
@@ -515,6 +571,9 @@ export class GitHubApiService {
       branches: branches.local.map((b) => b.name),
       currentBranch: actualDefaultBranch,
       branchHeads: Object.fromEntries(branches.local.map((b) => [b.name, b.commit])),
+      hasMore,
+      offset: effectiveOffset,
+      limit: effectiveLimit,
     };
   }
 

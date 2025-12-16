@@ -78,6 +78,7 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const repoFullName = searchParams.get('repo');
         const limit = parseInt(searchParams.get('limit') || '100', 10);
+        const offset = parseInt(searchParams.get('offset') || '0', 10);
         
         if (!repoFullName) {
             const responseTime = Date.now() - startTime;
@@ -127,7 +128,9 @@ export async function GET(request: NextRequest) {
         }
 
         const githubService = await getGitHubService(repoFullName);
-        const graph = await githubService.getGraph(Math.min(Math.max(limit, 1), 10000));
+        const safeLimit = Math.min(Math.max(limit, 1), 10000);
+        const safeOffset = Math.max(0, Number.isFinite(offset) ? offset : 0);
+        const graph = await githubService.getGraph(safeLimit, safeOffset);
         
         const responseTime = Date.now() - startTime;
         await logApiRequest({
@@ -141,6 +144,7 @@ export async function GET(request: NextRequest) {
             metadata: { 
                 repoFullName,
                 limit,
+                offset,
                 nodesCount: graph.nodes.length,
                 edgesCount: graph.edges.length,
             },

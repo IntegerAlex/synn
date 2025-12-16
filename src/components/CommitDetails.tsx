@@ -1,15 +1,32 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { useCommitDetails } from '@/hooks/useGitData';
 import { useAppStore } from '@/store/useAppStore';
+import { CollapsibleSection } from '@/components/ui/CollapsibleSection';
+import { highlightUnifiedDiffLines } from '@/lib/utils/diffHighlighter';
+import { Toast } from '@/components/ui/Toast';
+import { Copy, ExternalLink } from 'lucide-react';
+import { CommitFileTree } from '@/components/CommitDetails/FileTree';
+
+function getGitHubCommitUrl(repoPath: string | undefined | null, hash: string): string | null {
+    if (!repoPath) return null;
+    // GitHub mode uses repoFullName as RepoInfo.path (e.g. "owner/name")
+    if (/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repoPath)) {
+        return `https://github.com/${repoPath}/commit/${hash}`;
+    }
+    return null;
+}
 
 export function CommitDetails() {
     const selectedHash = useAppStore((state) => state.selectedCommitHash);
     const setSelectedCommitHash = useAppStore((state) => state.setSelectedCommitHash);
+    const repoInfo = useAppStore((state) => state.repoInfo);
     const { data: details, isLoading, error } = useCommitDetails(selectedHash);
     const [selectedFile, setSelectedFile] = useState<string | null>(null);
     const [showFullDiff, setShowFullDiff] = useState(false);
+    const [toast, setToast] = useState<string | null>(null);
+    const toastTimeoutRef = useRef<number | null>(null);
 
     // Parse diff by file
     const fileDiffs = useMemo(() => {
@@ -98,6 +115,36 @@ export function CommitDetails() {
         });
     }, []);
 
+    const showToast = useCallback((message: string) => {
+        setToast(message);
+        if (toastTimeoutRef.current) window.clearTimeout(toastTimeoutRef.current);
+        toastTimeoutRef.current = window.setTimeout(() => setToast(null), 2000);
+    }, []);
+
+    const copyToClipboard = useCallback(async (text: string, successMessage: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            showToast(successMessage);
+        } catch {
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                ta.style.top = '-9999px';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                const ok = document.execCommand('copy');
+                document.body.removeChild(ta);
+                if (ok) showToast(successMessage);
+                else showToast('Copy failed');
+            } catch {
+                showToast('Copy failed');
+            }
+        }
+    }, [showToast]);
+
     if (!selectedHash) {
         return (
             <aside className="w-80 h-full bg-[#161b22] border-l border-[#30363d] flex flex-col">
@@ -129,7 +176,7 @@ export function CommitDetails() {
     }
 
     return (
-        <aside className="w-80 h-full bg-[#161b22] border-l border-[#30363d] flex flex-col">
+        <aside className="w-80 h-full bg-[#161b22] border-l border-[#30363d] flex flex-col relative">
             {/* Header */}
             <div className="px-4 py-3 border-b border-[#30363d] flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-gray-200">Commit Details</h2>
@@ -149,72 +196,74 @@ export function CommitDetails() {
                         <span className="px-2 py-0.5 bg-[#21262d] rounded text-xs font-mono text-[#ef4444]">
                             {details.shortHash}
                         </span>
+                        <button
+                            type="button"
+                            onClick={() => copyToClipboard(details.hash, 'Copied commit hash')}
+                            className="p-1 rounded hover:bg-[#21262d] transition-colors"
+                            aria-label="Copy commit hash"
+                            title="Copy commit hash"
+                        >
+                            <Copy className="w-4 h-4 text-gray-400" />
+                        </button>
+                        {getGitHubCommitUrl(repoInfo?.path, details.hash) && (
+                            <a
+                                href={getGitHubCommitUrl(repoInfo?.path, details.hash)!}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="p-1 rounded hover:bg-[#21262d] transition-colors"
+                                aria-label="Open commit on GitHub"
+                                title="Open commit on GitHub"
+                            >
+                                <ExternalLink className="w-4 h-4 text-gray-400" />
+                            </a>
+                        )}
                     </div>
-                    <p className="text-sm text-gray-200 font-medium mb-2">{details.message}</p>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                        <p className="text-sm text-gray-200 font-medium">{details.message}</p>
+                        <button
+                            type="button"
+                            onClick={() => copyToClipboard(details.message, 'Copied commit message')}
+                            className="p-1 rounded hover:bg-[#21262d] transition-colors shrink-0"
+                            aria-label="Copy commit message"
+                            title="Copy commit message"
+                        >
+                            <Copy className="w-4 h-4 text-gray-400" />
+                        </button>
+                    </div>
                     {details.body && (
                         <p className="text-xs text-gray-400 whitespace-pre-wrap">{details.body}</p>
                     )}
                 </div>
 
-                {/* Author info */}
-                <div className="px-4 py-3 border-b border-[#30363d]">
-                    <div className="text-xs text-gray-500 mb-1">Author</div>
+                <CollapsibleSection title="Author">
                     <div className="text-sm text-gray-200">{details.author.name}</div>
                     <div className="text-xs text-gray-400">{details.author.email}</div>
                     <div className="text-xs text-gray-500 mt-1">
                         {new Date(details.date).toLocaleString()}
                     </div>
-                </div>
+                </CollapsibleSection>
 
-                {/* Stats */}
-                <div className="px-4 py-3 border-b border-[#30363d]">
-                    <div className="text-xs text-gray-500 mb-2">Changes</div>
+                <CollapsibleSection title="Changes">
                     <div className="flex items-center gap-4 text-sm">
                         <span className="text-[#3fb950]">+{details.stats.additions}</span>
                         <span className="text-[#f85149]">-{details.stats.deletions}</span>
                         <span className="text-gray-400">{details.stats.totalFiles} files</span>
                     </div>
-                </div>
+                </CollapsibleSection>
 
-                {/* Files */}
-                <div className="px-4 py-3 border-b border-[#30363d]">
-                    <div className="text-xs text-gray-500 mb-2">Files Changed</div>
-                    <div className="space-y-1">
-                        {details.files.map((file) => {
-                            const isSelected = selectedFile === file.path;
-                            return (
-                                <div
-                                    key={file.path}
-                                    className={`flex items-center gap-2 text-xs py-1 cursor-pointer rounded px-1 transition-colors ${
-                                        isSelected 
-                                            ? 'bg-[#1f6feb] text-white' 
-                                            : 'hover:bg-[#21262d]'
-                                    }`}
-                                    onClick={(e) => handleFileClick(file.path, e)}
-                                >
-                                    <span className={`w-1.5 h-1.5 rounded-full ${file.status === 'added' ? 'bg-[#3fb950]' :
-                                            file.status === 'deleted' ? 'bg-[#f85149]' :
-                                                'bg-[#d29922]'
-                                        }`} />
-                                    <span className={`truncate flex-1 ${isSelected ? 'text-white' : 'text-gray-300'}`}>
-                                        {file.path}
-                                    </span>
-                                    <span className={`ml-auto ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
-                                        +{file.additions} -{file.deletions}
-                                    </span>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
+                <CollapsibleSection title="Files Changed" defaultCollapsed={false}>
+                    <CommitFileTree
+                        files={details.files}
+                        selectedFile={selectedFile}
+                        onSelectFile={(path) => handleFileClick(path)}
+                    />
+                </CollapsibleSection>
 
                 {/* Diff */}
                 {displayDiff && (
-                    <div className="px-4 py-3">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="text-xs text-gray-500">
-                                {selectedFile ? `Diff: ${selectedFile.split('/').pop()}` : 'Diff'}
-                            </div>
+                    <CollapsibleSection
+                        title={selectedFile ? `Diff: ${selectedFile.split('/').pop()}` : 'Diff'}
+                        right={
                             <div className="flex items-center gap-2">
                                 {selectedFile && (
                                     <button
@@ -231,45 +280,48 @@ export function CommitDetails() {
                                     {showFullDiff ? 'Show Summary' : 'Show Full Diff'}
                                 </button>
                             </div>
-                        </div>
+                        }
+                    >
                         <div className="bg-[#0d1117] border border-[#30363d] rounded overflow-hidden">
                             <div className="text-xs font-mono p-3 overflow-x-auto max-h-[400px] overflow-y-auto leading-relaxed">
-                                {renderDiff(displayDiff, showFullDiff)}
+                                {renderDiff(displayDiff, showFullDiff, selectedFile ?? undefined)}
                             </div>
                         </div>
-                    </div>
+                    </CollapsibleSection>
                 )}
+            </div>
+
+            {/* Toast */}
+            <div className="pointer-events-none absolute bottom-4 left-4 right-4">
+                <Toast message={toast} onClose={() => setToast(null)} />
             </div>
         </aside>
     );
 }
 
-function renderDiff(diff: string, showFull: boolean): React.ReactNode {
+function renderDiff(diff: string, showFull: boolean, filePathHint?: string): React.ReactNode {
     if (!diff) return null;
 
     const lines = diff.split('\n');
     const displayLines = showFull ? lines : lines.slice(0, 50);
     const hasMore = !showFull && lines.length > 50;
 
+    const highlighted = highlightUnifiedDiffLines(displayLines.join('\n'), filePathHint);
+
     return (
         <>
-            {displayLines.map((line, idx) => {
-                const isAdded = line.startsWith('+') && !line.startsWith('+++');
-                const isRemoved = line.startsWith('-') && !line.startsWith('---');
-                const isHeader = line.startsWith('+++') || line.startsWith('---') || line.startsWith('@@');
-                
-                let className = 'text-gray-300';
-                if (isAdded) className = 'text-[#3fb950]';
-                else if (isRemoved) className = 'text-[#f85149]';
-                else if (isHeader) className = 'text-[#ef4444]';
-                else if (line.trim() === '') className = 'text-gray-600';
-
-                return (
-                    <div key={idx} className={className}>
-                        {line || ' '}
-                    </div>
-                );
-            })}
+            {highlighted.map((line, idx) => (
+                <div key={idx} className={`${line.className} whitespace-pre`}>
+                    {line.prefix ? (
+                        <span className="select-none text-gray-600">{line.prefix}</span>
+                    ) : null}
+                    <span
+                        dangerouslySetInnerHTML={{
+                            __html: line.html && line.html.length > 0 ? line.html : '&nbsp;',
+                        }}
+                    />
+                </div>
+            ))}
             {hasMore && (
                 <div className="text-gray-500 italic mt-2">
                     ... ({lines.length - 50} more lines, click "Show Full Diff" to see all)
