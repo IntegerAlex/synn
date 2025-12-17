@@ -39,12 +39,15 @@ function getVisitorId(): string | null {
     }
 }
 
-// Helper to create headers with visitor ID
-function getHeaders(): HeadersInit {
+// Helper to create headers with visitor ID and optional share ID
+function getHeaders(shareId?: string): HeadersInit {
     const headers: HeadersInit = { 'Content-Type': 'application/json' };
     const visitorId = getVisitorId();
     if (visitorId) {
         headers['x-visitor-id'] = visitorId;
+    }
+    if (shareId) {
+        headers['x-share-id'] = shareId;
     }
     return headers;
 }
@@ -82,12 +85,12 @@ export const gitApi = {
     },
 
     // Get graph
-    getGraph: async (repoInfo: RepoInfo | null, limit = 100, offset = 0): Promise<GraphData> => {
+    getGraph: async (repoInfo: RepoInfo | null, limit = 100, offset = 0, shareId?: string): Promise<GraphData> => {
         const repoFullName = getRepoFullName(repoInfo);
         const response = await fetch(
             `${API_BASE}/graph?repo=${encodeURIComponent(repoFullName)}&limit=${limit}&offset=${offset}`,
             {
-            headers: getHeaders(),
+            headers: getHeaders(shareId),
             }
         );
         return handleResponse(response);

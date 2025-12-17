@@ -50,12 +50,12 @@ export function useBranches() {
 }
 
 // Graph - simplified, TanStack Query v5 doesn't support onSuccess
-export function useGraph(limit = 100, offset = 0) {
+export function useGraph(limit = 100, offset = 0, shareId?: string) {
     const repoInfo = useAppStore((state) => state.repoInfo);
 
     return useQuery({
         queryKey: queryKeys.graph(limit, offset),
-        queryFn: () => gitApi.getGraph(repoInfo, limit, offset),
+        queryFn: () => gitApi.getGraph(repoInfo, limit, offset, shareId),
         enabled: !!repoInfo,
         staleTime: 10000,
         placeholderData: (previousData) => previousData,

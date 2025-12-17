@@ -1,12 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getGitHubService } from '@/lib/services/githubApiHelper';
+import { getGitHubService, getGitHubServiceForUser } from '@/lib/services/githubApiHelper';
 import { formatErrorResponse } from '@/lib/utils/errorHandler';
 import { logApiRequest, getClientIp, getUserAgent } from '@/lib/services/activityLogger';
 import { validateRepoAccess } from '@/lib/services/repoValidator';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@/db';
-import { usersTable, fingerprintsTable } from '@/db/schema';
+import { usersTable, fingerprintsTable, sharedViewsTable } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 // GET /api/git/graph - Get graph data
@@ -79,6 +79,7 @@ export async function GET(request: NextRequest) {
         const repoFullName = searchParams.get('repo');
         const limit = parseInt(searchParams.get('limit') || '100', 10);
         const offset = parseInt(searchParams.get('offset') || '0', 10);
+        const shareId = request.headers.get('x-share-id'); // For shared views
         
         if (!repoFullName) {
             const responseTime = Date.now() - startTime;
@@ -102,32 +103,113 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        // Validate repository access
+        // Handle shared views: if shareId is provided, use creator's token if viewer doesn't have access
+        let githubService: Awaited<ReturnType<typeof getGitHubService>> | undefined;
         const { userId: clerkUserIdForValidation } = await auth();
-        if (clerkUserIdForValidation) {
-            const validation = await validateRepoAccess(clerkUserIdForValidation, repoFullName);
-            if (!validation.valid) {
-                const responseTime = Date.now() - startTime;
-                await logApiRequest({
-                    userId,
-                    fingerprintId,
-                    method: 'GET',
-                    path: '/api/git/graph',
-                    queryParams: Object.fromEntries(searchParams),
-                    statusCode: 403,
-                    responseTime,
-                    errorCode: 'ACCESS_DENIED',
-                    errorMessage: validation.error,
-                    ipAddress: getClientIp(request),
-                    userAgent: getUserAgent(request),
-                });
-                
-                // Note: We log but don't block - GitHub API will enforce actual permissions
-                console.warn(`Repository access validation warning: ${validation.error}`);
+        
+        if (shareId && repoFullName) {
+            // This is a shared view request
+            const [sharedView] = await db
+                .select()
+                .from(sharedViewsTable)
+                .where(eq(sharedViewsTable.shareId, shareId))
+                .limit(1);
+            
+            if (sharedView && sharedView.repoFullName === repoFullName) {
+                // Verify share is not expired
+                if (!sharedView.expiresAt || new Date(sharedView.expiresAt) >= new Date()) {
+                    // Check if viewer has access
+                    let viewerHasAccess = false;
+                    if (clerkUserIdForValidation) {
+                        try {
+                            githubService = await getGitHubService(repoFullName);
+                            await githubService.getRepoInfo();
+                            viewerHasAccess = true;
+                        } catch {
+                            // Viewer doesn't have access - use creator's token
+                            viewerHasAccess = false;
+                        }
+                    }
+                    
+                    if (viewerHasAccess) {
+                        // Viewer has access - use their token (already set above)
+                        // githubService is already set in the try block above
+                    } else if (sharedView.userId) {
+                        // Get creator's Clerk ID and use their token
+                        const [creator] = await db
+                            .select()
+                            .from(usersTable)
+                            .where(eq(usersTable.id, sharedView.userId))
+                            .limit(1);
+                        
+                        if (creator) {
+                            try {
+                                githubService = await getGitHubServiceForUser(creator.clerkUserId, repoFullName);
+                            } catch (error: any) {
+                                return NextResponse.json(
+                                    { error: { code: 'ACCESS_DENIED', message: 'The share creator no longer has access to this repository' } },
+                                    { status: 403 }
+                                );
+                            }
+                        } else {
+                            return NextResponse.json(
+                                { error: { code: 'ACCESS_DENIED', message: 'Share creator not found' } },
+                                { status: 403 }
+                            );
+                        }
+                    } else {
+                        return NextResponse.json(
+                            { error: { code: 'ACCESS_DENIED', message: 'Authentication required' } },
+                            { status: 401 }
+                        );
+                    }
+                } else {
+                    return NextResponse.json(
+                        { error: { code: 'EXPIRED', message: 'Shared view has expired' } },
+                        { status: 410 }
+                    );
+                }
+            } else {
+                return NextResponse.json(
+                    { error: { code: 'INVALID_SHARE', message: 'Invalid share ID or repository mismatch' } },
+                    { status: 403 }
+                );
             }
+        } else {
+            // Normal request - validate repository access
+            if (clerkUserIdForValidation) {
+                const validation = await validateRepoAccess(clerkUserIdForValidation, repoFullName);
+                if (!validation.valid) {
+                    const responseTime = Date.now() - startTime;
+                    await logApiRequest({
+                        userId,
+                        fingerprintId,
+                        method: 'GET',
+                        path: '/api/git/graph',
+                        queryParams: Object.fromEntries(searchParams),
+                        statusCode: 403,
+                        responseTime,
+                        errorCode: 'ACCESS_DENIED',
+                        errorMessage: validation.error,
+                        ipAddress: getClientIp(request),
+                        userAgent: getUserAgent(request),
+                    });
+                    
+                    // Note: We log but don't block - GitHub API will enforce actual permissions
+                    console.warn(`Repository access validation warning: ${validation.error}`);
+                }
+            }
+
+            githubService = await getGitHubService(repoFullName);
         }
 
-        const githubService = await getGitHubService(repoFullName);
+        if (!githubService) {
+            return NextResponse.json(
+                { error: { code: 'SERVICE_ERROR', message: 'Failed to initialize GitHub service' } },
+                { status: 500 }
+            );
+        }
+
         const safeLimit = Math.min(Math.max(limit, 1), 10000);
         const safeOffset = Math.max(0, Number.isFinite(offset) ? offset : 0);
         const graph = await githubService.getGraph(safeLimit, safeOffset);

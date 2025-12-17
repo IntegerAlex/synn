@@ -320,7 +320,7 @@ function renderDiff(diff: string, showFull: boolean, filePathHint?: string): Rea
                             __html: line.html && line.html.length > 0 ? line.html : '&nbsp;',
                         }}
                     />
-                </div>
+                    </div>
             ))}
             {hasMore && (
                 <div className="text-gray-500 italic mt-2">

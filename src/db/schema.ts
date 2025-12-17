@@ -1,4 +1,4 @@
-import { integer, pgTable, varchar, timestamp, text, boolean, jsonb, index } from "drizzle-orm/pg-core";
+import { integer, pgTable, varchar, timestamp, text, boolean, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const usersTable = pgTable("users", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -180,7 +180,8 @@ export const githubApiUsageTable = pgTable("github_api_usage", {
   count: integer().default(1).notNull(),
   lastSeenAt: timestamp().defaultNow().notNull(),
 }, (table) => ({
-  usageBucketIdx: index("github_api_usage_bucket_idx").on(table.clerkUserId, table.endpoint, table.bucketDate),
+  // Unique constraint for ON CONFLICT - one row per clerkUserId/endpoint/bucketDate combination
+  usageBucketUnique: uniqueIndex("github_api_usage_bucket_unique").on(table.clerkUserId, table.endpoint, table.bucketDate),
   endpointIdx: index("github_api_usage_endpoint_idx").on(table.endpoint),
   userIdx: index("github_api_usage_user_idx").on(table.userId),
 }));
@@ -251,5 +252,33 @@ export const roastsTable = pgTable("roasts", {
   createdAt: timestamp().defaultNow().notNull(),
 }, (table) => ({
   userIdUnique: index("roasts_user_id_unique").on(table.userId),
+}));
+
+// Shared views table - stores shareable graph view snapshots
+export const sharedViewsTable = pgTable("shared_views", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  // Unique share ID (URL-friendly)
+  shareId: varchar({ length: 32 }).notNull().unique(),
+  // Foreign key to users table (nullable for anonymous shares)
+  userId: integer().references(() => usersTable.id, { onDelete: "set null" }),
+  // Repository information
+  repoFullName: varchar({ length: 500 }).notNull(),
+  // View state (stored as JSON)
+  viewState: jsonb().notNull(), // { branch, filters, selectedCommit, etc. }
+  // View metadata
+  title: varchar({ length: 255 }),
+  description: text(),
+  // Expiration (optional, null = never expires)
+  expiresAt: timestamp(),
+  // Access tracking
+  viewCount: integer().default(0).notNull(),
+  // Timestamps
+  createdAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp().defaultNow().notNull(),
+  lastViewedAt: timestamp(),
+}, (table) => ({
+  shareIdIdx: index("shared_views_share_id_idx").on(table.shareId),
+  userIdIdx: index("shared_views_user_id_idx").on(table.userId),
+  createdAtIdx: index("shared_views_created_at_idx").on(table.createdAt),
 }));
 

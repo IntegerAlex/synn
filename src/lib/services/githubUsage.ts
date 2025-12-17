@@ -32,26 +32,40 @@ export async function recordGitHubUsage({
   const bucketDate = bucketToDayUTC(createdAt);
 
   // Drizzle onConflictDoUpdate for atomic increment
-  await db
-    .insert(githubApiUsageTable)
-    .values({
-      clerkUserId: clerkUserId || null,
-      userId: userId ?? null,
-      endpoint,
-      statusCode: statusCode ?? null,
-      bucketDate,
-      count: 1,
-      lastSeenAt: createdAt,
-    })
-    .onConflictDoUpdate({
-      target: [githubApiUsageTable.clerkUserId, githubApiUsageTable.endpoint, githubApiUsageTable.bucketDate],
-      set: {
-        count: sql`${githubApiUsageTable.count} + 1`,
+  // Requires unique constraint on (clerkUserId, endpoint, bucketDate)
+  try {
+    await db
+      .insert(githubApiUsageTable)
+      .values({
+        clerkUserId: clerkUserId || null,
+        userId: userId ?? null,
+        endpoint,
         statusCode: statusCode ?? null,
+        bucketDate,
+        count: 1,
         lastSeenAt: createdAt,
-      },
-    });
+      })
+      .onConflictDoUpdate({
+        target: [githubApiUsageTable.clerkUserId, githubApiUsageTable.endpoint, githubApiUsageTable.bucketDate],
+        set: {
+          count: sql`${githubApiUsageTable.count} + 1`,
+          statusCode: statusCode ?? null,
+          lastSeenAt: createdAt,
+        },
+      });
+  } catch (error: any) {
+    // If unique constraint doesn't exist yet, log warning but don't fail
+    // The migration should be run to add the constraint
+    if (error?.code === '42P10' || error?.message?.includes('unique constraint') || error?.message?.includes('ON CONFLICT')) {
+      console.warn('GitHub usage tracking: Unique constraint missing. Run migration: drizzle/add_github_api_usage_unique_constraint.sql');
+      // Silently fail - usage tracking is non-critical
+      return;
+    }
+    // Re-throw other errors
+    throw error;
+  }
 }
+
 
 
 

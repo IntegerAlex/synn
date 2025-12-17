@@ -33,3 +33,32 @@ export async function getGitHubService(
   });
 }
 
+/**
+ * Get GitHub API service using a specific user's token (for shared views)
+ * @param clerkUserId - Clerk user ID of the user whose token to use
+ * @param repoFullName - The full name of the repository (owner/repo)
+ * @param defaultBranch - Optional default branch
+ */
+export async function getGitHubServiceForUser(
+  clerkUserId: string,
+  repoFullName: string,
+  defaultBranch?: string
+): Promise<GitHubApiService> {
+  // Validate repo format
+  if (!repoFullName || !repoFullName.includes('/')) {
+    throw new Error('Invalid repository format. Expected: owner/repo');
+  }
+
+  const client = await clerkClient();
+  const tokenRes = await client.users.getUserOauthAccessToken(clerkUserId, 'github');
+  const token = tokenRes.data[0]?.token;
+
+  if (!token) {
+    throw new Error('No GitHub token found for the share creator.');
+  }
+
+  return new GitHubApiService(token, repoFullName, defaultBranch, {
+    clerkUserId,
+  });
+}
+

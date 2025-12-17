@@ -16,6 +16,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { CommitTooltip } from './CommitTooltip';
 import { CommitActivityChart } from './CommitActivityChart';
 import { GraphFilters } from './GraphFilters';
+import { ShareButton } from './ShareButton';
 import type { GraphNode, GraphData } from '@/types/git';
 
 function normalizeBranchLabel(branch: string): string {
@@ -52,13 +53,25 @@ const BRANCH_COLORS = [
   '#90A4AE', // grey-blue
 ];
 
-export function CytoscapeGraph() {
+interface CytoscapeGraphProps {
+  initialGraphLimit?: number;
+  readOnly?: boolean;
+  onGraphLimitChange?: (limit: number) => void;
+  shareId?: string; // For shared views
+}
+
+export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange, shareId }: CytoscapeGraphProps = {}) {
   const cyRef = useRef<cytoscape.Core | null>(null);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [isHoveringNode, setIsHoveringNode] = useState(false);
   const [activityCollapsed, setActivityCollapsed] = useState(false);
-  const [graphLimit, setGraphLimit] = useState(500);
+  const [graphLimit, setGraphLimit] = useState(initialGraphLimit ?? 500);
+
+  const handleGraphLimitChange = (newLimit: number) => {
+    setGraphLimit(newLimit);
+    onGraphLimitChange?.(newLimit);
+  };
 
   const selectedCommitHash = useAppStore((state) => state.selectedCommitHash);
   const setSelectedCommitHash = useAppStore((state) => state.setSelectedCommitHash);
@@ -66,7 +79,7 @@ export function CytoscapeGraph() {
   const showMergeCommits = useAppStore((state) => state.graphFilters.showMergeCommits);
   const showTags = useAppStore((state) => state.graphFilters.showTags);
   const highlightedBranches = useAppStore((state) => state.graphFilters.highlightedBranches);
-  const { data: graphData, isLoading, error, refetch, isFetching } = useGraph(graphLimit, 0);
+  const { data: graphData, isLoading, error, refetch, isFetching } = useGraph(graphLimit, 0, shareId);
 
   const isDark = useMemo(
     () => !['light', 'solarized-light'].includes(theme),
@@ -486,20 +499,25 @@ export function CytoscapeGraph() {
           <span className="text-gray-500">{graphData.branches.length} branches</span>
         </div>
         <div className="flex items-center gap-2">
-          {graphData.hasMore ? (
-            <button
-              type="button"
-              onClick={() => setGraphLimit((v) => Math.min(10000, v + 500))}
-              className="px-2 py-1 rounded-md text-xs border border-[#30363d] hover:bg-[#21262d] text-gray-200 transition-colors"
-              disabled={isFetching}
-              title="Load more commits"
-            >
-              {isFetching ? 'Loading…' : 'Load more'}
-            </button>
-          ) : (
-            <span className="text-xs text-gray-500">All loaded</span>
+          {!readOnly && (
+            <>
+              {graphData.hasMore ? (
+                <button
+                  type="button"
+                  onClick={() => handleGraphLimitChange(Math.min(10000, graphLimit + 500))}
+                  className="px-2 py-1 rounded-md text-xs border border-[#30363d] hover:bg-[#21262d] text-gray-200 transition-colors"
+                  disabled={isFetching}
+                  title="Load more commits"
+                >
+                  {isFetching ? 'Loading…' : 'Load more'}
+                </button>
+              ) : (
+                <span className="text-xs text-gray-500">All loaded</span>
+              )}
+              <GraphFilters branches={graphData.branches} currentBranch={graphData.currentBranch} />
+              <ShareButton graphLimit={graphLimit} />
+            </>
           )}
-          <GraphFilters branches={graphData.branches} currentBranch={graphData.currentBranch} />
         </div>
       </div>
 
@@ -618,7 +636,7 @@ export function CytoscapeGraph() {
         {!activityCollapsed && (
           <div className="h-[calc(100%-28px)] p-2 overflow-hidden min-h-0">
             <CommitActivityChart nodes={(filteredGraphData ?? graphData).nodes} />
-          </div>
+        </div>
         )}
       </div>
     </div>
