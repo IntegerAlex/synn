@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { X, Search, GitBranch, Check, Copy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBranches } from '@/hooks/useGitData';
@@ -19,18 +19,47 @@ export function BranchesModal({ isOpen, onClose, totalBranches }: BranchesModalP
   const currentBranch = useAppStore((state) => state.repoInfo?.currentBranch);
   const { data: branchesData } = useBranches();
   const checkoutBranch = useCheckoutBranch();
+  const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedBranch, setCopiedBranch] = useState<string | null>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounce search input
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    debounceTimerRef.current = setTimeout(() => {
+      setSearchQuery(searchInput);
+    }, 150); // 150ms debounce delay
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [searchInput]);
 
   const branches = useMemo(() => {
     if (!branchesData?.local) return [];
     return branchesData.local;
   }, [branchesData]);
 
+  // Memoize filtered branches with useMemo for performance
   const filteredBranches = useMemo(() => {
     if (!searchQuery.trim()) return branches;
     const query = searchQuery.toLowerCase();
-    return branches.filter((branch) => branch.name.toLowerCase().includes(query));
+    
+    // Use a more efficient filtering approach
+    const results: Branch[] = [];
+    for (let i = 0; i < branches.length; i++) {
+      const branch = branches[i];
+      if (branch.name.toLowerCase().includes(query)) {
+        results.push(branch);
+      }
+    }
+    return results;
   }, [branches, searchQuery]);
 
   const handleBranchClick = async (branchName: string) => {
@@ -108,8 +137,8 @@ export function BranchesModal({ isOpen, onClose, totalBranches }: BranchesModalP
                 <input
                   type="text"
                   placeholder="Search branches..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 bg-[#0d1117] border border-[#30363d] rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#1f6feb] focus:border-transparent"
                 />
               </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { X, Search, GitCommit, Calendar, User, Copy, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGraph, useCommitDetails } from '@/hooks/useGitData';
@@ -17,28 +17,55 @@ interface CommitsModalProps {
 export function CommitsModal({ isOpen, onClose, totalCommits }: CommitsModalProps) {
   const repoInfo = useAppStore((state) => state.repoInfo);
   const { data: graphData } = useGraph(10000, 0); // Get all commits
+  const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedHash, setCopiedHash] = useState<string | null>(null);
   const [selectedCommitHash, setSelectedCommitHash] = useState<string | null>(null);
   const [isBetterDiffOpen, setIsBetterDiffOpen] = useState(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   const { data: commitDetails } = useCommitDetails(selectedCommitHash);
+
+  // Debounce search input
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    debounceTimerRef.current = setTimeout(() => {
+      setSearchQuery(searchInput);
+    }, 150); // 150ms debounce delay
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [searchInput]);
 
   const commits = useMemo(() => {
     if (!graphData?.nodes) return [];
     return graphData.nodes;
   }, [graphData]);
 
+  // Memoize filtered commits with useMemo for performance
   const filteredCommits = useMemo(() => {
     if (!searchQuery.trim()) return commits;
     const query = searchQuery.toLowerCase();
-    return commits.filter((commit) => {
-      return (
+    
+    // Use a more efficient filtering approach
+    const results: GraphNode[] = [];
+    for (let i = 0; i < commits.length; i++) {
+      const commit = commits[i];
+      if (
         commit.hash.toLowerCase().includes(query) ||
         commit.message.toLowerCase().includes(query) ||
         commit.author.toLowerCase().includes(query)
-      );
-    });
+      ) {
+        results.push(commit);
+      }
+    }
+    return results;
   }, [commits, searchQuery]);
 
   const formatDate = (dateStr: string) => {
@@ -128,8 +155,8 @@ export function CommitsModal({ isOpen, onClose, totalCommits }: CommitsModalProp
                 <input
                   type="text"
                   placeholder="Search commits by hash, message, or author..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 bg-[#0d1117] border border-[#30363d] rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#1f6feb] focus:border-transparent"
                 />
               </div>
