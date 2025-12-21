@@ -17,6 +17,8 @@ import { CommitTooltip } from './CommitTooltip';
 import { CommitActivityChart } from './CommitActivityChart';
 import { GraphFilters } from './GraphFilters';
 import { ShareButton } from './ShareButton';
+import { CommitsModal } from './CommitsModal';
+import { BranchesModal } from './BranchesModal';
 import type { GraphNode, GraphData } from '@/types/git';
 
 function normalizeBranchLabel(branch: string): string {
@@ -140,6 +142,8 @@ interface CytoscapeGraphProps {
 }
 
 export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange, shareId }: CytoscapeGraphProps = {}) {
+  const [isCommitsModalOpen, setIsCommitsModalOpen] = useState(false);
+  const [isBranchesModalOpen, setIsBranchesModalOpen] = useState(false);
   const cyRef = useRef<cytoscape.Core | null>(null);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
@@ -599,11 +603,21 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
             {graphData.currentBranch}
           </span>
           <span className="text-gray-500">•</span>
-          <span className="text-gray-500">
+          <button
+            onClick={() => setIsCommitsModalOpen(true)}
+            className="text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
+            title="View all commits"
+          >
             {(filteredGraphData ?? graphData).nodes.length} commits
-          </span>
+          </button>
           <span className="text-gray-500">•</span>
-          <span className="text-gray-500">{graphData.branches.length} branches</span>
+          <button
+            onClick={() => setIsBranchesModalOpen(true)}
+            className="text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
+            title="View all branches"
+          >
+            {graphData.branches.length} branches
+          </button>
         </div>
         <div className="flex items-center gap-2">
           {!readOnly && (
@@ -747,6 +761,18 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
         </div>
         )}
       </div>
+
+      {/* Modals */}
+      <CommitsModal
+        isOpen={isCommitsModalOpen}
+        onClose={() => setIsCommitsModalOpen(false)}
+        totalCommits={(filteredGraphData ?? graphData).nodes.length}
+      />
+      <BranchesModal
+        isOpen={isBranchesModalOpen}
+        onClose={() => setIsBranchesModalOpen(false)}
+        totalBranches={graphData.branches.length}
+      />
     </div>
   );
 }
