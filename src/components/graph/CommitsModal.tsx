@@ -3,8 +3,9 @@
 import { useState, useMemo } from 'react';
 import { X, Search, GitCommit, Calendar, User, Copy, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGraph } from '@/hooks/useGitData';
+import { useGraph, useCommitDetails } from '@/hooks/useGitData';
 import { useAppStore } from '@/store/useAppStore';
+import { BetterDiffModal } from '@/components/diff/BetterDiffModal';
 import type { GraphNode } from '@/types/git';
 
 interface CommitsModalProps {
@@ -18,6 +19,10 @@ export function CommitsModal({ isOpen, onClose, totalCommits }: CommitsModalProp
   const { data: graphData } = useGraph(10000, 0); // Get all commits
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedHash, setCopiedHash] = useState<string | null>(null);
+  const [selectedCommitHash, setSelectedCommitHash] = useState<string | null>(null);
+  const [isBetterDiffOpen, setIsBetterDiffOpen] = useState(false);
+  
+  const { data: commitDetails } = useCommitDetails(selectedCommitHash);
 
   const commits = useMemo(() => {
     if (!graphData?.nodes) return [];
@@ -59,6 +64,16 @@ export function CommitsModal({ isOpen, onClose, totalCommits }: CommitsModalProp
     } catch {
       // Ignore
     }
+  };
+
+  const handleCommitClick = (commit: GraphNode) => {
+    setSelectedCommitHash(commit.hash);
+    setIsBetterDiffOpen(true);
+  };
+
+  const handleCloseBetterDiff = () => {
+    setIsBetterDiffOpen(false);
+    setSelectedCommitHash(null);
   };
 
   if (!isOpen) return null;
@@ -143,6 +158,7 @@ export function CommitsModal({ isOpen, onClose, totalCommits }: CommitsModalProp
                       key={commit.hash}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
+                      onClick={() => handleCommitClick(commit)}
                       className="px-4 py-3 hover:bg-[#161b22] transition-colors cursor-pointer group"
                     >
                       <div className="flex items-start gap-3">
@@ -191,6 +207,18 @@ export function CommitsModal({ isOpen, onClose, totalCommits }: CommitsModalProp
             </div>
           </motion.div>
         </motion.div>
+      )}
+
+      {/* Better Diff Modal */}
+      {commitDetails && (
+        <BetterDiffModal
+          isOpen={isBetterDiffOpen}
+          onClose={handleCloseBetterDiff}
+          diff={commitDetails.diff || ''}
+          commitMessage={commitDetails.message}
+          commitHash={selectedCommitHash || undefined}
+          files={commitDetails.files}
+        />
       )}
     </AnimatePresence>
   );
