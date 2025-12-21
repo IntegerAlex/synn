@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useCommitDetails } from '@/hooks/useGitData';
 import { useAppStore } from '@/store/useAppStore';
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection';
 import { highlightUnifiedDiffLines } from '@/lib/utils/diffHighlighter';
-import { Toast } from '@/components/ui/Toast';
 import { Copy, ExternalLink } from 'lucide-react';
 import { CommitFileTree } from '@/components/CommitDetails/FileTree';
+import { useToast } from '@/hooks/useToast';
 
 function getGitHubCommitUrl(repoPath: string | undefined | null, hash: string): string | null {
     if (!repoPath) return null;
@@ -25,8 +25,7 @@ export function CommitDetails() {
     const { data: details, isLoading, error } = useCommitDetails(selectedHash);
     const [selectedFile, setSelectedFile] = useState<string | null>(null);
     const [showFullDiff, setShowFullDiff] = useState(false);
-    const [toast, setToast] = useState<string | null>(null);
-    const toastTimeoutRef = useRef<number | null>(null);
+    const toast = useToast();
 
     // Parse diff by file
     const fileDiffs = useMemo(() => {
@@ -115,16 +114,10 @@ export function CommitDetails() {
         });
     }, []);
 
-    const showToast = useCallback((message: string) => {
-        setToast(message);
-        if (toastTimeoutRef.current) window.clearTimeout(toastTimeoutRef.current);
-        toastTimeoutRef.current = window.setTimeout(() => setToast(null), 2000);
-    }, []);
-
     const copyToClipboard = useCallback(async (text: string, successMessage: string) => {
         try {
             await navigator.clipboard.writeText(text);
-            showToast(successMessage);
+            toast.showSuccess(successMessage);
         } catch {
             try {
                 const ta = document.createElement('textarea');
@@ -137,18 +130,22 @@ export function CommitDetails() {
                 ta.select();
                 const ok = document.execCommand('copy');
                 document.body.removeChild(ta);
-                if (ok) showToast(successMessage);
-                else showToast('Copy failed');
+                if (ok) toast.showSuccess(successMessage);
+                else toast.showError('Copy failed');
             } catch {
-                showToast('Copy failed');
+                toast.showError('Copy failed');
             }
         }
-    }, [showToast]);
+    }, [toast]);
 
     if (!selectedHash) {
         return (
-            <aside className="w-80 h-full bg-[#161b22] border-l border-[#30363d] flex flex-col">
-                <div className="flex-1 flex items-center justify-center text-gray-500 text-sm">
+            <aside
+                className="w-80 h-full bg-[#161b22] border-l border-[#30363d] flex flex-col"
+                role="complementary"
+                aria-label="Commit details"
+            >
+                <div className="flex-1 flex items-center justify-center text-gray-500 text-sm" role="status" aria-live="polite">
                     Select a commit to view details
                 </div>
             </aside>
@@ -157,8 +154,12 @@ export function CommitDetails() {
 
     if (isLoading) {
         return (
-            <aside className="w-80 h-full bg-[#161b22] border-l border-[#30363d] flex flex-col">
-                <div className="flex-1 flex items-center justify-center">
+            <aside
+                className="w-80 h-full bg-[#161b22] border-l border-[#30363d] flex flex-col"
+                role="complementary"
+                aria-label="Commit details"
+            >
+                <div className="flex-1 flex items-center justify-center" role="status" aria-live="polite">
                     <div className="w-5 h-5 border-2 border-t-transparent border-[#ef4444] rounded-full animate-spin" />
                 </div>
             </aside>
@@ -167,8 +168,12 @@ export function CommitDetails() {
 
     if (error || !details) {
         return (
-            <aside className="w-80 h-full bg-[#161b22] border-l border-[#30363d] flex flex-col">
-                <div className="flex-1 flex items-center justify-center text-red-400 text-sm">
+            <aside
+                className="w-80 h-full bg-[#161b22] border-l border-[#30363d] flex flex-col"
+                role="complementary"
+                aria-label="Commit details"
+            >
+                <div className="flex-1 flex items-center justify-center text-red-400 text-sm" role="status" aria-live="assertive">
                     Failed to load commit details
                 </div>
             </aside>
@@ -176,13 +181,18 @@ export function CommitDetails() {
     }
 
     return (
-        <aside className="w-80 h-full bg-[#161b22] border-l border-[#30363d] flex flex-col relative">
+        <aside
+            className="w-80 h-full bg-[#161b22] border-l border-[#30363d] flex flex-col relative"
+            role="complementary"
+            aria-label="Commit details"
+        >
             {/* Header */}
             <div className="px-4 py-3 border-b border-[#30363d] flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-gray-200">Commit Details</h2>
                 <button
                     onClick={() => setSelectedCommitHash(null)}
                     className="text-gray-400 hover:text-white"
+                    aria-label="Close commit details"
                 >
                     ✕
                 </button>
@@ -269,6 +279,7 @@ export function CommitDetails() {
                                     <button
                                         onClick={() => setSelectedFile(null)}
                                         className="text-xs text-gray-400 hover:text-gray-300"
+                                        aria-label="Show all files"
                                     >
                                         Show All Files
                                     </button>
@@ -276,6 +287,8 @@ export function CommitDetails() {
                                 <button
                                     onClick={() => setShowFullDiff(!showFullDiff)}
                                     className="text-xs text-[#ef4444] hover:text-[#f87171]"
+                                    aria-pressed={showFullDiff}
+                                    aria-label={showFullDiff ? 'Show diff summary' : 'Show full diff'}
                                 >
                                     {showFullDiff ? 'Show Summary' : 'Show Full Diff'}
                                 </button>
@@ -291,10 +304,6 @@ export function CommitDetails() {
                 )}
             </div>
 
-            {/* Toast */}
-            <div className="pointer-events-none absolute bottom-4 left-4 right-4">
-                <Toast message={toast} onClose={() => setToast(null)} />
-            </div>
         </aside>
     );
 }

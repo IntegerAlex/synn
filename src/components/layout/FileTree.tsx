@@ -144,12 +144,19 @@ export function FileTree({ ref }: { ref?: string }) {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search files…"
           className="w-full bg-[#0d1117] border border-[#30363d] rounded-md px-2 py-1 text-xs text-gray-200 placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-[#1f6feb]/40"
+          aria-label="Search files"
         />
       </div>
       {query.trim() && filteredPaths.length === 0 ? (
         <div className="px-4 py-2 text-sm text-gray-500">No matches</div>
       ) : (
-        <div ref={listRef} className="flex-1 min-h-0 overflow-y-auto">
+        <div
+          ref={listRef}
+          className="flex-1 min-h-0 overflow-y-auto"
+          role="tree"
+          aria-label="Repository files"
+          aria-multiselectable="false"
+        >
           <div
             className="relative w-full"
             style={{ height: `${virtualizer.getTotalSize()}px` }}
@@ -173,6 +180,9 @@ export function FileTree({ ref }: { ref?: string }) {
                       className="w-full flex items-center gap-2 text-xs py-1 rounded hover:bg-[#21262d] transition-colors text-left"
                       style={{ paddingLeft: 8 + pad }}
                       aria-expanded={isOpen}
+                      aria-label={`${isOpen ? 'Collapse' : 'Expand'} folder ${node.name}`}
+                      role="treeitem"
+                      aria-level={row.depth + 1}
                     >
                       {isOpen ? (
                         <ChevronDown className="w-4 h-4 text-gray-500" />
@@ -187,6 +197,8 @@ export function FileTree({ ref }: { ref?: string }) {
                       className="w-full flex items-center gap-2 text-xs py-1 rounded px-1 text-gray-300"
                       style={{ paddingLeft: 8 + pad }}
                       title={node.path}
+                      role="treeitem"
+                      aria-level={row.depth + 1}
                     >
                       <FileIcon className="w-4 h-4 text-gray-500" />
                       <span className="truncate">{node.name}</span>

@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { X, Copy, Check, ExternalLink } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { generateShareUrl, getCurrentViewState } from '@/lib/utils/shareView';
-import { Toast } from '@/components/ui/Toast';
+import { useToast } from '@/hooks/useToast';
 
 export function ShareViewModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const repoInfo = useAppStore((state) => state.repoInfo);
@@ -17,7 +17,7 @@ export function ShareViewModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
   });
 
   const [copied, setCopied] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const toast = useToast();
 
   const viewState = getCurrentViewState(
     repoInfo,
@@ -35,11 +35,8 @@ export function ShareViewModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
-      setToast('Link copied to clipboard');
-      setTimeout(() => {
-        setCopied(false);
-        setToast(null);
-      }, 2000);
+      toast.showSuccess('Link copied to clipboard');
+      setTimeout(() => setCopied(false), 2000);
     } catch {
       // Fallback
       const textarea = document.createElement('textarea');
@@ -52,17 +49,14 @@ export function ShareViewModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
       try {
         document.execCommand('copy');
         setCopied(true);
-        setToast('Link copied to clipboard');
-        setTimeout(() => {
-          setCopied(false);
-          setToast(null);
-        }, 2000);
+        toast.showSuccess('Link copied to clipboard');
+        setTimeout(() => setCopied(false), 2000);
       } catch {
-        setToast('Failed to copy link');
+        toast.showError('Failed to copy link');
       }
       document.body.removeChild(textarea);
     }
-  }, [shareUrl]);
+  }, [shareUrl, toast]);
 
   const handleOpen = useCallback(() => {
     if (shareUrl) {

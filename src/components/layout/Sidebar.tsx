@@ -67,6 +67,8 @@ export function Sidebar() {
             className={`h-full bg-[#161b22] border-r border-[#30363d] flex flex-col transition-all duration-200 ${
                 sidebarCollapsed ? 'w-16' : 'w-60'
             }`}
+            role="navigation"
+            aria-label="Repository sidebar"
         >
             {/* Header */}
             <div className="px-4 py-3 border-b border-[#30363d]">
@@ -103,6 +105,8 @@ export function Sidebar() {
                                     ? 'border-[#30363d] bg-[#21262d] text-gray-200'
                                     : 'border-[#30363d] bg-transparent text-gray-400 hover:bg-[#21262d]'
                             }`}
+                            aria-pressed={tab === 'branches'}
+                            aria-label="Show branches"
                         >
                             Branches
                         </button>
@@ -114,6 +118,8 @@ export function Sidebar() {
                                     ? 'border-[#30363d] bg-[#21262d] text-gray-200'
                                     : 'border-[#30363d] bg-transparent text-gray-400 hover:bg-[#21262d]'
                             }`}
+                            aria-pressed={tab === 'files'}
+                            aria-label="Show files"
                         >
                             Files
                         </button>
@@ -122,9 +128,9 @@ export function Sidebar() {
             </div>
 
             {!sidebarCollapsed && tab === 'branches' && (
-                <div className="flex-1 overflow-y-auto py-2" ref={branchParentRef}>
+                <div className="flex-1 overflow-y-auto py-2" ref={branchParentRef} aria-live="polite">
                     {isLoading ? (
-                        <div className="px-4 py-2 text-sm text-gray-500">Loading...</div>
+                        <div className="px-4 py-2 text-sm text-gray-500">Loading branches…</div>
                     ) : !branches ? null : !shouldVirtualizeBranches ? (
                         <div className="space-y-1">
                             {/* Local branches */}
@@ -139,6 +145,8 @@ export function Sidebar() {
                                     className={`w-full px-4 py-1.5 text-left text-sm flex items-center gap-2 hover:bg-[#21262d] transition-colors
                                         ${selectedBranch === branch.name ? 'bg-[#21262d] text-white' : 'text-gray-300'}
                                         ${branch.isCurrent ? 'font-medium' : ''}`}
+                                    aria-label={`Branch ${branch.name}${branch.isCurrent ? ' (current)' : ''}`}
+                                    aria-current={selectedBranch === branch.name ? 'true' : undefined}
                                 >
                                     {branch.isCurrent && (
                                         <span className="w-2 h-2 rounded-full bg-[#ef4444]" />
@@ -159,6 +167,8 @@ export function Sidebar() {
                                             onClick={() => handleBranchClick(branch.name)}
                                             className={`w-full px-4 py-1.5 text-left text-sm truncate hover:bg-[#21262d] transition-colors
                                                 ${selectedBranch === branch.name ? 'bg-[#21262d] text-white' : 'text-gray-400'}`}
+                                            aria-label={`Remote branch ${branch.name}`}
+                                            aria-current={selectedBranch === branch.name ? 'true' : undefined}
                                         >
                                             {branch.name}
                                         </button>
@@ -199,6 +209,8 @@ export function Sidebar() {
                                                 className={`w-full px-4 py-1.5 text-left text-sm flex items-center gap-2 hover:bg-[#21262d] transition-colors
                                                     ${selectedBranch === row.branch.name ? 'bg-[#21262d] text-white' : row.isRemote ? 'text-gray-400' : 'text-gray-300'}
                                                     ${row.branch.isCurrent ? 'font-medium' : ''}`}
+                                                aria-label={`${row.isRemote ? 'Remote' : 'Local'} branch ${row.branch.name}${row.branch.isCurrent ? ' (current)' : ''}`}
+                                                aria-current={selectedBranch === row.branch.name ? 'true' : undefined}
                                             >
                                                 {row.branch.isCurrent && (
                                                     <span className="w-2 h-2 rounded-full bg-[#ef4444]" />

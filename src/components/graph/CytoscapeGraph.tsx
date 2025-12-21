@@ -28,15 +28,94 @@ function normalizeBranchLabel(branch: string): string {
     .trim();
 }
 
-function nodeMatchesHighlightedBranches(node: GraphNode, highlighted: Set<string>): boolean {
-  if (highlighted.size === 0) return false;
-  const refs = node.refs || [];
-  for (const ref of refs) {
-    if (ref.includes('tag:')) continue;
-    const label = normalizeBranchLabel(ref);
-    if (label && highlighted.has(label)) return true;
+/**
+ * Builds a set of all commit hashes that belong to the highlighted branches
+ * by traversing from branch heads through parent commits
+ */
+function buildHighlightedCommitsSet(
+  graphData: GraphData,
+  highlightedBranches: Set<string>
+): Set<string> {
+  const highlightedCommits = new Set<string>();
+  if (highlightedBranches.size === 0) {
+    return highlightedCommits;
   }
-  return false;
+
+  // Create a map of commit hash -> node for quick lookup
+  const hashToNode = new Map<string, GraphNode>();
+  graphData.nodes.forEach((node) => {
+    hashToNode.set(node.hash, node);
+  });
+
+  // Create a reverse map: normalized branch name -> branch head hash
+  const branchNameToHead = new Map<string, string>();
+  
+  // First, try to use branchHeads if available
+  if (graphData.branchHeads) {
+    for (const [branchName, headHash] of Object.entries(graphData.branchHeads)) {
+      const normalizedBranch = normalizeBranchLabel(branchName);
+      branchNameToHead.set(normalizedBranch, headHash);
+      // Also store the original name in case it matches directly
+      branchNameToHead.set(branchName, headHash);
+    }
+  }
+  
+  // Fallback: find branch heads from node refs if branchHeads is not available or incomplete
+  for (const node of graphData.nodes) {
+    if (node.refs && node.refs.length > 0) {
+      for (const ref of node.refs) {
+        if (ref.includes('tag:')) continue;
+        const normalizedBranch = normalizeBranchLabel(ref);
+        // Store both normalized and original ref
+        if (highlightedBranches.has(normalizedBranch) && !branchNameToHead.has(normalizedBranch)) {
+          branchNameToHead.set(normalizedBranch, node.hash);
+        }
+        if (highlightedBranches.has(ref) && !branchNameToHead.has(ref)) {
+          branchNameToHead.set(ref, node.hash);
+        }
+      }
+    }
+  }
+
+  // For each highlighted branch, traverse from its head commit
+  for (const highlightedBranch of highlightedBranches) {
+    const headHash = branchNameToHead.get(highlightedBranch);
+    if (!headHash) continue;
+
+    // Only traverse if the branch head exists in the current graph
+    if (!hashToNode.has(headHash)) continue;
+
+    // Traverse from branch head through all parent commits
+    const visited = new Set<string>();
+    const queue: string[] = [headHash];
+
+    while (queue.length > 0) {
+      const currentHash = queue.shift()!;
+      if (visited.has(currentHash)) continue;
+      visited.add(currentHash);
+      highlightedCommits.add(currentHash);
+
+      // Get the node and traverse to its parents
+      const node = hashToNode.get(currentHash);
+      if (node && node.parentHashes) {
+        for (const parentHash of node.parentHashes) {
+          // Only traverse to parents that exist in the graph
+          if (!visited.has(parentHash) && hashToNode.has(parentHash)) {
+            queue.push(parentHash);
+          }
+        }
+      }
+    }
+  }
+
+  return highlightedCommits;
+}
+
+function nodeMatchesHighlightedBranches(
+  node: GraphNode,
+  highlightedCommits: Set<string>
+): boolean {
+  return highlightedCommits.has(node.hash);
 }
 
 // GitLens-style color palette
@@ -109,6 +188,24 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
     return { ...graphData, nodes, edges };
   }, [graphData, showMergeCommits, showTags]);
 
+  // Build set of highlighted commit hashes by traversing from branch heads
+  const highlightedCommits = useMemo(() => {
+    if (!graphData || highlightedBranches.size === 0) {
+      return new Set<string>();
+    }
+    const result = buildHighlightedCommitsSet(graphData, highlightedBranches);
+    // Debug logging (remove in production)
+    if (process.env.NODE_ENV === 'development' && highlightedBranches.size > 0) {
+      console.log('Highlight debug:', {
+        highlightedBranches: Array.from(highlightedBranches),
+        branchHeads: graphData.branchHeads,
+        highlightedCommitsCount: result.size,
+        totalNodes: graphData.nodes.length,
+      });
+    }
+    return result;
+  }, [graphData, highlightedBranches]);
+
   // Convert graph data to Cytoscape format
   const elements = useMemo(() => {
     if (!filteredGraphData || filteredGraphData.nodes.length === 0) return [];
@@ -122,7 +219,7 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
     const nodeIsHighlighted = new Map<string, boolean>();
 
     const nodes = filteredGraphData.nodes.map((node) => {
-      const isHighlighted = dimMode ? nodeMatchesHighlightedBranches(node, highlightedBranches) : false;
+      const isHighlighted = dimMode ? nodeMatchesHighlightedBranches(node, highlightedCommits) : false;
       nodeIsHighlighted.set(node.hash, isHighlighted);
       return {
       data: {
@@ -194,7 +291,7 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
     });
 
     return [...nodes, ...edges];
-  }, [filteredGraphData, highlightedBranches]);
+  }, [filteredGraphData, highlightedBranches, highlightedCommits]);
 
   // Cytoscape stylesheet
   const stylesheet = useMemo(() => [
@@ -452,11 +549,16 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-full bg-[#0d1117] text-red-400">
+      <div
+        className="flex flex-col items-center justify-center h-full bg-[#0d1117] text-red-400"
+        role="status"
+        aria-live="assertive"
+      >
         <p>Error loading graph</p>
         <button
           onClick={() => refetch()}
           className="mt-4 px-4 py-2 bg-[#238636] hover:bg-[#2ea043] text-white rounded-lg"
+          aria-label="Retry loading graph"
         >
           Retry
         </button>
@@ -466,7 +568,7 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
 
   if (isLoading && !graphData) {
     return (
-      <div className="flex items-center justify-center h-full bg-[#0d1117]">
+      <div className="flex items-center justify-center h-full bg-[#0d1117]" role="status" aria-live="polite">
         <div className="flex items-center gap-3 text-gray-400">
           <div className="w-5 h-5 border-2 border-t-transparent border-[#ef4444] rounded-full animate-spin" />
           <span>Loading commit graph...</span>
@@ -477,17 +579,22 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
 
   if (!graphData || graphData.nodes.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full bg-[#0d1117] text-gray-400">
+      <div className="flex items-center justify-center h-full bg-[#0d1117] text-gray-400" role="status" aria-live="polite">
         <span>No commits found</span>
       </div>
     );
   }
 
   return (
-    <div className="relative w-full h-full overflow-hidden bg-[#0d1117] flex flex-col">
+    <div
+      className="relative w-full h-full overflow-hidden bg-[#0d1117] flex flex-col"
+      role="region"
+      aria-label="Commit graph"
+      aria-describedby="graph-stats"
+    >
       {/* Header */}
       <div className="flex-none z-10 flex items-center justify-between px-4 py-2 bg-[#161b22] border-b border-[#30363d]">
-        <div className="flex items-center gap-2 text-sm text-gray-300">
+        <div className="flex items-center gap-2 text-sm text-gray-300" id="graph-stats">
           <span className="px-2 py-0.5 bg-[#238636]/20 text-[#3fb950] rounded text-xs font-medium">
             {graphData.currentBranch}
           </span>
@@ -508,6 +615,7 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
                   className="px-2 py-1 rounded-md text-xs border border-[#30363d] hover:bg-[#21262d] text-gray-200 transition-colors"
                   disabled={isFetching}
                   title="Load more commits"
+                  aria-label="Load more commits"
                 >
                   {isFetching ? 'Loading…' : 'Load more'}
                 </button>

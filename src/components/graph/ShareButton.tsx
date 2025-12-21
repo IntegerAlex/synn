@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Share2, Copy, X } from 'lucide-react';
 import { useShareView } from '@/hooks/useShareView';
 import { useAppStore } from '@/store/useAppStore';
-import { Toast } from '@/components/ui/Toast';
+import { useToast } from '@/hooks/useToast';
 
 interface ShareButtonProps {
   graphLimit?: number;
@@ -16,9 +16,9 @@ export function ShareButton({ graphLimit = 500 }: ShareButtonProps) {
   const selectedCommitHash = useAppStore((state) => state.selectedCommitHash);
   const graphFilters = useAppStore((state) => state.graphFilters);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const shareMutation = useShareView();
+  const toast = useToast();
 
   const handleShare = async () => {
     if (!repoInfo) return;
@@ -39,8 +39,7 @@ export function ShareButton({ graphLimit = 500 }: ShareButtonProps) {
       setShareUrl(result.url);
       setIsOpen(true);
     } catch (error) {
-      setToast('Failed to create share link');
-      setTimeout(() => setToast(null), 2000);
+      toast.showError('Failed to create share link');
     }
   };
 
@@ -48,11 +47,9 @@ export function ShareButton({ graphLimit = 500 }: ShareButtonProps) {
     if (!shareUrl) return;
     try {
       await navigator.clipboard.writeText(shareUrl);
-      setToast('Link copied to clipboard!');
-      setTimeout(() => setToast(null), 2000);
+      toast.showSuccess('Link copied to clipboard!');
     } catch {
-      setToast('Failed to copy');
-      setTimeout(() => setToast(null), 2000);
+      toast.showError('Failed to copy');
     }
   };
 
@@ -72,10 +69,10 @@ export function ShareButton({ graphLimit = 500 }: ShareButtonProps) {
       </button>
 
       {isOpen && shareUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="share-view-title" aria-describedby="share-view-desc">
           <div className="w-full max-w-md rounded-xl border border-[#30363d] bg-[#0d1117] shadow-2xl overflow-hidden">
             <div className="px-4 py-3 border-b border-[#30363d] flex items-center justify-between">
-              <div className="text-sm font-semibold text-gray-200">Share View</div>
+              <div className="text-sm font-semibold text-gray-200" id="share-view-title">Share View</div>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
@@ -87,7 +84,7 @@ export function ShareButton({ graphLimit = 500 }: ShareButtonProps) {
             </div>
 
             <div className="px-4 py-4 space-y-3">
-              <div className="text-xs text-gray-400">
+              <div className="text-xs text-gray-400" id="share-view-desc">
                 Anyone with this link can view the graph (read-only)
               </div>
               <div className="text-xs text-yellow-400">
@@ -125,10 +122,6 @@ export function ShareButton({ graphLimit = 500 }: ShareButtonProps) {
         </div>
       )}
 
-      {/* Toast */}
-      <div className="pointer-events-none fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
-        <Toast message={toast} onClose={() => setToast(null)} />
-      </div>
     </>
   );
 }
