@@ -257,10 +257,10 @@ export function CommitDetails() {
 
                 <CollapsibleSection title="Changes">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 text-sm">
-                            <span className="text-[#3fb950]">+{details.stats.additions}</span>
-                            <span className="text-[#f85149]">-{details.stats.deletions}</span>
-                            <span className="text-gray-400">{details.stats.totalFiles} files</span>
+                    <div className="flex items-center gap-4 text-sm">
+                        <span className="text-[#3fb950]">+{details.stats.additions}</span>
+                        <span className="text-[#f85149]">-{details.stats.deletions}</span>
+                        <span className="text-gray-400">{details.stats.totalFiles} files</span>
                         </div>
                         {details.diff && (
                             <button

@@ -64,7 +64,7 @@ function buildHighlightedCommitsSet(
   for (const node of graphData.nodes) {
     if (node.refs && node.refs.length > 0) {
       for (const ref of node.refs) {
-        if (ref.includes('tag:')) continue;
+    if (ref.includes('tag:')) continue;
         const normalizedBranch = normalizeBranchLabel(ref);
         // Store both normalized and original ref
         if (highlightedBranches.has(normalizedBranch) && !branchNameToHead.has(normalizedBranch)) {
@@ -102,7 +102,7 @@ function buildHighlightedCommitsSet(
           // Only traverse to parents that exist in the graph
           if (!visited.has(parentHash) && hashToNode.has(parentHash)) {
             queue.push(parentHash);
-          }
+  }
         }
       }
     }

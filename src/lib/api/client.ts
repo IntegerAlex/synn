@@ -142,6 +142,34 @@ export const gitApi = {
         return handleResponse(response);
     },
 
+    // Get file contents
+    getFileContents: async (repoInfo: RepoInfo | null, filePath: string, ref?: string): Promise<{ content: string; encoding: string; size: number }> => {
+        const repoFullName = getRepoFullName(repoInfo);
+        const response = await fetch(
+            `${API_BASE}/file-contents?repo=${encodeURIComponent(repoFullName)}&filepath=${encodeURIComponent(filePath)}${
+                ref ? `&ref=${encodeURIComponent(ref)}` : ''
+            }`,
+            {
+                headers: getHeaders(),
+            }
+        );
+        return handleResponse(response);
+    },
+
+    // Get file blame
+    getFileBlame: async (repoInfo: RepoInfo | null, filePath: string, ref?: string): Promise<Array<{ hash: string; author: string; date: string; message: string; lineNumber: number; content: string }>> => {
+        const repoFullName = getRepoFullName(repoInfo);
+        const response = await fetch(
+            `${API_BASE}/blame?repo=${encodeURIComponent(repoFullName)}&filepath=${encodeURIComponent(filePath)}${
+                ref ? `&ref=${encodeURIComponent(ref)}` : ''
+            }`,
+            {
+                headers: getHeaders(),
+            }
+        );
+        return handleResponse(response);
+    },
+
     // File history
     getFileHistory: async (
         repoInfo: RepoInfo | null,

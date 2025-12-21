@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ChevronDown, ChevronRight, File as FileIcon, Folder, RefreshCw } from 'lucide-react';
 import { useRepoFiles } from '@/hooks/useGitData';
+import { FileViewerModal } from '@/components/FileViewerModal';
 
 type TreeNode =
   | { type: 'folder'; name: string; path: string; children: TreeNode[] }
@@ -57,6 +58,7 @@ function buildTree(paths: string[]): TreeNode[] {
 export function FileTree({ ref }: { ref?: string }) {
   const { data: files, isLoading, error, refetch, isFetching } = useRepoFiles(ref);
   const [query, setQuery] = useState('');
+  const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
 
   const filteredPaths = useMemo(() => {
     const list = files || [];
@@ -193,8 +195,10 @@ export function FileTree({ ref }: { ref?: string }) {
                       <span className="truncate text-gray-200">{node.name}</span>
                     </button>
                   ) : (
-                    <div
-                      className="w-full flex items-center gap-2 text-xs py-1 rounded px-1 text-gray-300"
+                    <button
+                      type="button"
+                      onClick={() => setSelectedFilePath(node.path)}
+                      className="w-full flex items-center gap-2 text-xs py-1 rounded px-1 text-gray-300 hover:bg-[#21262d] transition-colors text-left"
                       style={{ paddingLeft: 8 + pad }}
                       title={node.path}
                       role="treeitem"
@@ -202,7 +206,7 @@ export function FileTree({ ref }: { ref?: string }) {
                     >
                       <FileIcon className="w-4 h-4 text-gray-500" />
                       <span className="truncate">{node.name}</span>
-                    </div>
+                    </button>
                   )}
                 </div>
               );
@@ -210,6 +214,14 @@ export function FileTree({ ref }: { ref?: string }) {
           </div>
         </div>
       )}
+
+      {/* File Viewer Modal */}
+      <FileViewerModal
+        isOpen={!!selectedFilePath}
+        onClose={() => setSelectedFilePath(null)}
+        filePath={selectedFilePath || ''}
+        branchRef={ref}
+      />
     </div>
   );
 }

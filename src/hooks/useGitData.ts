@@ -111,3 +111,27 @@ export function useRepoFiles(ref?: string) {
         staleTime: 60_000,
     });
 }
+
+// File contents
+export function useFileContents(filePath: string | null, ref?: string) {
+    const repoInfo = useAppStore((state) => state.repoInfo);
+
+    return useQuery({
+        queryKey: ['fileContents', filePath, ref || 'HEAD'],
+        queryFn: () => gitApi.getFileContents(repoInfo, filePath!, ref),
+        enabled: !!filePath && !!repoInfo,
+        staleTime: 60_000,
+    });
+}
+
+// File blame
+export function useFileBlame(filePath: string | null, ref?: string) {
+    const repoInfo = useAppStore((state) => state.repoInfo);
+
+    return useQuery({
+        queryKey: ['fileBlame', filePath, ref || 'HEAD'],
+        queryFn: () => gitApi.getFileBlame(repoInfo, filePath!, ref),
+        enabled: !!filePath && !!repoInfo,
+        staleTime: 60_000,
+    });
+}
