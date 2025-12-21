@@ -54,7 +54,9 @@ export function ChangeGroupComponent({
     return group.changes;
   }, [group, isContextExpanded]);
 
-  const hasContext = group.contextBefore.length > 0 || group.contextAfter.length > 0;
+  // Only show context button if there are actual non-empty context lines
+  const hasContext = (group.contextBefore.length > 0 && group.contextBefore.some(l => l.left?.content.trim() || l.right?.content.trim())) ||
+                     (group.contextAfter.length > 0 && group.contextAfter.some(l => l.left?.content.trim() || l.right?.content.trim()));
 
   return (
     <motion.div
@@ -150,23 +152,23 @@ interface DiffLineRowProps {
 }
 
 function DiffLineRow({ line, isContextLine, isAnimated }: DiffLineRowProps) {
-  // Enhanced dimming: context lines are more dimmed
+  // Enhanced dimming: context lines are dimmed but still visible
   const leftBg = line.type === 'remove' || line.type === 'modify'
     ? 'bg-[#3d1f1f]'
     : isContextLine
-    ? 'bg-[#0d1117]/30 blur-sm'
+    ? 'bg-[#0d1117]/50'
     : 'bg-[#0d1117]';
 
   const rightBg = line.type === 'add' || line.type === 'modify'
     ? 'bg-[#1f3d1f]'
     : isContextLine
-    ? 'bg-[#0d1117]/30 blur-sm'
+    ? 'bg-[#0d1117]/50'
     : 'bg-[#0d1117]';
 
   const content = (
     <div className="grid grid-cols-2 gap-px">
       {/* Left side (old) */}
-      <div className={`flex ${leftBg} ${isContextLine ? 'opacity-30' : ''}`}>
+      <div className={`flex ${leftBg} ${isContextLine ? 'opacity-50' : ''}`}>
         <span className="w-12 shrink-0 text-right pr-2 py-0.5 text-gray-500 select-none border-r border-[#30363d]/30">
           {line.left?.lineNumber || ''}
         </span>
@@ -184,7 +186,7 @@ function DiffLineRow({ line, isContextLine, isAnimated }: DiffLineRowProps) {
       </div>
 
       {/* Right side (new) */}
-      <div className={`flex ${rightBg} ${isContextLine ? 'opacity-30' : ''}`}>
+      <div className={`flex ${rightBg} ${isContextLine ? 'opacity-50' : ''}`}>
         <span className="w-12 shrink-0 text-right pr-2 py-0.5 text-gray-500 select-none border-r border-[#30363d]/30">
           {line.right?.lineNumber || ''}
         </span>
