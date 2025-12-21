@@ -1,0 +1,271 @@
+'use client';
+
+import { useState, useMemo } from 'react';
+import { ChevronDown, ChevronRight, Code2, Import, Layers, Box } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import type { ChangeGroup } from '@/lib/diff/changeGrouper';
+import type { SideBySideLine, WordChange } from '@/lib/diff/diffParser';
+import { SemanticSummary } from './SemanticSummary';
+import { TokenHighlighter } from './TokenHighlighter';
+import Prism from 'prismjs';
+
+// Load common languages
+import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-typescript';
+import 'prismjs/components/prism-jsx';
+import 'prismjs/components/prism-tsx';
+
+interface ChangeGroupComponentProps {
+  group: ChangeGroup;
+  isSelected: boolean;
+  onSelect: () => void;
+  groupIndex: number;
+}
+
+const typeIcons: Record<ChangeGroup['type'], React.ReactNode> = {
+  function: <Code2 className="w-3.5 h-3.5" />,
+  class: <Layers className="w-3.5 h-3.5" />,
+  import: <Import className="w-3.5 h-3.5" />,
+  block: <Box className="w-3.5 h-3.5" />,
+  misc: null,
+};
+
+const typeColors: Record<ChangeGroup['type'], string> = {
+  function: 'text-[#7ee787]',
+  class: 'text-[#d2a8ff]',
+  import: 'text-[#79c0ff]',
+  block: 'text-[#ffa657]',
+  misc: 'text-gray-400',
+};
+
+export function ChangeGroupComponent({
+  group,
+  isSelected,
+  onSelect,
+  groupIndex,
+}: ChangeGroupComponentProps) {
+  const [isContextExpanded, setIsContextExpanded] = useState(false);
+
+  // Combine context and changes for display
+  const allLines = useMemo(() => {
+    if (isContextExpanded) {
+      return [...group.contextBefore, ...group.changes, ...group.contextAfter];
+    }
+    return group.changes;
+  }, [group, isContextExpanded]);
+
+  const hasContext = group.contextBefore.length > 0 || group.contextAfter.length > 0;
+
+  return (
+    <motion.div
+      whileHover={{ scale: isSelected ? 1 : 1.005 }}
+      className={`rounded-lg border transition-all duration-200 ${
+        isSelected
+          ? 'border-[#1f6feb] bg-[#1f6feb]/5 ring-1 ring-[#1f6feb]/30'
+          : 'border-[#30363d] bg-[#0d1117] hover:border-[#30363d]/80'
+      }`}
+      onClick={onSelect}
+      role="button"
+      tabIndex={0}
+      aria-label={`Change group ${groupIndex + 1}: ${group.description}`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          onSelect();
+          e.preventDefault();
+        }
+      }}
+    >
+      {/* Group header */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-[#30363d]/50">
+        <div className="flex items-center gap-2">
+          {typeIcons[group.type] && (
+            <span className={typeColors[group.type]}>
+              {typeIcons[group.type]}
+            </span>
+          )}
+          <SemanticSummary semanticChanges={group.semanticChanges || []}>
+            <span className="text-sm font-medium text-gray-200">{group.title}</span>
+          </SemanticSummary>
+          {group.description && group.title !== group.description && (
+            <span className="text-xs text-gray-500 hidden sm:inline">
+              — {group.description}
+            </span>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-3">
+          {/* Stats */}
+          <div className="flex items-center gap-2 text-xs">
+            {group.additions > 0 && (
+              <span className="text-[#3fb950]">+{group.additions}</span>
+            )}
+            {group.deletions > 0 && (
+              <span className="text-[#f85149]">-{group.deletions}</span>
+            )}
+          </div>
+          
+          {/* Context toggle */}
+          {hasContext && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsContextExpanded(!isContextExpanded);
+              }}
+              className="flex items-center gap-1 px-2 py-0.5 text-xs text-gray-400 hover:text-gray-200 bg-[#21262d] rounded transition-colors"
+              aria-expanded={isContextExpanded}
+              aria-label={isContextExpanded ? 'Hide context' : 'Show context'}
+            >
+              {isContextExpanded ? (
+                <ChevronDown className="w-3 h-3" />
+              ) : (
+                <ChevronRight className="w-3 h-3" />
+              )}
+              <span>Context</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Lines */}
+      <div className="font-mono text-xs overflow-x-auto overflow-y-visible">
+        <AnimatePresence initial={false}>
+          {allLines.map((line, idx) => (
+            <DiffLineRow
+              key={`${line.left?.lineNumber || 'empty'}-${line.right?.lineNumber || 'empty'}-${idx}`}
+              line={line}
+              isContextLine={line.type === 'context' && (idx < group.contextBefore.length || idx >= group.contextBefore.length + group.changes.length)}
+              isAnimated={isContextExpanded && (idx < group.contextBefore.length || idx >= allLines.length - group.contextAfter.length)}
+            />
+          ))}
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  );
+}
+
+interface DiffLineRowProps {
+  line: SideBySideLine;
+  isContextLine?: boolean;
+  isAnimated?: boolean;
+}
+
+function DiffLineRow({ line, isContextLine, isAnimated }: DiffLineRowProps) {
+  // Enhanced dimming: context lines are more dimmed
+  const leftBg = line.type === 'remove' || line.type === 'modify'
+    ? 'bg-[#3d1f1f]'
+    : isContextLine
+    ? 'bg-[#0d1117]/30 blur-sm'
+    : 'bg-[#0d1117]';
+
+  const rightBg = line.type === 'add' || line.type === 'modify'
+    ? 'bg-[#1f3d1f]'
+    : isContextLine
+    ? 'bg-[#0d1117]/30 blur-sm'
+    : 'bg-[#0d1117]';
+
+  const content = (
+    <div className="grid grid-cols-2 gap-px">
+      {/* Left side (old) */}
+      <div className={`flex ${leftBg} ${isContextLine ? 'opacity-30' : ''}`}>
+        <span className="w-12 shrink-0 text-right pr-2 py-0.5 text-gray-500 select-none border-r border-[#30363d]/30">
+          {line.left?.lineNumber || ''}
+        </span>
+        <span className="flex-1 px-2 py-0.5 whitespace-pre overflow-hidden">
+          {line.left ? (
+            <TokenHighlighter
+              oldLine={line.left.content}
+              isRemove={line.left.type === 'remove'}
+              isModify={line.type === 'modify'}
+            />
+          ) : (
+            <span className="text-gray-600">{'  '}</span>
+          )}
+        </span>
+      </div>
+
+      {/* Right side (new) */}
+      <div className={`flex ${rightBg} ${isContextLine ? 'opacity-30' : ''}`}>
+        <span className="w-12 shrink-0 text-right pr-2 py-0.5 text-gray-500 select-none border-r border-[#30363d]/30">
+          {line.right?.lineNumber || ''}
+        </span>
+        <span className="flex-1 px-2 py-0.5 whitespace-pre overflow-hidden">
+          {line.right ? (
+            <TokenHighlighter
+              newLine={line.right.content}
+              oldLine={line.left?.content}
+              isAdd={line.right.type === 'add'}
+              isModify={line.type === 'modify'}
+            />
+          ) : (
+            <span className="text-gray-600">{'  '}</span>
+          )}
+        </span>
+      </div>
+    </div>
+  );
+
+  if (isAnimated) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, height: 0 }}
+        animate={{ opacity: 1, height: 'auto' }}
+        exit={{ opacity: 0, height: 0 }}
+        transition={{ duration: 0.15 }}
+      >
+        {content}
+      </motion.div>
+    );
+  }
+
+  return content;
+}
+
+interface RenderContentProps {
+  content: string;
+  wordChanges?: WordChange[];
+  isAdd?: boolean;
+  isRemove?: boolean;
+}
+
+function RenderContent({ content, wordChanges, isAdd, isRemove }: RenderContentProps) {
+  // If we have word-level changes, render them
+  if (wordChanges && wordChanges.length > 0) {
+    return (
+      <span className={isAdd ? 'text-[#7ee787]' : isRemove ? 'text-[#ffa198]' : 'text-gray-300'}>
+        {wordChanges.map((change, idx) => {
+          if (change.type === 'unchanged') {
+            return <span key={idx}>{change.value}</span>;
+          }
+          if (change.type === 'add' && isAdd) {
+            return (
+              <span
+                key={idx}
+                className="bg-[#3fb950]/30 rounded-sm px-0.5"
+              >
+                {change.value}
+              </span>
+            );
+          }
+          if (change.type === 'remove' && isRemove) {
+            return (
+              <span
+                key={idx}
+                className="bg-[#f85149]/30 rounded-sm px-0.5"
+              >
+                {change.value}
+              </span>
+            );
+          }
+          return <span key={idx}>{change.value}</span>;
+        })}
+      </span>
+    );
+  }
+
+  // Default: just render the content with appropriate color
+  return (
+    <span className={isAdd ? 'text-[#7ee787]' : isRemove ? 'text-[#ffa198]' : 'text-gray-300'}>
+      {content || ' '}
+    </span>
+  );
+}

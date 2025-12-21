@@ -5,9 +5,10 @@ import { useCommitDetails } from '@/hooks/useGitData';
 import { useAppStore } from '@/store/useAppStore';
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection';
 import { highlightUnifiedDiffLines } from '@/lib/utils/diffHighlighter';
-import { Copy, ExternalLink } from 'lucide-react';
+import { Copy, ExternalLink, Sparkles } from 'lucide-react';
 import { CommitFileTree } from '@/components/CommitDetails/FileTree';
 import { useToast } from '@/hooks/useToast';
+import { BetterDiffModal } from '@/components/diff/BetterDiffModal';
 
 function getGitHubCommitUrl(repoPath: string | undefined | null, hash: string): string | null {
     if (!repoPath) return null;
@@ -25,6 +26,7 @@ export function CommitDetails() {
     const { data: details, isLoading, error } = useCommitDetails(selectedHash);
     const [selectedFile, setSelectedFile] = useState<string | null>(null);
     const [showFullDiff, setShowFullDiff] = useState(false);
+    const [isBetterDiffOpen, setIsBetterDiffOpen] = useState(false);
     const toast = useToast();
 
     // Parse diff by file
@@ -254,10 +256,22 @@ export function CommitDetails() {
                 </CollapsibleSection>
 
                 <CollapsibleSection title="Changes">
-                    <div className="flex items-center gap-4 text-sm">
-                        <span className="text-[#3fb950]">+{details.stats.additions}</span>
-                        <span className="text-[#f85149]">-{details.stats.deletions}</span>
-                        <span className="text-gray-400">{details.stats.totalFiles} files</span>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4 text-sm">
+                            <span className="text-[#3fb950]">+{details.stats.additions}</span>
+                            <span className="text-[#f85149]">-{details.stats.deletions}</span>
+                            <span className="text-gray-400">{details.stats.totalFiles} files</span>
+                        </div>
+                        {details.diff && (
+                            <button
+                                onClick={() => setIsBetterDiffOpen(true)}
+                                className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-linear-to-r from-[#ef4444] to-[#f97316] text-white rounded-md hover:from-[#f87171] hover:to-[#fb923c] transition-all shadow-sm"
+                                aria-label="Open Better Diff view"
+                            >
+                                <Sparkles className="w-3 h-3" />
+                                Better Diff
+                            </button>
+                        )}
                     </div>
                 </CollapsibleSection>
 
@@ -304,6 +318,15 @@ export function CommitDetails() {
                 )}
             </div>
 
+            {/* Better Diff Modal */}
+            <BetterDiffModal
+                isOpen={isBetterDiffOpen}
+                onClose={() => setIsBetterDiffOpen(false)}
+                diff={details?.diff || ''}
+                commitMessage={details?.message}
+                commitHash={details?.hash}
+                files={details?.files}
+            />
         </aside>
     );
 }
