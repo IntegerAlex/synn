@@ -402,8 +402,6 @@ export class GitHubApiService {
   }
 
   async getBlame(filePath: string, ref?: string): Promise<Array<{ hash: string; author: string; date: string; message: string; lineNumber: number; content: string }>> {
-    // GitHub API doesn't have a direct blame endpoint, so we use the commits API
-    // to get commit history for the file and map lines to commits
     const sha = ref || this.defaultBranch;
     
     // Get file contents first to determine line count - this MUST succeed for blame to work
@@ -414,7 +412,6 @@ export class GitHubApiService {
       fileContents = await this.getFileContents(filePath, ref);
       lines = fileContents.content.split('\n');
     } catch (fileError) {
-      console.error('Failed to get file contents for blame:', fileError);
       return []; // Can't provide blame without file contents
     }
 
@@ -423,65 +420,207 @@ export class GitHubApiService {
       return [];
     }
 
+    // Strategy: Reconstruct blame by analyzing commit patches (optimized - no file content fetches)
+    // Process commits from newest to oldest, tracking which lines each commit modified
     const blameInfo: Array<{ hash: string; author: string; date: string; message: string; lineNumber: number; content: string }> = [];
     
-    // Strategy 1: Try to get commits specifically for this file
-    let commits: any[] = [];
     try {
+      // Initialize blame array - we'll fill it as we process commits
+      const lineBlame: Array<{ hash: string; author: string; date: string; message: string } | null> = 
+        new Array(lines.length).fill(null);
+      
+      // Get commits that touched this file (most recent first, limit to 15 for performance)
+      // Processing fewer commits reduces API calls significantly while still covering recent changes
       const commitsResponse = await this.fetchGitHub<any[]>(
-        `/commits?sha=${encodeURIComponent(sha)}&path=${encodeURIComponent(filePath)}&per_page=100`
-      );
-      if (Array.isArray(commitsResponse)) {
-        commits = commitsResponse;
-      }
-    } catch (commitError) {
-      console.warn('Failed to fetch file-specific commits for blame:', commitError);
-    }
-
-    // Strategy 2: If we have file-specific commits, use the most recent one
-    if (commits.length > 0) {
-      const mostRecentCommit = commits[0];
-      if (mostRecentCommit?.sha) {
-        for (let i = 0; i < lines.length; i++) {
-          blameInfo.push({
-            hash: mostRecentCommit.sha,
-            author: mostRecentCommit.commit?.author?.name || mostRecentCommit.author?.login || 'Unknown',
-            date: mostRecentCommit.commit?.author?.date || mostRecentCommit.commit?.committer?.date || new Date().toISOString(),
-            message: mostRecentCommit.commit?.message?.split('\n')[0] || 'No message',
-            lineNumber: i + 1,
-            content: lines[i] || '',
-          });
-        }
-        return blameInfo; // Success - return early
-      }
-    }
-
-    // Strategy 3: Fallback to latest commit on the branch (file exists, so SOME commit touched it)
-    try {
-      const latestCommits = await this.fetchGitHub<any[]>(
-        `/commits?sha=${encodeURIComponent(sha)}&per_page=1`
+        `/commits?sha=${encodeURIComponent(sha)}&path=${encodeURIComponent(filePath)}&per_page=15`
       );
       
-      if (Array.isArray(latestCommits) && latestCommits.length > 0 && latestCommits[0]?.sha) {
-        const latestCommit = latestCommits[0];
-        for (let i = 0; i < lines.length; i++) {
+      if (!Array.isArray(commitsResponse) || commitsResponse.length === 0) {
+        throw new Error('No commits found');
+      }
+
+      // Process commits from newest to oldest
+      // Track line content to commit mapping to avoid fetching file contents
+      const lineContentToCommit = new Map<string, { hash: string; author: string; date: string; message: string }>();
+      
+      for (const commit of commitsResponse) {
+        if (!commit.sha) continue;
+        
+        try {
+          // Get commit details with patch (includes patch in response, no extra call needed)
+          const commitDetail = await this.fetchGitHub<any>(
+            `/commits/${commit.sha}`
+          );
+          
+          if (!commitDetail.files) continue;
+          
+          // Find the file in this commit
+          const fileChange = commitDetail.files.find((f: any) => 
+            f.filename === filePath || f.filename.endsWith(`/${filePath}`)
+          );
+          
+          if (!fileChange || !fileChange.patch) continue;
+          
+          // Get commit metadata
+          const author = commitDetail.commit?.author?.name || 
+                        commitDetail.author?.login || 
+                        commit.commit?.author?.name || 
+                        commit.author?.login || 
+                        'Unknown';
+          const date = commitDetail.commit?.author?.date || 
+                      commit.commit?.author?.date || 
+                      new Date().toISOString();
+          const message = commitDetail.commit?.message?.split('\n')[0] || 
+                         commit.commit?.message?.split('\n')[0] || 
+                         'No message';
+          
+          const commitInfo = { hash: commit.sha, author, date, message };
+          
+          // Parse the patch to extract added/modified lines with their content
+          const patch = fileChange.patch;
+          const patchLines = patch.split('\n');
+          
+          let newFileLine = 0; // Line number in the file after this commit (1-based)
+          const addedLines: Array<{ lineNum: number; content: string }> = [];
+          
+          for (const patchLine of patchLines) {
+            // Parse unified diff format: @@ -old_start,old_count +new_start,new_count @@
+            const hunkMatch = patchLine.match(/^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/);
+            if (hunkMatch) {
+              const newStart = parseInt(hunkMatch[3]);
+              newFileLine = newStart; // Start counting from this line (1-based)
+              continue;
+            }
+            
+            // Track added/modified lines with their content
+            if (patchLine.startsWith('+') && !patchLine.startsWith('+++')) {
+              // This line was added/modified in this commit
+              const lineContent = patchLine.substring(1); // Remove the '+' prefix
+              addedLines.push({ lineNum: newFileLine, content: lineContent });
+              newFileLine++;
+            } else if (patchLine.startsWith('-') && !patchLine.startsWith('---')) {
+              // This line was deleted - don't increment newFileLine
+            } else if (!patchLine.startsWith('\\') && patchLine.trim() !== '') {
+              // Context line (exists in both old and new) - increment
+              newFileLine++;
+            }
+          }
+          
+          // For each added line, try to find it in the final file and assign blame
+          // Use content matching with position hints from the patch
+          for (const addedLine of addedLines) {
+            const lineContent = addedLine.content;
+            
+            // First, try exact position match (if line numbers haven't shifted much)
+            const approximateIndex = addedLine.lineNum - 1;
+            if (approximateIndex >= 0 && approximateIndex < lines.length && 
+                lineBlame[approximateIndex] === null && 
+                lines[approximateIndex] === lineContent) {
+              lineBlame[approximateIndex] = commitInfo;
+              lineContentToCommit.set(lineContent, commitInfo);
+              continue;
+            }
+            
+            // If exact position doesn't match, search nearby (within ±5 lines for better performance)
+            const searchStart = Math.max(0, approximateIndex - 5);
+            const searchEnd = Math.min(lines.length, approximateIndex + 6);
+            let found = false;
+            
+            for (let i = searchStart; i < searchEnd; i++) {
+              if (lineBlame[i] === null && lines[i] === lineContent) {
+                lineBlame[i] = commitInfo;
+                lineContentToCommit.set(lineContent, commitInfo);
+                found = true;
+                break;
+              }
+            }
+            
+            // If still not found and we haven't seen this content before, mark it for later
+            if (!found && !lineContentToCommit.has(lineContent)) {
+              lineContentToCommit.set(lineContent, commitInfo);
+            }
+          }
+        } catch (commitDetailError) {
+          // If we can't get commit details, skip this commit
+          continue;
+        }
+      }
+      
+      // Fill in any remaining unassigned lines by matching content
+      for (let i = 0; i < lines.length; i++) {
+        if (lineBlame[i] === null) {
+          const lineContent = lines[i];
+          const matchingCommit = lineContentToCommit.get(lineContent);
+          if (matchingCommit) {
+            lineBlame[i] = matchingCommit;
+          }
+        }
+      }
+      
+      // Fill in any remaining null lines with the oldest commit (or most recent if no commits processed)
+      const fallbackCommit = commitsResponse[commitsResponse.length - 1] || commitsResponse[0];
+      const fallbackAuthor = fallbackCommit?.commit?.author?.name || 
+                            fallbackCommit?.author?.login || 
+                            'Unknown';
+      const fallbackDate = fallbackCommit?.commit?.author?.date || 
+                          new Date().toISOString();
+      const fallbackMessage = fallbackCommit?.commit?.message?.split('\n')[0] || 
+                             'No message';
+      const fallbackHash = fallbackCommit?.sha || 'unknown';
+      
+      // Build final blame info
+      for (let i = 0; i < lines.length; i++) {
+        const blame = lineBlame[i];
+        if (blame) {
           blameInfo.push({
-            hash: latestCommit.sha,
-            author: latestCommit.commit?.author?.name || latestCommit.author?.login || 'Unknown',
-            date: latestCommit.commit?.author?.date || latestCommit.commit?.committer?.date || new Date().toISOString(),
-            message: latestCommit.commit?.message?.split('\n')[0] || 'No message',
+            ...blame,
+            lineNumber: i + 1,
+            content: lines[i] || '',
+          });
+        } else {
+          // Fallback for unassigned lines
+          blameInfo.push({
+            hash: fallbackHash,
+            author: fallbackAuthor,
+            date: fallbackDate,
+            message: fallbackMessage,
             lineNumber: i + 1,
             content: lines[i] || '',
           });
         }
-        return blameInfo; // Success with fallback
       }
-    } catch (fallbackError) {
-      console.warn('Failed to get latest commit for blame fallback:', fallbackError);
+      
+      return blameInfo;
+    } catch (error) {
+      // Fallback: Use the most recent commit for all lines
+      try {
+        const commitsResponse = await this.fetchGitHub<any[]>(
+          `/commits?sha=${encodeURIComponent(sha)}&path=${encodeURIComponent(filePath)}&per_page=1`
+        );
+        
+        if (Array.isArray(commitsResponse) && commitsResponse.length > 0) {
+          const mostRecentCommit = commitsResponse[0];
+          
+          if (mostRecentCommit?.sha) {
+            for (let i = 0; i < lines.length; i++) {
+              blameInfo.push({
+                hash: mostRecentCommit.sha,
+                author: mostRecentCommit.commit?.author?.name || mostRecentCommit.author?.login || 'Unknown',
+                date: mostRecentCommit.commit?.author?.date || mostRecentCommit.commit?.committer?.date || new Date().toISOString(),
+                message: mostRecentCommit.commit?.message?.split('\n')[0] || 'No message',
+                lineNumber: i + 1,
+                content: lines[i] || '',
+              });
+            }
+            return blameInfo;
+          }
+        }
+      } catch (fallbackError) {
+        // Fallback failed, will use placeholder data
+      }
     }
 
-    // Strategy 4: Last resort - use placeholder data (file exists, so we know someone wrote it)
-    // This ensures blame ALWAYS works, even if we can't get commit info
+    // Strategy 3: Last resort - use placeholder data
     for (let i = 0; i < lines.length; i++) {
       blameInfo.push({
         hash: 'unknown',
@@ -493,7 +632,7 @@ export class GitHubApiService {
       });
     }
     
-    return blameInfo; // Always return something if file exists
+    return blameInfo;
   }
 
   async getCommits(branch?: string, limit: number = 100): Promise<Commit[]> {

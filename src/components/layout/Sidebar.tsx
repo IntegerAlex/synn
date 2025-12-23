@@ -16,7 +16,7 @@ export function Sidebar() {
     const repoInfo = useAppStore((state) => state.repoInfo);
     const sidebarCollapsed = useAppStore((state) => state.sidebarCollapsed);
     const toggleSidebar = useAppStore((state) => state.toggleSidebar);
-    const [tab, setTab] = useState<'branches' | 'files'>('branches');
+    const [tab, setTab] = useState<'branches' | 'files'>('files');
 
     const handleBranchClick = (branchName: string) => {
         setSelectedBranch(branchName);
@@ -97,7 +97,7 @@ export function Sidebar() {
                 </div>
                 {!sidebarCollapsed && (
                     <div className="mt-3 flex items-center gap-2">
-                        <button
+                        {/* <button
                             type="button"
                             onClick={() => setTab('branches')}
                             className={`flex-1 px-2 py-1 rounded-md text-xs border transition-colors ${
@@ -109,7 +109,7 @@ export function Sidebar() {
                             aria-label="Show branches"
                         >
                             Branches
-                        </button>
+                        </button> */}
                         <button
                             type="button"
                             onClick={() => setTab('files')}

@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
-import { X, Copy, Download, GitCommit, User, Calendar } from 'lucide-react';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { X, Copy, Download, GitCommit, User, Calendar, GitBranch } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useFileContents, useFileBlame } from '@/hooks/useGitData';
 import { useAppStore } from '@/store/useAppStore';
 import { useToast } from '@/hooks/useToast';
+import { useQueryClient } from '@tanstack/react-query';
+import { gitApi } from '@/lib/api/client';
 import Prism from 'prismjs';
 // Core language components (load in dependency order)
 import 'prismjs/components/prism-markup'; // Base for HTML/XML - must load first
@@ -182,17 +184,24 @@ export function FileViewerModal({ isOpen, onClose, filePath, branchRef }: FileVi
   // Use branchRef prop if provided, otherwise use selected branch, fallback to undefined (default branch)
   const effectiveRef = branchRef || selectedBranch || undefined;
   const { data: fileData, isLoading, error } = useFileContents(filePath, effectiveRef);
-  const { data: blameData, isLoading: isLoadingBlame, error: blameError } = useFileBlame(filePath, effectiveRef);
+  const queryClient = useQueryClient();
+  const [blameEnabled, setBlameEnabled] = useState(false);
   
-  // Debug logging (remove in production)
-  if (typeof window !== 'undefined' && blameData) {
-    console.log('Blame data received:', {
-      filePath,
-      blameDataLength: Array.isArray(blameData) ? blameData.length : 0,
-      firstFew: Array.isArray(blameData) ? blameData.slice(0, 3) : null,
-      error: blameError,
-    });
-  }
+  // Prefetch blame data when file loads (but don't enable blame view yet)
+  useEffect(() => {
+    if (fileData && filePath && repoInfo && isOpen) {
+      const blameQueryKey = ['fileBlame', filePath, effectiveRef || 'HEAD'];
+      queryClient.prefetchQuery({
+        queryKey: blameQueryKey,
+        queryFn: () => gitApi.getFileBlame(repoInfo, filePath, effectiveRef),
+        staleTime: 60_000,
+      });
+    }
+  }, [fileData, filePath, effectiveRef, repoInfo, isOpen, queryClient]);
+  
+  // Only fetch blame data when blame is enabled
+  const { data: blameData } = useFileBlame(blameEnabled ? filePath : null, effectiveRef);
+  
   const toast = useToast();
   const [hoveredLine, setHoveredLine] = useState<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
@@ -243,7 +252,7 @@ export function FileViewerModal({ isOpen, onClose, filePath, branchRef }: FileVi
   }, [blameData]);
 
   const handleLineHover = (lineNumber: number, event: React.MouseEvent) => {
-    if (blameMap.has(lineNumber)) {
+    if (blameEnabled && blameMap.has(lineNumber)) {
       setHoveredLine(lineNumber);
       const rect = event.currentTarget.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
@@ -359,6 +368,19 @@ export function FileViewerModal({ isOpen, onClose, filePath, branchRef }: FileVi
                 {fileData && (
                   <>
                     <button
+                      onClick={() => setBlameEnabled(!blameEnabled)}
+                      className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 ${
+                        blameEnabled
+                          ? 'bg-[#1f6feb] text-white hover:bg-[#1a5cd8]'
+                          : 'text-gray-400 hover:text-white hover:bg-[#21262d]'
+                      }`}
+                      title={blameEnabled ? 'Disable blame view' : 'Enable blame view'}
+                      aria-label={blameEnabled ? 'Disable blame view' : 'Enable blame view'}
+                    >
+                      <GitBranch className="w-3.5 h-3.5" />
+                      Blame
+                    </button>
+                    <button
                       onClick={copyToClipboard}
                       className="p-2 text-gray-400 hover:text-white hover:bg-[#21262d] rounded transition-colors"
                       title="Copy to clipboard"
@@ -442,9 +464,9 @@ export function FileViewerModal({ isOpen, onClose, filePath, branchRef }: FileVi
                               <div
                                 key={index}
                                 className={`group relative h-[1.5em] leading-[1.5em] whitespace-pre ${
-                                  hasBlame ? 'cursor-help hover:bg-[#1c2128]/50' : ''
+                                  blameEnabled && hasBlame ? 'cursor-help hover:bg-[#1c2128]/50' : ''
                                 } ${hoveredLine === lineNumber ? 'bg-[#1c2128]' : ''}`}
-                                onMouseEnter={(e) => hasBlame && handleLineHover(lineNumber, e)}
+                                onMouseEnter={(e) => blameEnabled && hasBlame && handleLineHover(lineNumber, e)}
                                 onMouseLeave={handleLineLeave}
                                 dangerouslySetInnerHTML={{ __html: highlightedLine || '&nbsp;' }}
                               />

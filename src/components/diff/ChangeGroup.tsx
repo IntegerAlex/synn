@@ -7,13 +7,7 @@ import type { ChangeGroup } from '@/lib/diff/changeGrouper';
 import type { SideBySideLine, WordChange } from '@/lib/diff/diffParser';
 import { SemanticSummary } from './SemanticSummary';
 import { TokenHighlighter } from './TokenHighlighter';
-import Prism from 'prismjs';
-
-// Load common languages
-import 'prismjs/components/prism-javascript';
-import 'prismjs/components/prism-typescript';
-import 'prismjs/components/prism-jsx';
-import 'prismjs/components/prism-tsx';
+import Prism from '@/lib/utils/prism-setup';
 
 interface ChangeGroupComponentProps {
   group: ChangeGroup;
