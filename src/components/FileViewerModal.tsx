@@ -1,13 +1,11 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { X, Copy, Download, GitCommit, User, Calendar, GitBranch } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useFileContents, useFileBlame } from '@/hooks/useGitData';
 import { useAppStore } from '@/store/useAppStore';
 import { useToast } from '@/hooks/useToast';
-import { useQueryClient } from '@tanstack/react-query';
-import { gitApi } from '@/lib/api/client';
 import Prism from 'prismjs';
 // Core language components (load in dependency order)
 import 'prismjs/components/prism-markup'; // Base for HTML/XML - must load first
@@ -184,23 +182,17 @@ export function FileViewerModal({ isOpen, onClose, filePath, branchRef }: FileVi
   // Use branchRef prop if provided, otherwise use selected branch, fallback to undefined (default branch)
   const effectiveRef = branchRef || selectedBranch || undefined;
   const { data: fileData, isLoading, error } = useFileContents(filePath, effectiveRef);
-  const queryClient = useQueryClient();
   const [blameEnabled, setBlameEnabled] = useState(false);
   
   // Prefetch blame data when file loads (but don't enable blame view yet)
-  useEffect(() => {
-    if (fileData && filePath && repoInfo && isOpen) {
-      const blameQueryKey = ['fileBlame', filePath, effectiveRef || 'HEAD'];
-      queryClient.prefetchQuery({
-        queryKey: blameQueryKey,
-        queryFn: () => gitApi.getFileBlame(repoInfo, filePath, effectiveRef),
-        staleTime: 60_000,
-      });
-    }
-  }, [fileData, filePath, effectiveRef, repoInfo, isOpen, queryClient]);
+  // This will automatically fetch when fileData is ready
+  const { data: prefetchedBlameData, isSuccess: isBlameReady, isLoading: isBlameLoading } = useFileBlame(
+    fileData && filePath ? filePath : null,
+    effectiveRef
+  );
   
-  // Only fetch blame data when blame is enabled
-  const { data: blameData } = useFileBlame(blameEnabled ? filePath : null, effectiveRef);
+  // Use the prefetched data when blame is enabled
+  const blameData = blameEnabled ? prefetchedBlameData : null;
   
   const toast = useToast();
   const [hoveredLine, setHoveredLine] = useState<number | null>(null);
@@ -369,13 +361,28 @@ export function FileViewerModal({ isOpen, onClose, filePath, branchRef }: FileVi
                   <>
                     <button
                       onClick={() => setBlameEnabled(!blameEnabled)}
+                      disabled={!isBlameReady}
                       className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 ${
-                        blameEnabled
+                        !isBlameReady
+                          ? 'text-gray-600 cursor-not-allowed opacity-50'
+                          : blameEnabled
                           ? 'bg-[#1f6feb] text-white hover:bg-[#1a5cd8]'
                           : 'text-gray-400 hover:text-white hover:bg-[#21262d]'
                       }`}
-                      title={blameEnabled ? 'Disable blame view' : 'Enable blame view'}
-                      aria-label={blameEnabled ? 'Disable blame view' : 'Enable blame view'}
+                      title={
+                        !isBlameReady
+                          ? 'Loading blame data...'
+                          : blameEnabled
+                          ? 'Disable blame view'
+                          : 'Enable blame view'
+                      }
+                      aria-label={
+                        !isBlameReady
+                          ? 'Loading blame data...'
+                          : blameEnabled
+                          ? 'Disable blame view'
+                          : 'Enable blame view'
+                      }
                     >
                       <GitBranch className="w-3.5 h-3.5" />
                       Blame
