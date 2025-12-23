@@ -24,7 +24,7 @@ export function TokenHighlighter({
     if (isModify && oldLine && newLine) {
       // For modifications, highlight changed tokens
       const { newTokens, changedIndices } = findChangedTokens(oldLine, newLine);
-      return renderTokensWithHighlights(newTokens, changedIndices, isAdd);
+      return renderTokensWithHighlights(newTokens, changedIndices, isAdd ?? false);
     } else if (isAdd && newLine) {
       // For additions, highlight all identifiers
       const tokens = parseTokens(newLine);
