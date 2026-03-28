@@ -257,7 +257,7 @@ export function RepoSelector() {
                                             />
                                         </div>
                                         {/* Repository list */}
-                                        <div className="max-h-64 overflow-y-auto rounded-lg border-2 border-border bg-background shadow-lg">
+                                        <div role="listbox" aria-label="Repositories" className="max-h-64 overflow-y-auto rounded-lg border-2 border-border bg-background shadow-lg">
                                             {loadingRepos ? (
                                                 <div className="px-4 py-8 text-center text-sm text-muted-foreground">
                                                     Loading repositories...
@@ -271,6 +271,8 @@ export function RepoSelector() {
                                                     <button
                                                         key={repo.id}
                                                         type="button"
+                                                        role="option"
+                                                        aria-selected={selectedRepo === repo.full_name}
                                                         onClick={() => setSelectedRepo(repo.full_name)}
                                                         disabled={downloading}
                                                         className={`w-full text-left px-4 py-3 border-b border-border/50 last:border-b-0
