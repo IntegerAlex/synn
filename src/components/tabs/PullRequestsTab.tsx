@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import {
 	useGitHubPulls,
 	usePRDetail,
@@ -111,7 +111,7 @@ function PRStatusBadge({ pr }: { pr: GitHubPullRequest }) {
 
 /* ── Comment Card ──────────────────────────────────────────────── */
 
-function CommentCard({ comment }: { comment: GitHubComment }) {
+const CommentCard = memo(function CommentCard({ comment }: { comment: GitHubComment }) {
 	return (
 		<div className="border border-[#30363d] rounded-md overflow-hidden">
 			<div className="flex items-center gap-2 px-4 py-2 bg-[#161b22] border-b border-[#30363d]">
@@ -136,7 +136,7 @@ function CommentCard({ comment }: { comment: GitHubComment }) {
 			</div>
 		</div>
 	);
-}
+});
 
 /* ── File Diff Viewer (delegated to DiffView component) ────────── */
 
@@ -522,7 +522,7 @@ function PRDetail({
 
 /* ── PR List Row ───────────────────────────────────────────────── */
 
-function PRRow({
+const PRRow = memo(function PRRow({
 	pr,
 	onClick,
 }: {
@@ -616,7 +616,7 @@ function PRRow({
 			</div>
 		</div>
 	);
-}
+});
 
 /* ── Main Export ────────────────────────────────────────────────── */
 
@@ -630,13 +630,17 @@ export function PullRequestsTab() {
 	const pulls = data?.data ?? [];
 	const pagination = data?.pagination;
 
-	const filtered = searchQuery
-		? pulls.filter(
-				(p) =>
-					p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-					p.number.toString().includes(searchQuery),
-			)
-		: pulls;
+	const filtered = useMemo(
+		() =>
+			searchQuery
+				? pulls.filter(
+						(p) =>
+							p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+							p.number.toString().includes(searchQuery),
+					)
+				: pulls,
+		[pulls, searchQuery],
+	);
 
 	/* Show detail view when a PR is selected */
 	if (selectedPR !== null) {

@@ -1,17 +1,33 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useAppStore } from '@/store/useAppStore';
 import { RepoSelector } from '@/components/RepoSelector';
-import { CytoscapeGraph } from '@/components/graph/CytoscapeGraph';
-import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { CommitDetails } from '@/components/CommitDetails';
 import { DocumentTitle } from '@/components/DocumentTitle';
-import { IssuesTab } from '@/components/tabs/IssuesTab';
-import { PullRequestsTab } from '@/components/tabs/PullRequestsTab';
-import { InsightsTab } from '@/components/tabs/InsightsTab';
 import { SettingsTab } from '@/components/tabs/SettingsTab';
+
+// Lazy-load heavy tab components for code-splitting
+const CytoscapeGraph = dynamic(
+  () => import('@/components/graph/CytoscapeGraph').then((m) => ({ default: m.CytoscapeGraph })),
+  { ssr: false },
+);
+const Sidebar = dynamic(
+  () => import('@/components/layout/Sidebar').then((m) => ({ default: m.Sidebar })),
+);
+const CommitDetails = dynamic(
+  () => import('@/components/CommitDetails').then((m) => ({ default: m.CommitDetails })),
+);
+const IssuesTab = dynamic(
+  () => import('@/components/tabs/IssuesTab').then((m) => ({ default: m.IssuesTab })),
+);
+const PullRequestsTab = dynamic(
+  () => import('@/components/tabs/PullRequestsTab').then((m) => ({ default: m.PullRequestsTab })),
+);
+const InsightsTab = dynamic(
+  () => import('@/components/tabs/InsightsTab').then((m) => ({ default: m.InsightsTab })),
+);
 
 export default function Home() {
   const repoInfo = useAppStore((state) => state.repoInfo);

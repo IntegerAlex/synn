@@ -21,6 +21,7 @@ export function useRepoInfo() {
         queryKey: queryKeys.repo,
         queryFn: () => gitApi.getRepoInfo(repoInfo),
         enabled: !!repoInfo,
+        gcTime: 10 * 60 * 1000,
     });
 }
 
@@ -46,6 +47,7 @@ export function useBranches() {
         queryKey: queryKeys.branches,
         queryFn: () => gitApi.getBranches(repoInfo),
         enabled: !!repoInfo,
+        gcTime: 10 * 60 * 1000,
     });
 }
 
@@ -58,6 +60,7 @@ export function useGraph(limit = 100, offset = 0, shareId?: string) {
         queryFn: () => gitApi.getGraph(repoInfo, limit, offset, shareId),
         enabled: !!repoInfo,
         staleTime: 10000,
+        gcTime: 10 * 60 * 1000,
         placeholderData: (previousData) => previousData,
     });
 }

@@ -111,6 +111,8 @@ export function useGitHubIssues(state: "open" | "closed" = "open", page = 1) {
 		},
 		enabled: !!repoFullName,
 		staleTime: 2 * 60 * 1000,
+		gcTime: 10 * 60 * 1000,
+		placeholderData: (previousData) => previousData,
 	});
 }
 
@@ -133,6 +135,8 @@ export function useGitHubPulls(state: "open" | "closed" | "all" = "open", page =
 		},
 		enabled: !!repoFullName,
 		staleTime: 2 * 60 * 1000,
+		gcTime: 10 * 60 * 1000,
+		placeholderData: (previousData) => previousData,
 	});
 }
 
@@ -150,6 +154,8 @@ export function useRepoInsights() {
 		},
 		enabled: !!repoFullName,
 		staleTime: 5 * 60 * 1000,
+		gcTime: 15 * 60 * 1000,
+		placeholderData: (previousData) => previousData,
 	});
 }
 
@@ -203,6 +209,8 @@ return res.json();
 },
 enabled: !!repoFullName && issueNumber !== null,
 staleTime: 30 * 1000,
+gcTime: 5 * 60 * 1000,
+placeholderData: (previousData) => previousData,
 });
 }
 
@@ -222,6 +230,8 @@ return res.json();
 },
 enabled: !!repoFullName && prNumber !== null,
 staleTime: 30 * 1000,
+gcTime: 5 * 60 * 1000,
+placeholderData: (previousData) => previousData,
 });
 }
 

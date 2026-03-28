@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { useRepoInsights } from "@/hooks/useGitHubData";
 import {
 	Star,
@@ -40,7 +41,7 @@ const LANGUAGE_COLORS: Record<string, string> = {
 	Svelte: "#ff3e00",
 };
 
-function StatCard({
+const StatCard = memo(function StatCard({
 	icon: Icon,
 	label,
 	value,
@@ -60,9 +61,9 @@ function StatCard({
 			<div className="text-2xl font-bold text-gray-200">{value}</div>
 		</div>
 	);
-}
+});
 
-function LanguageBar({ languages }: { languages: Array<{ name: string; percentage: number }> }) {
+const LanguageBar = memo(function LanguageBar({ languages }: { languages: Array<{ name: string; percentage: number }> }) {
 	return (
 		<div className="space-y-3">
 			<div className="flex h-2 rounded-full overflow-hidden bg-[#21262d]">
@@ -92,7 +93,7 @@ function LanguageBar({ languages }: { languages: Array<{ name: string; percentag
 			</div>
 		</div>
 	);
-}
+});
 
 function formatDate(dateStr: string): string {
 	return new Date(dateStr).toLocaleDateString("en-US", {
