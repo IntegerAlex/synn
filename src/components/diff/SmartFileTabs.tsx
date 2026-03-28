@@ -178,13 +178,13 @@ const FileTab = memo(function FileTab({ file, index, isSelected, impact, icon: I
         {file.newPath.split('/').pop()}
       </span>
       {file.isNew && (
-        <span className="px-1 py-0.5 bg-[#238636]/20 text-[#3fb950] rounded text-[10px] font-medium">N</span>
+        <span className="px-1 py-0.5 bg-[#238636]/20 text-[#3fb950] rounded text-[10px] font-medium" aria-label="New file">N</span>
       )}
       {file.isDeleted && (
-        <span className="px-1 py-0.5 bg-[#da3633]/20 text-[#f85149] rounded text-[10px] font-medium">D</span>
+        <span className="px-1 py-0.5 bg-[#da3633]/20 text-[#f85149] rounded text-[10px] font-medium" aria-label="Deleted file">D</span>
       )}
       {file.isRenamed && (
-        <span className="px-1 py-0.5 bg-[#1f6feb]/20 text-[#79c0ff] rounded text-[10px] font-medium">R</span>
+        <span className="px-1 py-0.5 bg-[#1f6feb]/20 text-[#79c0ff] rounded text-[10px] font-medium" aria-label="Renamed file">R</span>
       )}
       <span className="text-xs">
         <span className="text-[#3fb950]">+{file.additions}</span>
