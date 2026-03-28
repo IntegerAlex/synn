@@ -41,7 +41,8 @@ let files: any[] = filesRes.ok ? await filesRes.json() : [];
 // Paginate remaining files if there are more than 100
 if (filesRes.ok && files.length === 100) {
 let page = 2;
-while (true) {
+const maxPages = 10; // Safety limit: max 1000 files
+while (page <= maxPages) {
 const nextRes = await githubFetch(
 `https://api.github.com/repos/${repo}/pulls/${number}/files?per_page=100&page=${page}`,
 token,
