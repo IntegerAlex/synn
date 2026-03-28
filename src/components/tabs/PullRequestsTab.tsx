@@ -17,7 +17,7 @@ import {
   Send,
   XCircle,
 } from "lucide-react";
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import type { GitHubComment, GitHubPullRequest } from "@/hooks/useGitHubData";
 import {
   useAddComment,
