@@ -12,15 +12,14 @@ import {
 import type {
 	GitHubPullRequest,
 	GitHubComment,
-	PRFile,
 } from "@/hooks/useGitHubData";
+import { DiffView } from "./DiffView";
 import {
 	ArrowLeft,
 	CheckCircle,
 	ChevronDown,
 	ChevronLeft,
 	ChevronRight,
-	ChevronUp,
 	CircleDot,
 	FileText,
 	GitBranch,
@@ -139,83 +138,7 @@ function CommentCard({ comment }: { comment: GitHubComment }) {
 	);
 }
 
-/* ── File Diff Viewer ──────────────────────────────────────────── */
-
-function FileDiffCard({ file }: { file: PRFile }) {
-	const [expanded, setExpanded] = useState(false);
-
-	const statusColor: Record<string, string> = {
-		added: "text-green-400",
-		removed: "text-red-400",
-		modified: "text-yellow-400",
-		renamed: "text-blue-400",
-		copied: "text-blue-400",
-	};
-
-	return (
-		<div className="border border-[#30363d] rounded-md overflow-hidden">
-			<button
-				type="button"
-				onClick={() => setExpanded((v) => !v)}
-				className="flex items-center gap-2 w-full px-4 py-2 bg-[#161b22] hover:bg-[#1c2128] text-left transition-colors"
-			>
-				{expanded ? (
-					<ChevronUp className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
-				) : (
-					<ChevronDown className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
-				)}
-				<span className={`text-xs font-medium ${statusColor[file.status] ?? "text-gray-400"}`}>
-					{file.status}
-				</span>
-				<span className="text-sm text-gray-200 truncate flex-1 font-mono">
-					{file.filename}
-				</span>
-				<span className="flex items-center gap-2 text-xs flex-shrink-0">
-					{file.additions > 0 && (
-						<span className="text-green-400">+{file.additions}</span>
-					)}
-					{file.deletions > 0 && (
-						<span className="text-red-400">-{file.deletions}</span>
-					)}
-				</span>
-			</button>
-
-			{expanded && file.patch && (
-				<div className="overflow-x-auto border-t border-[#30363d]">
-					<pre className="text-xs font-mono leading-5">
-						{file.patch.split("\n").map((line, i) => {
-							let bgClass = "bg-transparent";
-							let textClass = "text-gray-400";
-
-							if (line.startsWith("+")) {
-								bgClass = "bg-green-500/10";
-								textClass = "text-green-300";
-							} else if (line.startsWith("-")) {
-								bgClass = "bg-red-500/10";
-								textClass = "text-red-300";
-							} else if (line.startsWith("@@")) {
-								bgClass = "bg-blue-500/10";
-								textClass = "text-blue-300";
-							}
-
-							return (
-								<div key={i} className={`px-4 py-0 ${bgClass} ${textClass}`}>
-									{line}
-								</div>
-							);
-						})}
-					</pre>
-				</div>
-			)}
-
-			{expanded && !file.patch && (
-				<div className="px-4 py-3 text-sm text-gray-500 italic border-t border-[#30363d]">
-					No diff available (binary file or too large).
-				</div>
-			)}
-		</div>
-	);
-}
+/* ── File Diff Viewer (delegated to DiffView component) ────────── */
 
 /* ── Merge Button with Method Dropdown ─────────────────────────── */
 
@@ -497,21 +420,15 @@ function PRDetail({
 					</div>
 				</div>
 
-				{/* Changed files section */}
+				{/* Changed files section with enhanced DiffView */}
 				<div className="space-y-3">
 					<h3 className="text-sm font-medium text-gray-400 flex items-center gap-1.5">
 						<FileText className="w-4 h-4" />
 						Files changed ({pr.files.length})
 					</h3>
-					{pr.files.length === 0 ? (
-						<p className="text-sm text-gray-500 py-3">No file changes.</p>
-					) : (
-						<div className="space-y-2">
-							{pr.files.map((file) => (
-								<FileDiffCard key={file.filename} file={file} />
-							))}
-						</div>
-					)}
+					<div className="border border-[#30363d] rounded-md overflow-hidden" style={{ height: pr.files.length > 0 ? "auto" : undefined }}>
+						<DiffView files={pr.files} />
+					</div>
 				</div>
 
 				{/* Comments section */}

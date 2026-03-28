@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { X, Search, GitBranch, Check, Copy } from 'lucide-react';
+import { X, Search, GitBranch, Check, Copy, Shield, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBranches } from '@/hooks/useGitData';
+import { useGitHubBranches } from '@/hooks/useGitHubData';
 import { useAppStore } from '@/store/useAppStore';
 import { useCheckoutBranch } from '@/hooks/useGitData';
 import type { Branch } from '@/types/git';
@@ -18,10 +19,23 @@ export function BranchesModal({ isOpen, onClose, totalBranches }: BranchesModalP
   const repoInfo = useAppStore((state) => state.repoInfo);
   const currentBranch = useAppStore((state) => state.repoInfo?.currentBranch);
   const { data: branchesData } = useBranches();
+  const { data: githubBranchesData } = useGitHubBranches();
   const checkoutBranch = useCheckoutBranch();
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedBranch, setCopiedBranch] = useState<string | null>(null);
+
+  // Build a lookup map from GitHub branch data for protection/default info
+  const githubBranchMap = useMemo(() => {
+    const map = new Map<string, { isDefault: boolean; isProtected: boolean }>();
+    const branches = githubBranchesData?.data?.branches;
+    if (branches) {
+      for (const b of branches) {
+        map.set(b.name, { isDefault: b.isDefault, isProtected: b.protected });
+      }
+    }
+    return map;
+  }, [githubBranchesData]);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Debounce search input
@@ -189,6 +203,17 @@ export function BranchesModal({ isOpen, onClose, totalBranches }: BranchesModalP
                                 {isCurrent && (
                                   <span className="px-2 py-0.5 bg-[#238636]/20 text-[#3fb950] rounded text-xs font-medium shrink-0">
                                     Current
+                                  </span>
+                                )}
+                                {githubBranchMap.get(branch.name)?.isDefault && (
+                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded bg-blue-500/15 text-blue-400 border border-blue-500/30 shrink-0" title="Default branch">
+                                    <Star className="w-3 h-3" />
+                                    default
+                                  </span>
+                                )}
+                                {githubBranchMap.get(branch.name)?.isProtected && (
+                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded bg-yellow-500/15 text-yellow-400 border border-yellow-500/30 shrink-0" title="Protected branch">
+                                    <Shield className="w-3 h-3" />
                                   </span>
                                 )}
                               </div>
