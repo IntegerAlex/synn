@@ -687,7 +687,7 @@ function PRRow({
 				{(pr.changed_files ?? 0) > 0 && (
 					<span className="flex items-center gap-1">
 						<FileText className="w-3.5 h-3.5" />
-						{pr.changed_files}
+						{pr.changed_files ?? 0}
 					</span>
 				)}
 				{((pr.comments ?? 0) > 0 || (pr.review_comments ?? 0) > 0) && (
