@@ -4,10 +4,13 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { RepoInfo, Theme } from '@/types/git';
 
+export type AppTab = 'code' | 'issues' | 'pulls' | 'insights' | 'settings';
+
 export interface AppStoreState {
   repoInfo: RepoInfo | null;
   selectedCommitHash: string | null;
   selectedBranch: string | null;
+  activeTab: AppTab;
   theme: Theme;
   sidebarCollapsed: boolean;
   sidebarWidth: number;
@@ -24,6 +27,7 @@ export interface AppStoreActions {
   closeRepo: () => void;
   setSelectedCommitHash: (hash: string | null) => void;
   setSelectedBranch: (branch: string | null) => void;
+  setActiveTab: (tab: AppTab) => void;
   setTheme: (theme: Theme) => void;
   toggleSidebar: () => void;
   setSidebarWidth: (width: number) => void;
@@ -41,6 +45,7 @@ const initialState: AppStoreState = {
   repoInfo: null,
   selectedCommitHash: null,
   selectedBranch: null,
+  activeTab: 'code',
   theme: 'github-dark',
   sidebarCollapsed: false,
   sidebarWidth: 250,
@@ -70,9 +75,11 @@ export const useAppStore = create<AppStore>()(
           repoInfo: null,
           selectedCommitHash: null,
           selectedBranch: null,
+          activeTab: 'code',
         }),
       setSelectedCommitHash: (hash) => set({ selectedCommitHash: hash }),
       setSelectedBranch: (branch) => set({ selectedBranch: branch }),
+      setActiveTab: (tab) => set({ activeTab: tab }),
       setTheme: (theme) => set({ theme }),
       toggleSidebar: () =>
         set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
@@ -129,6 +136,7 @@ export const useAppStore = create<AppStore>()(
       partialize: (state) => ({
         repoInfo: state.repoInfo,
         selectedBranch: state.selectedBranch,
+        activeTab: state.activeTab,
         theme: state.theme,
         sidebarCollapsed: state.sidebarCollapsed,
         sidebarWidth: state.sidebarWidth,
