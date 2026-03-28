@@ -717,6 +717,20 @@ const VirtualizedFileList = memo(function VirtualizedFileList({
           );
         })}
       </div>
+      {/* Fallback for environments without layout (SSR/tests) */}
+      {virtualizer.getVirtualItems().length === 0 && (
+        <div className="space-y-3">
+          {files.map((file) => (
+            <FileDiffCardEnhanced
+              key={file.filename}
+              file={file}
+              viewMode={viewMode}
+              isSelected={selectedFile === file.filename}
+              onSelect={() => onSelectFile(file.filename)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 });
