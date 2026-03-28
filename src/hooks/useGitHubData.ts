@@ -225,6 +225,120 @@ staleTime: 30 * 1000,
 });
 }
 
+// ============ PR Files Hook (Paginated) ============
+
+export interface PRFileDetailed {
+  sha: string;
+  filename: string;
+  status: string;
+  additions: number;
+  deletions: number;
+  changes: number;
+  patch?: string;
+  blob_url: string;
+  raw_url: string;
+  contents_url: string;
+}
+
+export function usePullRequestFiles(prNumber: number | null, page = 1, perPage = 30) {
+  const repoFullName = useRepoFullName();
+
+  return useQuery<{
+    data: PRFileDetailed[];
+    pagination: { page: number; per_page: number; has_next: boolean };
+  }>({
+    queryKey: ["github-pr-files", repoFullName, prNumber, page, perPage],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        repo: repoFullName!,
+        page: page.toString(),
+        per_page: perPage.toString(),
+      });
+      const res = await fetch(
+        `/api/github/pulls/${prNumber}/files?${params}`,
+      );
+      if (!res.ok) throw new Error("Failed to fetch PR files");
+      return res.json();
+    },
+    enabled: !!repoFullName && prNumber !== null,
+    staleTime: 60 * 1000,
+  });
+}
+
+// ============ GitHub Branches Hook ============
+
+export interface GitHubBranchInfo {
+  name: string;
+  sha: string;
+  protected: boolean;
+  isDefault: boolean;
+}
+
+export interface GitHubBranchesResponse {
+  branches: GitHubBranchInfo[];
+  defaultBranch: string;
+}
+
+export function useGitHubBranches(page = 1) {
+  const repoFullName = useRepoFullName();
+
+  return useQuery<{
+    data: GitHubBranchesResponse;
+    pagination: { page: number; per_page: number; has_next: boolean };
+  }>({
+    queryKey: ["github-branches", repoFullName, page],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        repo: repoFullName!,
+        page: page.toString(),
+        per_page: "100",
+      });
+      const res = await fetch(`/api/github/branches?${params}`);
+      if (!res.ok) throw new Error("Failed to fetch branches");
+      return res.json();
+    },
+    enabled: !!repoFullName,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ============ Branch Comparison Hook ============
+
+export interface BranchComparisonResult {
+  status: string;
+  ahead_by: number;
+  behind_by: number;
+  total_commits: number;
+  files: Array<{
+    filename: string;
+    status: string;
+    additions: number;
+    deletions: number;
+    changes: number;
+    patch?: string;
+  }>;
+}
+
+export function useBranchComparison(base: string | null, head: string | null) {
+  const repoFullName = useRepoFullName();
+
+  return useQuery<{ data: BranchComparisonResult }>({
+    queryKey: ["github-branch-compare", repoFullName, base, head],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        repo: repoFullName!,
+        base: base!,
+        head: head!,
+      });
+      const res = await fetch(`/api/github/branches/compare?${params}`);
+      if (!res.ok) throw new Error("Failed to compare branches");
+      return res.json();
+    },
+    enabled: !!repoFullName && !!base && !!head && base !== head,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
 // ============ Mutation Hooks ============
 
 /** Create a new issue */
