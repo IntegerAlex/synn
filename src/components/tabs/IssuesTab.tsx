@@ -15,7 +15,7 @@ import {
   Tag,
   XCircle,
 } from "lucide-react";
-import { memo, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import type { GitHubComment, GitHubIssue } from "@/hooks/useGitHubData";
 import {
   useAddComment,
@@ -397,15 +397,17 @@ function CreateIssueForm({ onClose }: { onClose: () => void }) {
 
 const IssueRow = memo(function IssueRow({
   issue,
-  onClick,
+  onSelect,
 }: {
   issue: GitHubIssue;
-  onClick: () => void;
+  onSelect: (issue: GitHubIssue) => void;
 }) {
+  const handleClick = useCallback(() => onSelect(issue), [onSelect, issue]);
+
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={handleClick}
       className="w-full text-left flex items-start gap-3 px-4 py-3 hover:bg-[#161b22] border-b border-[#21262d] transition-colors"
     >
       {issue.state === "open" ? (
@@ -590,7 +592,7 @@ export function IssuesTab() {
               <IssueRow
                 key={issue.number}
                 issue={issue}
-                onClick={() => setSelectedIssue(issue)}
+                onSelect={setSelectedIssue}
               />
             ))}
           </div>

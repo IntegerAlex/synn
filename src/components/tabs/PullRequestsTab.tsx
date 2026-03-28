@@ -17,7 +17,7 @@ import {
   Send,
   XCircle,
 } from "lucide-react";
-import { memo, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import type { GitHubComment, GitHubPullRequest } from "@/hooks/useGitHubData";
 import {
   useAddComment,
@@ -554,24 +554,28 @@ function PRDetail({
 
 const PRRow = memo(function PRRow({
   pr,
-  onClick,
+  onSelect,
 }: {
   pr: GitHubPullRequest;
-  onClick: () => void;
+  onSelect: (prNumber: number) => void;
 }) {
   const isMerged = !!pr.merged_at;
+  const handleClick = useCallback(
+    () => onSelect(pr.number),
+    [onSelect, pr.number],
+  );
 
   return (
     <div
       role="button"
       tabIndex={0}
-      onClick={onClick}
+      onClick={handleClick}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
-          onClick();
+          handleClick();
         } else if (e.key === " ") {
           e.preventDefault();
-          onClick();
+          handleClick();
         }
       }}
       className="flex items-start gap-3 px-4 py-3 hover:bg-[#161b22] border-b border-[#21262d] transition-colors cursor-pointer"
@@ -756,11 +760,7 @@ export function PullRequestsTab() {
         ) : (
           <div>
             {filtered.map((pr) => (
-              <PRRow
-                key={pr.number}
-                pr={pr}
-                onClick={() => setSelectedPR(pr.number)}
-              />
+              <PRRow key={pr.number} pr={pr} onSelect={setSelectedPR} />
             ))}
           </div>
         )}
