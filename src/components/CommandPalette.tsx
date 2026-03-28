@@ -151,9 +151,11 @@ items[selectedIndex].action();
 useEffect(() => {
 const list = listRef.current;
 if (!list) return;
-const selected = list.children[selectedIndex] as HTMLElement;
+const selected = list.querySelector<HTMLElement>(
+  `[data-index="${selectedIndex}"]`
+);
 if (selected) {
-selected.scrollIntoView({ block: "nearest" });
+  selected.scrollIntoView({ block: "nearest" });
 }
 }, [selectedIndex]);
 
