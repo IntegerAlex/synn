@@ -7,6 +7,7 @@ interface UseDiffNavigationProps {
   totalFiles: number;
   onClose?: () => void;
   onFileChange?: (direction: 'next' | 'prev') => void;
+  onToggleSearch?: () => void;
   enabled?: boolean;
 }
 
@@ -33,6 +34,7 @@ export function useDiffNavigation({
   totalFiles,
   onClose,
   onFileChange,
+  onToggleSearch,
   enabled = true,
 }: UseDiffNavigationProps): UseDiffNavigationReturn {
   const [currentChangeIndex, setCurrentChangeIndex] = useState(0);
@@ -70,7 +72,8 @@ export function useDiffNavigation({
 
   const openSearch = useCallback(() => {
     setIsSearchOpen(true);
-  }, []);
+    onToggleSearch?.();
+  }, [onToggleSearch]);
 
   const closeSearch = useCallback(() => {
     setIsSearchOpen(false);
@@ -78,120 +81,119 @@ export function useDiffNavigation({
   }, []);
 
   // Keyboard navigation handler
-  // COMMENTED OUT: Keyboard shortcuts disabled for better diff
-  // useEffect(() => {
-  //   if (!enabled) return;
+  useEffect(() => {
+    if (!enabled) return;
 
-  //   const handleKeyDown = (event: KeyboardEvent) => {
-  //     // Don't handle if typing in an input
-  //     const target = event.target as HTMLElement;
-  //     if (
-  //       target.tagName === 'INPUT' ||
-  //       target.tagName === 'TEXTAREA' ||
-  //       target.isContentEditable
-  //     ) {
-  //       // Allow Escape to close search
-  //       if (event.key === 'Escape' && isSearchOpen) {
-  //         closeSearch();
-  //         event.preventDefault();
-  //       }
-  //       return;
-  //     }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Don't handle if typing in an input
+      const target = event.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        // Allow Escape to close search
+        if (event.key === 'Escape' && isSearchOpen) {
+          closeSearch();
+          event.preventDefault();
+        }
+        return;
+      }
 
-  //     const now = Date.now();
-  //     const key = event.key;
+      const now = Date.now();
+      const key = event.key;
 
-  //     // Handle double-key sequences
-  //     if (key === 'g' && lastKeyRef.current === 'g' && now - lastKeyTimeRef.current < 500) {
-  //       // 'gg' - go to first change
-  //       goToFirstChange();
-  //       lastKeyRef.current = '';
-  //       event.preventDefault();
-  //       return;
-  //     }
+      // Handle double-key sequences
+      if (key === 'g' && lastKeyRef.current === 'g' && now - lastKeyTimeRef.current < 500) {
+        // 'gg' - go to first change
+        goToFirstChange();
+        lastKeyRef.current = '';
+        event.preventDefault();
+        return;
+      }
 
-  //     lastKeyRef.current = key;
-  //     lastKeyTimeRef.current = now;
+      lastKeyRef.current = key;
+      lastKeyTimeRef.current = now;
 
-  //     // Single key shortcuts
-  //     switch (key) {
-  //       case 'j':
-  //       case 'ArrowDown':
-  //         if (!event.metaKey && !event.ctrlKey) {
-  //           goToNextChange();
-  //           event.preventDefault();
-  //         }
-  //         break;
+      // Single key shortcuts
+      switch (key) {
+        case 'j':
+        case 'ArrowDown':
+          if (!event.metaKey && !event.ctrlKey) {
+            goToNextChange();
+            event.preventDefault();
+          }
+          break;
 
-  //       case 'k':
-  //       case 'ArrowUp':
-  //         if (!event.metaKey && !event.ctrlKey) {
-  //           goToPrevChange();
-  //           event.preventDefault();
-  //         }
-  //         break;
+        case 'k':
+        case 'ArrowUp':
+          if (!event.metaKey && !event.ctrlKey) {
+            goToPrevChange();
+            event.preventDefault();
+          }
+          break;
 
-  //       case 'J':
-  //       case 'PageDown':
-  //         goToNextFile();
-  //         event.preventDefault();
-  //         break;
+        case 'J':
+        case 'PageDown':
+          goToNextFile();
+          event.preventDefault();
+          break;
 
-  //       case 'K':
-  //       case 'PageUp':
-  //         goToPrevFile();
-  //         event.preventDefault();
-  //         break;
+        case 'K':
+        case 'PageUp':
+          goToPrevFile();
+          event.preventDefault();
+          break;
 
-  //       case 'G':
-  //         // Shift+G - go to last change
-  //         if (event.shiftKey) {
-  //           goToLastChange();
-  //           event.preventDefault();
-  //         }
-  //         break;
+        case 'G':
+          // Shift+G - go to last change
+          if (event.shiftKey) {
+            goToLastChange();
+            event.preventDefault();
+          }
+          break;
 
-  //       case '/':
-  //         openSearch();
-  //         event.preventDefault();
-  //         break;
+        case '/':
+          openSearch();
+          event.preventDefault();
+          break;
 
-  //       case 'Escape':
-  //         if (isSearchOpen) {
-  //           closeSearch();
-  //         } else if (showShortcuts) {
-  //           setShowShortcuts(false);
-  //         } else {
-  //           onClose?.();
-  //         }
-  //         event.preventDefault();
-  //         break;
+        case 'Escape':
+          if (isSearchOpen) {
+            closeSearch();
+          } else if (showShortcuts) {
+            setShowShortcuts(false);
+          } else {
+            onClose?.();
+          }
+          event.preventDefault();
+          break;
 
-  //       case '?':
-  //         setShowShortcuts((prev) => !prev);
-  //         event.preventDefault();
-  //         break;
-  //     }
-  //   };
+        case '?':
+          setShowShortcuts((prev) => !prev);
+          event.preventDefault();
+          break;
+      }
+    };
 
-  //   window.addEventListener('keydown', handleKeyDown);
-  //   return () => {
-  //     window.removeEventListener('keydown', handleKeyDown);
-  //   };
-  // }, [
-  //   enabled,
-  //   isSearchOpen,
-  //   showShortcuts,
-  //   goToNextChange,
-  //   goToPrevChange,
-  //   goToFirstChange,
-  //   goToLastChange,
-  //   goToNextFile,
-  //   goToPrevFile,
-  //   openSearch,
-  //   closeSearch,
-  //   onClose,
-  // ]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [
+    enabled,
+    isSearchOpen,
+    showShortcuts,
+    goToNextChange,
+    goToPrevChange,
+    goToFirstChange,
+    goToLastChange,
+    goToNextFile,
+    goToPrevFile,
+    openSearch,
+    closeSearch,
+    onClose,
+  ]);
 
   return {
     currentChangeIndex,

@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useMemo, memo } from 'react';
 import {
   FileCode,
   FileJson,
@@ -27,13 +26,13 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   File,
 };
 
-export function SmartFileTabs({
+export const SmartFileTabs = memo(function SmartFileTabs({
   files,
   selectedFileIndex,
   onFileSelect,
 }: SmartFileTabsProps) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const fileGroups = groupFiles(files);
+  const fileGroups = useMemo(() => groupFiles(files), [files]);
 
   const toggleGroup = (groupName: string) => {
     setExpandedGroups((prev) => {
@@ -122,12 +121,7 @@ export function SmartFileTabs({
                 </button>
 
                 {isExpanded && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="flex items-center gap-1 ml-2"
-                  >
+                  <div className="flex items-center gap-1 ml-2">
                     {group.files.map((file) => {
                       const fileIndex = files.indexOf(file);
                       const isSelected = fileIndex === selectedFileIndex;
@@ -146,7 +140,7 @@ export function SmartFileTabs({
                         />
                       );
                     })}
-                  </motion.div>
+                  </div>
                 )}
               </div>
             );
@@ -156,7 +150,7 @@ export function SmartFileTabs({
       </div>
     </div>
   );
-}
+});
 
 interface FileTabProps {
   file: ParsedFileDiff;
@@ -167,13 +161,11 @@ interface FileTabProps {
   onSelect: () => void;
 }
 
-function FileTab({ file, index, isSelected, impact, icon: Icon, onSelect }: FileTabProps) {
+const FileTab = memo(function FileTab({ file, index, isSelected, impact, icon: Icon, onSelect }: FileTabProps) {
   const impactColor = getImpactColor(impact);
 
   return (
-    <motion.button
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+    <button
       onClick={onSelect}
       className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm whitespace-nowrap transition-colors ${
         isSelected
@@ -185,6 +177,15 @@ function FileTab({ file, index, isSelected, impact, icon: Icon, onSelect }: File
       <span className="font-mono text-xs">
         {file.newPath.split('/').pop()}
       </span>
+      {file.isNew && (
+        <span className="px-1 py-0.5 bg-[#238636]/20 text-[#3fb950] rounded text-[10px] font-medium" aria-label="New file">N</span>
+      )}
+      {file.isDeleted && (
+        <span className="px-1 py-0.5 bg-[#da3633]/20 text-[#f85149] rounded text-[10px] font-medium" aria-label="Deleted file">D</span>
+      )}
+      {file.isRenamed && (
+        <span className="px-1 py-0.5 bg-[#1f6feb]/20 text-[#79c0ff] rounded text-[10px] font-medium" aria-label="Renamed file">R</span>
+      )}
       <span className="text-xs">
         <span className="text-[#3fb950]">+{file.additions}</span>
         <span className="text-gray-500 mx-1">/</span>
@@ -195,6 +196,6 @@ function FileTab({ file, index, isSelected, impact, icon: Icon, onSelect }: File
           {impact === 'high' ? '●' : '○'}
         </span>
       )}
-    </motion.button>
+    </button>
   );
-}
+});

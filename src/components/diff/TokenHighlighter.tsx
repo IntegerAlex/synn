@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import { parseTokens, findChangedTokens, type Token } from '@/lib/diff/tokenParser';
 
 interface TokenHighlighterProps {
@@ -11,7 +11,7 @@ interface TokenHighlighterProps {
   isModify?: boolean;
 }
 
-export function TokenHighlighter({
+export const TokenHighlighter = memo(function TokenHighlighter({
   oldLine,
   newLine,
   isAdd,
@@ -45,7 +45,7 @@ export function TokenHighlighter({
   }, [oldLine, newLine, isAdd, isRemove, isModify]);
 
   return highlightedContent;
-}
+});
 
 function renderTokensWithHighlights(
   tokens: Token[],

@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import type { ChangeGroup } from '@/lib/diff/changeGrouper';
 
 interface ChangeNavigatorProps {
@@ -14,7 +13,7 @@ interface ChangeNavigatorProps {
   groups: ChangeGroup[];
 }
 
-export function ChangeNavigator({
+export const ChangeNavigator = memo(function ChangeNavigator({
   currentIndex,
   totalChanges,
   onPrevious,
@@ -57,6 +56,8 @@ export function ChangeNavigator({
     onJumpTo(index);
     setIsDropdownOpen(false);
   };
+
+  const progressPercent = totalChanges > 0 ? ((currentIndex + 1) / totalChanges) * 100 : 0;
 
   return (
     <div className="flex items-center justify-center gap-2 px-4 py-2 bg-[#161b22] border-b border-[#30363d]">
@@ -125,9 +126,7 @@ export function ChangeNavigator({
       </div>
 
       {/* Next button */}
-      <motion.button
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
+      <button
         onClick={onNext}
         disabled={currentIndex >= totalChanges - 1}
         className="p-1.5 rounded hover:bg-[#21262d] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
@@ -135,36 +134,15 @@ export function ChangeNavigator({
         aria-label="Next change"
       >
         <ChevronDown className="w-4 h-4 text-gray-400" />
-      </motion.button>
+      </button>
 
       {/* Progress bar */}
-      <div className="ml-4 w-24 h-1.5 bg-[#21262d] rounded-full overflow-hidden relative">
-        <motion.div
-          className="h-full bg-[#1f6feb] rounded-full"
-          initial={false}
-          animate={{ width: `${((currentIndex + 1) / totalChanges) * 100}%` }}
-          transition={{ duration: 0.3, ease: 'easeOut' }}
+      <div className="ml-4 w-24 h-1.5 bg-[#21262d] rounded-full overflow-hidden">
+        <div
+          className="h-full bg-[#1f6feb] rounded-full transition-all duration-300 ease-out"
+          style={{ width: `${progressPercent}%` }}
         />
-        {/* Pulsing dot at current position */}
-        {totalChanges > 0 && (
-          <motion.div
-            className="absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-[#1f6feb] rounded-full"
-            style={{
-              left: `${((currentIndex + 1) / totalChanges) * 100}%`,
-              transform: 'translate(-50%, -50%)',
-            }}
-            animate={{
-              scale: [1, 1.3, 1],
-              opacity: [0.8, 1, 0.8],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
-          />
-        )}
       </div>
     </div>
   );
-}
+});
