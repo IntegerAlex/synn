@@ -4,7 +4,13 @@
 export function timeAgo(dateStr: string): string {
 	const now = Date.now();
 	const then = new Date(dateStr).getTime();
+
+	if (Number.isNaN(then)) return dateStr || "unknown";
+
 	const diff = now - then;
+
+	if (diff < 0) return "just now";
+
 	const minutes = Math.floor(diff / 60000);
 	if (minutes < 1) return "just now";
 	if (minutes < 60) return `${minutes}m ago`;
