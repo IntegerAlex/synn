@@ -115,8 +115,6 @@ export function useGitHubIssues(state: "open" | "closed" = "open", page = 1) {
       return res.json();
     },
     enabled: !!repoFullName,
-    staleTime: 2 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
 }
@@ -142,8 +140,6 @@ export function useGitHubPulls(
       return res.json();
     },
     enabled: !!repoFullName,
-    staleTime: 2 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
 }
@@ -161,8 +157,7 @@ export function useRepoInsights() {
       return res.json();
     },
     enabled: !!repoFullName,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 15 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // insights change less frequently
     placeholderData: keepPreviousData,
   });
 }
