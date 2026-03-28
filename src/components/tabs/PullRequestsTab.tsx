@@ -620,7 +620,12 @@ function PRRow({
 			tabIndex={0}
 			onClick={onClick}
 			onKeyDown={(e) => {
-				if (e.key === "Enter" || e.key === " ") onClick();
+				if (e.key === "Enter") {
+					onClick();
+				} else if (e.key === " ") {
+					e.preventDefault();
+					onClick();
+				}
 			}}
 			className="flex items-start gap-3 px-4 py-3 hover:bg-[#161b22] border-b border-[#21262d] transition-colors cursor-pointer"
 		>
