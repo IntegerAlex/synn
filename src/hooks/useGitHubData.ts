@@ -345,7 +345,13 @@ body: JSON.stringify({ repo: repoFullName, state: params.state }),
 });
 if (!res.ok) {
 const err = await res.json();
-throw new Error(err.error || "Failed to update PR");
+const message =
+typeof err?.error === "string"
+	? err.error
+	: typeof err?.error?.message === "string"
+	? err.error.message
+	: "Failed to update PR";
+throw new Error(message);
 }
 return res.json();
 },
