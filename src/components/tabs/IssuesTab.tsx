@@ -58,7 +58,11 @@ function BodyRenderer({ text }: { text: string }) {
 /*  Single comment                                                     */
 /* ------------------------------------------------------------------ */
 
-const CommentCard = memo(function CommentCard({ comment }: { comment: GitHubComment }) {
+const CommentCard = memo(function CommentCard({
+  comment,
+}: {
+  comment: GitHubComment;
+}) {
   return (
     <div className="border border-[#30363d] rounded-md overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-2 bg-[#161b22] border-b border-[#30363d]">
