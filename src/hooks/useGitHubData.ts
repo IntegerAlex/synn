@@ -242,7 +242,11 @@ body: JSON.stringify({ repo: repoFullName, ...params }),
 });
 if (!res.ok) {
 const err = await res.json();
-throw new Error(err.error || "Failed to create issue");
+const message =
+	err && typeof err.error === "object" && err.error !== null
+		? (err.error.message ?? JSON.stringify(err.error))
+		: (err?.error as string | undefined);
+throw new Error(message || "Failed to create issue");
 }
 return res.json();
 },
