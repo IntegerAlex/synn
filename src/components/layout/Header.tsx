@@ -38,6 +38,7 @@ export function Header() {
                             alt="Synn Logo"
                             width={84}
                             height={84}
+                            priority
                             className="object-contain"
                         />
                     </Link>

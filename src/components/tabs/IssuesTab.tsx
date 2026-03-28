@@ -15,7 +15,7 @@ import {
   Tag,
   XCircle,
 } from "lucide-react";
-import { useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import type { GitHubComment, GitHubIssue } from "@/hooks/useGitHubData";
 import {
   useAddComment,
@@ -58,7 +58,11 @@ function BodyRenderer({ text }: { text: string }) {
 /*  Single comment                                                     */
 /* ------------------------------------------------------------------ */
 
-function CommentCard({ comment }: { comment: GitHubComment }) {
+const CommentCard = memo(function CommentCard({
+  comment,
+}: {
+  comment: GitHubComment;
+}) {
   return (
     <div className="border border-[#30363d] rounded-md overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-2 bg-[#161b22] border-b border-[#30363d]">
@@ -85,7 +89,7 @@ function CommentCard({ comment }: { comment: GitHubComment }) {
       </div>
     </div>
   );
-}
+});
 
 /* ------------------------------------------------------------------ */
 /*  Issue detail view                                                  */
@@ -391,17 +395,19 @@ function CreateIssueForm({ onClose }: { onClose: () => void }) {
 /*  Issue row in the list                                              */
 /* ------------------------------------------------------------------ */
 
-function IssueRow({
+const IssueRow = memo(function IssueRow({
   issue,
-  onClick,
+  onSelect,
 }: {
   issue: GitHubIssue;
-  onClick: () => void;
+  onSelect: (issue: GitHubIssue) => void;
 }) {
+  const handleClick = useCallback(() => onSelect(issue), [onSelect, issue]);
+
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={handleClick}
       className="w-full text-left flex items-start gap-3 px-4 py-3 hover:bg-[#161b22] border-b border-[#21262d] transition-colors"
     >
       {issue.state === "open" ? (
@@ -455,7 +461,7 @@ function IssueRow({
       )}
     </button>
   );
-}
+});
 
 /* ------------------------------------------------------------------ */
 /*  Main tab                                                           */
@@ -472,13 +478,17 @@ export function IssuesTab() {
   const issues = data?.data ?? [];
   const pagination = data?.pagination;
 
-  const filtered = searchQuery
-    ? issues.filter(
-        (i) =>
-          i.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          i.number.toString().includes(searchQuery),
-      )
-    : issues;
+  const filtered = useMemo(
+    () =>
+      searchQuery
+        ? issues.filter(
+            (i) =>
+              i.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              i.number.toString().includes(searchQuery),
+          )
+        : issues,
+    [issues, searchQuery],
+  );
 
   /* When viewing an issue detail, replace the list with the detail panel */
   if (selectedIssue) {
@@ -582,7 +592,7 @@ export function IssuesTab() {
               <IssueRow
                 key={issue.number}
                 issue={issue}
-                onClick={() => setSelectedIssue(issue)}
+                onSelect={setSelectedIssue}
               />
             ))}
           </div>
