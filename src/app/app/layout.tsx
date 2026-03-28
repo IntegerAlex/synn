@@ -4,6 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { useFingerprint } from "@/lib/hooks/useFingerprint";
 import { ToastContainer } from "@/components/ui/ToastContainer";
+import { CommandPalette } from "@/components/CommandPalette";
 
 function FingerprintTracker() {
     useFingerprint(); // Initialize fingerprint tracking
@@ -22,6 +23,7 @@ export default function AppLayout({
                 <div className="h-screen w-screen bg-[#0d1117] text-gray-100">
                     {children}
                 </div>
+                <CommandPalette />
                 <ToastContainer />
             </QueryProvider>
         </ClerkProvider>

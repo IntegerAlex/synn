@@ -97,7 +97,7 @@ export function Sidebar() {
                 </div>
                 {!sidebarCollapsed && (
                     <div className="mt-3 flex items-center gap-2">
-                        {/* <button
+                        <button
                             type="button"
                             onClick={() => setTab('branches')}
                             className={`flex-1 px-2 py-1 rounded-md text-xs border transition-colors ${
@@ -109,7 +109,7 @@ export function Sidebar() {
                             aria-label="Show branches"
                         >
                             Branches
-                        </button> */}
+                        </button>
                         <button
                             type="button"
                             onClick={() => setTab('files')}
