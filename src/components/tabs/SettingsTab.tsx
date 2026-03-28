@@ -107,6 +107,8 @@ export function SettingsTab() {
 							</div>
 							<button
 								type="button"
+								role="switch"
+								aria-checked={!sidebarCollapsed}
 								onClick={toggleSidebar}
 								className={`relative w-10 h-5 rounded-full transition-colors ${
 									!sidebarCollapsed ? "bg-blue-500" : "bg-[#30363d]"
@@ -129,6 +131,8 @@ export function SettingsTab() {
 							</div>
 							<button
 								type="button"
+								role="switch"
+								aria-checked={graphFilters.showMergeCommits}
 								onClick={toggleShowMergeCommits}
 								className={`relative w-10 h-5 rounded-full transition-colors ${
 									graphFilters.showMergeCommits ? "bg-blue-500" : "bg-[#30363d]"
@@ -151,6 +155,8 @@ export function SettingsTab() {
 							</div>
 							<button
 								type="button"
+								role="switch"
+								aria-checked={graphFilters.showTags}
 								onClick={toggleShowTags}
 								className={`relative w-10 h-5 rounded-full transition-colors ${
 									graphFilters.showTags ? "bg-blue-500" : "bg-[#30363d]"

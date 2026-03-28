@@ -19,7 +19,7 @@ return NextResponse.json({ error: "Repository required" }, { status: 400 });
 }
 
 try {
-// Fetch PR details and files in parallel
+// Fetch PR details and first page of files in parallel
 const [prRes, filesRes] = await Promise.all([
 githubFetch(`https://api.github.com/repos/${repo}/pulls/${number}`, token),
 githubFetch(
@@ -36,7 +36,23 @@ return NextResponse.json(
 }
 
 const pr = await prRes.json();
-const files = filesRes.ok ? await filesRes.json() : [];
+let files: any[] = filesRes.ok ? await filesRes.json() : [];
+
+// Paginate remaining files if there are more than 100
+if (filesRes.ok && files.length === 100) {
+let page = 2;
+while (true) {
+const nextRes = await githubFetch(
+`https://api.github.com/repos/${repo}/pulls/${number}/files?per_page=100&page=${page}`,
+token,
+);
+if (!nextRes.ok) break;
+const nextFiles = await nextRes.json();
+if (nextFiles.length === 0) break;
+files = files.concat(nextFiles);
+page++;
+}
+}
 
   return NextResponse.json({
   data: {
