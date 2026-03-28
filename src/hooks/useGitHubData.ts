@@ -29,12 +29,12 @@ export interface GitHubPullRequest {
 	user: { login: string; avatar_url: string };
 	head: { ref: string; sha: string };
 	base: { ref: string; sha: string };
-	comments: number;
-	review_comments: number;
-	commits: number;
-	additions: number;
-	deletions: number;
-	changed_files: number;
+	comments?: number;
+	review_comments?: number;
+	commits?: number;
+	additions?: number;
+	deletions?: number;
+	changed_files?: number;
 	body: string | null;
 	assignees: Array<{ login: string; avatar_url: string }>;
 	requested_reviewers: Array<{ login: string; avatar_url: string }>;
@@ -178,6 +178,10 @@ export interface PRDetail extends GitHubPullRequest {
 merged: boolean;
 mergeable: boolean | null;
 mergeable_state: string;
+commits: number;
+additions: number;
+deletions: number;
+changed_files: number;
 files: PRFile[];
 }
 
@@ -270,7 +274,13 @@ body: JSON.stringify({ repo: repoFullName, ...params }),
 });
 if (!res.ok) {
 const err = await res.json();
-throw new Error(err.error || "Failed to add comment");
+const message =
+typeof err?.error === "string"
+	? err.error
+	: typeof err?.error?.message === "string"
+	? err.error.message
+	: "Failed to add comment";
+throw new Error(message);
 }
 return res.json();
 },
@@ -296,7 +306,13 @@ body: JSON.stringify({ repo: repoFullName, state: params.state }),
 });
 if (!res.ok) {
 const err = await res.json();
-throw new Error(err.error || "Failed to update issue");
+const message =
+typeof err?.error === "string"
+	? err.error
+	: typeof err?.error?.message === "string"
+	? err.error.message
+	: "Failed to update issue";
+throw new Error(message);
 }
 return res.json();
 },
@@ -324,7 +340,13 @@ body: JSON.stringify({ repo: repoFullName, ...params }),
 });
 if (!res.ok) {
 const err = await res.json();
-throw new Error(err.error || "Failed to merge pull request");
+const message =
+typeof err?.error === "string"
+	? err.error
+	: typeof err?.error?.message === "string"
+	? err.error.message
+	: "Failed to merge pull request";
+throw new Error(message);
 }
 return res.json();
 },
