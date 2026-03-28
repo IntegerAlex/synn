@@ -14,6 +14,8 @@ import {
 	Package,
 } from "lucide-react";
 
+const MAX_DISPLAYED_COMMITS = 15;
+
 const LANGUAGE_COLORS: Record<string, string> = {
 	TypeScript: "#3178c6",
 	JavaScript: "#f1e05a",
@@ -100,9 +102,10 @@ function formatDate(dateStr: string): string {
 	});
 }
 
-function formatSize(kb: number): string {
-	if (kb < 1024) return `${kb} KB`;
-	return `${(kb / 1024).toFixed(1)} MB`;
+function formatSize(kilobytes: number): string {
+	if (kilobytes < 1024) return `${kilobytes} KB`;
+	if (kilobytes < 1024 * 1024) return `${(kilobytes / 1024).toFixed(1)} MB`;
+	return `${(kilobytes / (1024 * 1024)).toFixed(1)} GB`;
 }
 
 export function InsightsTab() {
@@ -243,7 +246,7 @@ export function InsightsTab() {
 							Recent Activity
 						</h3>
 						<div className="space-y-1">
-							{recent_commits.slice(0, 15).map((commit, i) => (
+							{recent_commits.slice(0, MAX_DISPLAYED_COMMITS).map((commit, i) => (
 								<div
 									key={`${commit.sha}-${i}`}
 									className="flex items-center gap-3 py-1.5 text-xs"

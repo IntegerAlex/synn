@@ -83,7 +83,7 @@ export function Header() {
                     {showRepoInfo && (
                         <button
                             type="button"
-                            onClick={() => closeRepo()}
+                            onClick={closeRepo}
                             className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-[#21262d] rounded-lg border border-[#30363d] hover:border-[#ef4444]/50 bg-[#0d1117]/50 backdrop-blur-sm transition-all duration-200 hover:shadow-lg hover:shadow-[#ef4444]/10"
                             aria-label="Close repository"
                         >
