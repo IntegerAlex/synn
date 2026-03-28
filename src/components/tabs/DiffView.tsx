@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, memo } from "react";
+import { useState, useMemo, useCallback, useRef, memo } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -9,6 +9,7 @@ import {
   FileText,
   Loader2,
 } from "lucide-react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   highlightUnifiedDiffLines,
   detectPrismLanguageFromFilePath,
@@ -646,18 +647,75 @@ export const DiffView = memo(function DiffView({
           />
         )}
 
-        {/* Diff area */}
-        <div className="flex-1 overflow-y-auto space-y-3 p-4">
-          {files.map((file) => (
-            <FileDiffCardEnhanced
+        {/* Virtualized diff area */}
+        <VirtualizedFileList
+          files={files}
+          viewMode={viewMode}
+          selectedFile={selectedFile}
+          onSelectFile={setSelectedFile}
+        />
+      </div>
+    </div>
+  );
+});
+
+/* ── Virtualized File List ─────────────────────────────── */
+
+const VirtualizedFileList = memo(function VirtualizedFileList({
+  files,
+  viewMode,
+  selectedFile,
+  onSelectFile,
+}: {
+  files: PRFile[];
+  viewMode: DiffViewMode;
+  selectedFile: string | null;
+  onSelectFile: (filename: string) => void;
+}) {
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  const virtualizer = useVirtualizer({
+    count: files.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 300,
+    overscan: 3,
+  });
+
+  return (
+    <div ref={parentRef} className="flex-1 overflow-y-auto p-4">
+      <div
+        style={{
+          height: `${virtualizer.getTotalSize()}px`,
+          width: "100%",
+          position: "relative",
+        }}
+      >
+        {virtualizer.getVirtualItems().map((virtualItem) => {
+          const file = files[virtualItem.index];
+          return (
+            <div
               key={file.filename}
-              file={file}
-              viewMode={viewMode}
-              isSelected={selectedFile === file.filename}
-              onSelect={() => setSelectedFile(file.filename)}
-            />
-          ))}
-        </div>
+              data-index={virtualItem.index}
+              ref={virtualizer.measureElement}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                transform: `translateY(${virtualItem.start}px)`,
+              }}
+            >
+              <div className="mb-3">
+                <FileDiffCardEnhanced
+                  file={file}
+                  viewMode={viewMode}
+                  isSelected={selectedFile === file.filename}
+                  onSelect={() => onSelectFile(file.filename)}
+                />
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
