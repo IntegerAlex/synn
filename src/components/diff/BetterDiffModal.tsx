@@ -1,16 +1,17 @@
 'use client';
 
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
-// import { Keyboard } from 'lucide-react'; // COMMENTED OUT: Keyboard shortcuts disabled
+import { X, Keyboard, Search, Columns2, AlignJustify, Expand } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseUnifiedDiff, createSideBySideData, type ParsedFileDiff } from '@/lib/diff/diffParser';
 import { groupChanges, mergeSmallGroups, type GroupedFileDiff } from '@/lib/diff/changeGrouper';
-import { useDiffNavigation } from '@/hooks/useDiffNavigation';
-// import { DIFF_SHORTCUTS } from '@/hooks/useDiffNavigation'; // COMMENTED OUT: Keyboard shortcuts disabled
+import { useDiffNavigation, DIFF_SHORTCUTS } from '@/hooks/useDiffNavigation';
 import { SideBySideDiff } from './SideBySideDiff';
+import { UnifiedDiffView } from './UnifiedDiffView';
 import { ChangeNavigator } from './ChangeNavigator';
 import { SmartFileTabs } from './SmartFileTabs';
+
+type DiffViewMode = 'split' | 'unified';
 
 interface BetterDiffModalProps {
   isOpen: boolean;
@@ -30,17 +31,17 @@ export function BetterDiffModal({
   files,
 }: BetterDiffModalProps) {
   const [selectedFileIndex, setSelectedFileIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<DiffViewMode>('split');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const [expandAllContext, setExpandAllContext] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Parse the diff
+  // Parse the diff - no side effects inside useMemo
   const parsedDiff = useMemo(() => {
     if (!diff) return null;
-    setIsLoading(true);
-    const result = parseUnifiedDiff(diff);
-    // Simulate loading for animation
-    setTimeout(() => setIsLoading(false), 100);
-    return result;
+    return parseUnifiedDiff(diff);
   }, [diff]);
 
   // Get grouped changes for current file
@@ -77,6 +78,9 @@ export function BetterDiffModal({
         setSelectedFileIndex((prev) => Math.max(prev - 1, 0));
       }
     },
+    onToggleSearch: () => {
+      setIsSearchVisible((prev) => !prev);
+    },
     enabled: isOpen,
   });
 
@@ -85,6 +89,8 @@ export function BetterDiffModal({
     if (isOpen) {
       setSelectedFileIndex(0);
       navigation.setCurrentChangeIndex(0);
+      setSearchQuery('');
+      setIsSearchVisible(false);
     }
   }, [isOpen]);
 
@@ -94,6 +100,13 @@ export function BetterDiffModal({
       modalRef.current.focus();
     }
   }, [isOpen]);
+
+  // Focus search input when search becomes visible
+  useEffect(() => {
+    if (isSearchVisible && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [isSearchVisible]);
 
   // Handle file selection
   const handleFileSelect = useCallback((index: number) => {
@@ -158,15 +171,61 @@ export function BetterDiffModal({
                     <span className="text-gray-400">{parsedDiff.totalFiles} files</span>
                   </div>
                 )}
-                
-                {/* Shortcuts button - COMMENTED OUT: Keyboard shortcuts disabled */}
-                {/* <button
+
+                {/* View mode toggle */}
+                <div className="flex items-center gap-0.5 bg-[#21262d] rounded border border-[#30363d]">
+                  <button
+                    onClick={() => setViewMode('split')}
+                    className={`flex items-center gap-1 px-2 py-1 text-xs rounded-l transition-colors ${
+                      viewMode === 'split' ? 'bg-[#30363d] text-white' : 'text-gray-400 hover:text-gray-200'
+                    }`}
+                    title="Split view"
+                  >
+                    <Columns2 className="w-3.5 h-3.5" />
+                    Split
+                  </button>
+                  <button
+                    onClick={() => setViewMode('unified')}
+                    className={`flex items-center gap-1 px-2 py-1 text-xs rounded-r transition-colors ${
+                      viewMode === 'unified' ? 'bg-[#30363d] text-white' : 'text-gray-400 hover:text-gray-200'
+                    }`}
+                    title="Unified view"
+                  >
+                    <AlignJustify className="w-3.5 h-3.5" />
+                    Unified
+                  </button>
+                </div>
+
+                {/* Expand all context */}
+                <button
+                  onClick={() => setExpandAllContext((prev) => !prev)}
+                  className={`p-2 rounded transition-colors ${
+                    expandAllContext ? 'text-[#79c0ff] bg-[#21262d]' : 'text-gray-400 hover:text-white hover:bg-[#21262d]'
+                  }`}
+                  title="Expand all context"
+                >
+                  <Expand className="w-4 h-4" />
+                </button>
+
+                {/* Search button */}
+                <button
+                  onClick={() => setIsSearchVisible((prev) => !prev)}
+                  className={`p-2 rounded transition-colors ${
+                    isSearchVisible ? 'text-[#79c0ff] bg-[#21262d]' : 'text-gray-400 hover:text-white hover:bg-[#21262d]'
+                  }`}
+                  title="Search in diff (/)"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
+
+                {/* Shortcuts button */}
+                <button
                   onClick={() => navigation.setShowShortcuts(true)}
                   className="p-2 text-gray-400 hover:text-white hover:bg-[#21262d] rounded transition-colors"
                   title="Keyboard shortcuts (?)"
                 >
                   <Keyboard className="w-4 h-4" />
-                </button> */}
+                </button>
                 
                 {/* Close button */}
                 <button
@@ -178,6 +237,45 @@ export function BetterDiffModal({
                 </button>
               </div>
             </header>
+
+            {/* Search bar */}
+            <AnimatePresence>
+              {isSearchVisible && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="overflow-hidden border-b border-[#30363d] bg-[#161b22]"
+                >
+                  <div className="flex items-center gap-2 px-4 py-2">
+                    <Search className="w-4 h-4 text-gray-400 shrink-0" />
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search in diff..."
+                      className="flex-1 bg-[#0d1117] border border-[#30363d] rounded px-3 py-1 text-sm text-gray-200 placeholder-gray-500 focus:border-[#1f6feb] focus:outline-none"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          setIsSearchVisible(false);
+                          setSearchQuery('');
+                        }
+                      }}
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        className="text-xs text-gray-400 hover:text-gray-200"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Smart File tabs */}
             {parsedDiff && parsedDiff.files.length > 0 && (
@@ -202,24 +300,21 @@ export function BetterDiffModal({
 
             {/* Main content */}
             <div className="flex-1 overflow-hidden min-h-0">
-              {isLoading ? (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex items-center justify-center h-full"
-                >
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="w-8 h-8 border-2 border-t-transparent border-[#1f6feb] rounded-full animate-spin" />
-                    <span className="text-sm text-gray-400">Analyzing changes...</span>
-                  </div>
-                </motion.div>
-              ) : groupedFile ? (
+              {groupedFile ? (
                 <div className="h-full overflow-hidden">
-                  <SideBySideDiff
-                    groupedFile={groupedFile}
-                    currentChangeIndex={navigation.currentChangeIndex}
-                    onChangeSelect={navigation.setCurrentChangeIndex}
-                  />
+                  {viewMode === 'split' ? (
+                    <SideBySideDiff
+                      groupedFile={groupedFile}
+                      currentChangeIndex={navigation.currentChangeIndex}
+                      onChangeSelect={navigation.setCurrentChangeIndex}
+                    />
+                  ) : (
+                    <UnifiedDiffView
+                      groupedFile={groupedFile}
+                      currentChangeIndex={navigation.currentChangeIndex}
+                      onChangeSelect={navigation.setCurrentChangeIndex}
+                    />
+                  )}
                 </div>
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-400">
@@ -231,21 +326,29 @@ export function BetterDiffModal({
             {/* Footer */}
             <footer className="flex items-center justify-between px-4 py-2 border-t border-[#30363d] bg-[#161b22]/50 text-xs text-gray-500">
               <div className="flex items-center gap-4">
-                {/* COMMENTED OUT: Keyboard shortcuts disabled */}
-                {/* <span>
+                <span>
                   Press <kbd className="px-1.5 py-0.5 bg-[#21262d] rounded border border-[#30363d]">?</kbd> for keyboard shortcuts
-                </span> */}
+                </span>
               </div>
               
               {currentFile && (
                 <div className="flex items-center gap-2">
+                  {currentFile.isNew && (
+                    <span className="px-1.5 py-0.5 bg-[#238636]/20 text-[#3fb950] rounded text-[10px] font-medium" role="status" aria-label="New file">NEW</span>
+                  )}
+                  {currentFile.isDeleted && (
+                    <span className="px-1.5 py-0.5 bg-[#da3633]/20 text-[#f85149] rounded text-[10px] font-medium" role="status" aria-label="Deleted file">DELETED</span>
+                  )}
+                  {currentFile.isRenamed && (
+                    <span className="px-1.5 py-0.5 bg-[#1f6feb]/20 text-[#79c0ff] rounded text-[10px] font-medium" role="status" aria-label="Renamed file">RENAMED</span>
+                  )}
                   <span className="font-mono">{currentFile.newPath}</span>
                 </div>
               )}
             </footer>
 
-            {/* Keyboard shortcuts overlay - COMMENTED OUT: Keyboard shortcuts disabled */}
-            {/* <AnimatePresence>
+            {/* Keyboard shortcuts overlay */}
+            <AnimatePresence>
               {navigation.showShortcuts && (
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -284,7 +387,7 @@ export function BetterDiffModal({
                   </motion.div>
                 </motion.div>
               )}
-            </AnimatePresence> */}
+            </AnimatePresence>
           </motion.div>
         </motion.div>
       )}

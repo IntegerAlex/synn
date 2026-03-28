@@ -1,11 +1,9 @@
 'use client';
 
-import { useRef, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { useRef, useEffect, useCallback, memo } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import type { GroupedFileDiff, ChangeGroup } from '@/lib/diff/changeGrouper';
 import { ChangeGroupComponent } from './ChangeGroup';
-import { Breadcrumbs } from './Breadcrumbs';
-import { extractSemanticScope } from '@/lib/diff/semanticAnalyzer';
 
 interface SideBySideDiffProps {
   groupedFile: GroupedFileDiff;
@@ -13,45 +11,40 @@ interface SideBySideDiffProps {
   onChangeSelect: (index: number) => void;
 }
 
-export function SideBySideDiff({
+export const SideBySideDiff = memo(function SideBySideDiff({
   groupedFile,
   currentChangeIndex,
   onChangeSelect,
 }: SideBySideDiffProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const groupRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
-  // Scroll to current change when it changes with animation
+  // Virtualize the change groups for performance on large diffs
+  const virtualizer = useVirtualizer({
+    count: groupedFile.groups.length,
+    getScrollElement: () => containerRef.current,
+    estimateSize: () => 120,
+    overscan: 5,
+  });
+
+  // Scroll to current change when it changes
   useEffect(() => {
-    const currentGroup = groupedFile.groups[currentChangeIndex];
-    if (!currentGroup) return;
-
-    const element = groupRefs.current.get(currentGroup.id);
-    if (element && containerRef.current) {
-      // Add a small delay for smooth animation
-      setTimeout(() => {
-        element.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-        });
-      }, 50);
+    if (currentChangeIndex >= 0 && currentChangeIndex < groupedFile.groups.length) {
+      virtualizer.scrollToIndex(currentChangeIndex, {
+        align: 'center',
+        behavior: 'smooth',
+      });
     }
-  }, [currentChangeIndex, groupedFile.groups]);
+  }, [currentChangeIndex, groupedFile.groups.length, virtualizer]);
 
-  // Store ref for group element
-  const setGroupRef = useCallback((id: string, element: HTMLDivElement | null) => {
-    if (element) {
-      groupRefs.current.set(id, element);
-    } else {
-      groupRefs.current.delete(id);
-    }
-  }, []);
+  const handleSelect = useCallback(
+    (index: number) => onChangeSelect(index),
+    [onChangeSelect],
+  );
 
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-y-auto overflow-x-auto scroll-smooth flex flex-col min-h-0"
-      style={{ scrollBehavior: 'smooth' }}
+      className="h-full w-full overflow-y-auto overflow-x-auto flex flex-col min-h-0"
     >
       {/* File header */}
       <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-2 bg-[#161b22] border-b border-[#30363d] shrink-0">
@@ -81,59 +74,42 @@ export function SideBySideDiff({
         </div>
       </div>
 
-      {/* Change groups */}
-      <div className="space-y-1 p-2">
-        {groupedFile.groups.map((group, index) => (
-          <motion.div
-            key={group.id}
-            ref={(el) => setGroupRef(group.id, el)}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{
-              opacity: 1,
-              y: 0,
-              scale: index === currentChangeIndex ? 1.01 : 1,
-            }}
-            transition={{
-              delay: index * 0.02,
-              duration: 0.2,
-              scale: { duration: 0.15 },
-            }}
-            className={index === currentChangeIndex ? 'ring-2 ring-[#1f6feb]/50 rounded-lg' : ''}
-          >
-            <motion.div
-              animate={
-                index === currentChangeIndex
-                  ? {
-                      boxShadow: [
-                        '0 0 0px rgba(31, 111, 235, 0)',
-                        '0 0 20px rgba(31, 111, 235, 0.3)',
-                        '0 0 0px rgba(31, 111, 235, 0)',
-                      ],
-                    }
-                  : {}
-              }
-              transition={{
-                duration: 0.6,
-                repeat: index === currentChangeIndex ? 1 : 0,
-              }}
-            >
-              <ChangeGroupComponent
-                group={group}
-                isSelected={index === currentChangeIndex}
-                onSelect={() => onChangeSelect(index)}
-                groupIndex={index}
-              />
-            </motion.div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Empty state */}
-      {groupedFile.groups.length === 0 && (
+      {/* Virtualized change groups */}
+      {groupedFile.groups.length > 0 ? (
+        <div
+          className="relative p-2"
+          style={{ height: `${virtualizer.getTotalSize()}px` }}
+        >
+          {virtualizer.getVirtualItems().map((virtualItem) => {
+            const group = groupedFile.groups[virtualItem.index];
+            const isSelected = virtualItem.index === currentChangeIndex;
+            return (
+              <div
+                key={group.id}
+                data-index={virtualItem.index}
+                ref={virtualizer.measureElement}
+                className={`absolute left-2 right-2 ${isSelected ? 'ring-2 ring-[#1f6feb]/50 rounded-lg' : ''}`}
+                style={{
+                  top: `${virtualItem.start}px`,
+                }}
+              >
+                <div className="mb-1">
+                  <ChangeGroupComponent
+                    group={group}
+                    isSelected={isSelected}
+                    onSelect={() => handleSelect(virtualItem.index)}
+                    groupIndex={virtualItem.index}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
         <div className="flex items-center justify-center h-64 text-gray-400">
           No changes in this file
         </div>
       )}
     </div>
   );
-}
+});
