@@ -38,7 +38,7 @@ function BodyRenderer({ text }: { text: string }) {
     <div className="text-sm text-gray-300 whitespace-pre-wrap break-words leading-relaxed">
       {parts.map((part, i) => {
         if (part.startsWith("```") && part.endsWith("```")) {
-          const inner = part.slice(3, -3).replace(/^\w*\n/, "");
+          const inner = part.slice(3, -3).replace(/^[a-zA-Z0-9_-]*\n?/, "");
           return (
             <pre
               key={i}
