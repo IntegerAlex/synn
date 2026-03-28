@@ -131,10 +131,13 @@ export function RepoSelector() {
         retry: 2,
     });
 
-    const filteredRepos = repos.filter((repo: Repo) =>
-        repo.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        repo.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredRepos = (() => {
+        const query = searchQuery.toLowerCase();
+        return repos.filter((repo: Repo) =>
+            repo.full_name.toLowerCase().includes(query) ||
+            repo.name.toLowerCase().includes(query)
+        );
+    })();
 
     const handleGithubSubmit = async () => {
         if (!selectedRepo) return;
