@@ -31,7 +31,25 @@ return NextResponse.json(
 );
 }
 
-const comments = await response.json();
+let comments: any[] = await response.json();
+
+// Paginate remaining comments if there are more than 100
+if (comments.length === 100) {
+let page = 2;
+const maxPages = 10; // Safety limit: max 1000 comments
+while (page <= maxPages) {
+const nextRes = await githubFetch(
+`https://api.github.com/repos/${repo}/issues/${issueNumber}/comments?per_page=100&page=${page}`,
+token,
+);
+if (!nextRes.ok) break;
+const nextComments = await nextRes.json();
+if (nextComments.length === 0) break;
+comments = comments.concat(nextComments);
+page++;
+}
+}
+
 return NextResponse.json({
 data: comments.map((c: any) => ({
 id: c.id,
