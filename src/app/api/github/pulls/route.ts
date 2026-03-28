@@ -82,10 +82,6 @@ export async function GET(request: NextRequest) {
 			},
 			comments: pr.comments,
 			review_comments: pr.review_comments,
-			commits: pr.commits,
-			additions: pr.additions,
-			deletions: pr.deletions,
-			changed_files: pr.changed_files,
 			body: pr.body,
 			assignees: pr.assignees.map((a: any) => ({
 				login: a.login,
