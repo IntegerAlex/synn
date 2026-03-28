@@ -1,13 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, memo } from 'react';
 import { ChevronDown, ChevronRight, Code2, Import, Layers, Box } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import type { ChangeGroup } from '@/lib/diff/changeGrouper';
 import type { SideBySideLine, WordChange } from '@/lib/diff/diffParser';
 import { SemanticSummary } from './SemanticSummary';
 import { TokenHighlighter } from './TokenHighlighter';
-import Prism from '@/lib/utils/prism-setup';
 
 interface ChangeGroupComponentProps {
   group: ChangeGroup;
@@ -32,7 +30,7 @@ const typeColors: Record<ChangeGroup['type'], string> = {
   misc: 'text-gray-400',
 };
 
-export function ChangeGroupComponent({
+export const ChangeGroupComponent = memo(function ChangeGroupComponent({
   group,
   isSelected,
   onSelect,
@@ -53,9 +51,8 @@ export function ChangeGroupComponent({
                      (group.contextAfter.length > 0 && group.contextAfter.some(l => l.left?.content.trim() || l.right?.content.trim()));
 
   return (
-    <motion.div
-      whileHover={{ scale: isSelected ? 1 : 1.005 }}
-      className={`rounded-lg border transition-all duration-200 ${
+    <div
+      className={`rounded-lg border transition-colors duration-150 ${
         isSelected
           ? 'border-[#1f6feb] bg-[#1f6feb]/5 ring-1 ring-[#1f6feb]/30'
           : 'border-[#30363d] bg-[#0d1117] hover:border-[#30363d]/80'
@@ -124,28 +121,24 @@ export function ChangeGroupComponent({
 
       {/* Lines */}
       <div className="font-mono text-xs overflow-x-auto overflow-y-visible">
-        <AnimatePresence initial={false}>
-          {allLines.map((line, idx) => (
-            <DiffLineRow
-              key={`${line.left?.lineNumber || 'empty'}-${line.right?.lineNumber || 'empty'}-${idx}`}
-              line={line}
-              isContextLine={line.type === 'context' && (idx < group.contextBefore.length || idx >= group.contextBefore.length + group.changes.length)}
-              isAnimated={isContextExpanded && (idx < group.contextBefore.length || idx >= allLines.length - group.contextAfter.length)}
-            />
-          ))}
-        </AnimatePresence>
+        {allLines.map((line, idx) => (
+          <DiffLineRow
+            key={`${line.left?.lineNumber || 'empty'}-${line.right?.lineNumber || 'empty'}-${idx}`}
+            line={line}
+            isContextLine={line.type === 'context' && (idx < group.contextBefore.length || idx >= group.contextBefore.length + group.changes.length)}
+          />
+        ))}
       </div>
-    </motion.div>
+    </div>
   );
-}
+});
 
 interface DiffLineRowProps {
   line: SideBySideLine;
   isContextLine?: boolean;
-  isAnimated?: boolean;
 }
 
-function DiffLineRow({ line, isContextLine, isAnimated }: DiffLineRowProps) {
+const DiffLineRow = memo(function DiffLineRow({ line, isContextLine }: DiffLineRowProps) {
   // Enhanced dimming: context lines are dimmed but still visible
   const leftBg = line.type === 'remove' || line.type === 'modify'
     ? 'bg-[#3d1f1f]'
@@ -159,7 +152,7 @@ function DiffLineRow({ line, isContextLine, isAnimated }: DiffLineRowProps) {
     ? 'bg-[#0d1117]/50'
     : 'bg-[#0d1117]';
 
-  const content = (
+  return (
     <div className="grid grid-cols-2 gap-px">
       {/* Left side (old) */}
       <div className={`flex ${leftBg} ${isContextLine ? 'opacity-50' : ''}`}>
@@ -199,69 +192,4 @@ function DiffLineRow({ line, isContextLine, isAnimated }: DiffLineRowProps) {
       </div>
     </div>
   );
-
-  if (isAnimated) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, height: 0 }}
-        animate={{ opacity: 1, height: 'auto' }}
-        exit={{ opacity: 0, height: 0 }}
-        transition={{ duration: 0.15 }}
-      >
-        {content}
-      </motion.div>
-    );
-  }
-
-  return content;
-}
-
-interface RenderContentProps {
-  content: string;
-  wordChanges?: WordChange[];
-  isAdd?: boolean;
-  isRemove?: boolean;
-}
-
-function RenderContent({ content, wordChanges, isAdd, isRemove }: RenderContentProps) {
-  // If we have word-level changes, render them
-  if (wordChanges && wordChanges.length > 0) {
-    return (
-      <span className={isAdd ? 'text-[#7ee787]' : isRemove ? 'text-[#ffa198]' : 'text-gray-300'}>
-        {wordChanges.map((change, idx) => {
-          if (change.type === 'unchanged') {
-            return <span key={idx}>{change.value}</span>;
-          }
-          if (change.type === 'add' && isAdd) {
-            return (
-              <span
-                key={idx}
-                className="bg-[#3fb950]/30 rounded-sm px-0.5"
-              >
-                {change.value}
-              </span>
-            );
-          }
-          if (change.type === 'remove' && isRemove) {
-            return (
-              <span
-                key={idx}
-                className="bg-[#f85149]/30 rounded-sm px-0.5"
-              >
-                {change.value}
-              </span>
-            );
-          }
-          return <span key={idx}>{change.value}</span>;
-        })}
-      </span>
-    );
-  }
-
-  // Default: just render the content with appropriate color
-  return (
-    <span className={isAdd ? 'text-[#7ee787]' : isRemove ? 'text-[#ffa198]' : 'text-gray-300'}>
-      {content || ' '}
-    </span>
-  );
-}
+});
