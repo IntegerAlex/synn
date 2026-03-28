@@ -334,13 +334,13 @@ export function BetterDiffModal({
               {currentFile && (
                 <div className="flex items-center gap-2">
                   {currentFile.isNew && (
-                    <span className="px-1.5 py-0.5 bg-[#238636]/20 text-[#3fb950] rounded text-[10px] font-medium">NEW</span>
+                    <span className="px-1.5 py-0.5 bg-[#238636]/20 text-[#3fb950] rounded text-[10px] font-medium" role="status" aria-label="New file">NEW</span>
                   )}
                   {currentFile.isDeleted && (
-                    <span className="px-1.5 py-0.5 bg-[#da3633]/20 text-[#f85149] rounded text-[10px] font-medium">DELETED</span>
+                    <span className="px-1.5 py-0.5 bg-[#da3633]/20 text-[#f85149] rounded text-[10px] font-medium" role="status" aria-label="Deleted file">DELETED</span>
                   )}
                   {currentFile.isRenamed && (
-                    <span className="px-1.5 py-0.5 bg-[#1f6feb]/20 text-[#79c0ff] rounded text-[10px] font-medium">RENAMED</span>
+                    <span className="px-1.5 py-0.5 bg-[#1f6feb]/20 text-[#79c0ff] rounded text-[10px] font-medium" role="status" aria-label="Renamed file">RENAMED</span>
                   )}
                   <span className="font-mono">{currentFile.newPath}</span>
                 </div>

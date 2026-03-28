@@ -104,15 +104,28 @@ export const UnifiedDiffView = memo(function UnifiedDiffView({
             const item = flatLines[virtualItem.index];
             const { line, groupIndex, isGroupStart, groupTitle, additions, deletions } = item;
             const isCurrentGroup = groupIndex === currentChangeIndex;
-            const prefix = line.type === 'add' || line.type === 'modify' ? '+' : line.type === 'remove' ? '-' : ' ';
-            const bgClass =
-              line.type === 'add' ? 'bg-[#1f3d1f]' :
-              line.type === 'remove' ? 'bg-[#3d1f1f]' :
-              line.type === 'modify' ? 'bg-[#3d3d1f]' : '';
-            const textClass =
-              line.type === 'add' ? 'text-[#7ee787]' :
-              line.type === 'remove' ? 'text-[#ffa198]' :
-              line.type === 'modify' ? 'text-[#e3b341]' : 'text-gray-300';
+            let prefix = ' ';
+            if (line.type === 'add' || line.type === 'modify') {
+              prefix = '+';
+            } else if (line.type === 'remove') {
+              prefix = '-';
+            }
+            let bgClass = '';
+            if (line.type === 'add') {
+              bgClass = 'bg-[#1f3d1f]';
+            } else if (line.type === 'remove') {
+              bgClass = 'bg-[#3d1f1f]';
+            } else if (line.type === 'modify') {
+              bgClass = 'bg-[#3d3d1f]';
+            }
+            let textClass = 'text-gray-300';
+            if (line.type === 'add') {
+              textClass = 'text-[#7ee787]';
+            } else if (line.type === 'remove') {
+              textClass = 'text-[#ffa198]';
+            } else if (line.type === 'modify') {
+              textClass = 'text-[#e3b341]';
+            }
 
             return (
               <div
