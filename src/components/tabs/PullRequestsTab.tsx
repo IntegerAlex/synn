@@ -295,7 +295,7 @@ function MergeButton({
 							{mergeMethod === method && (
 								<CheckCircle className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
 							)}
-							<span className={mergeMethod !== method ? "ml-5.5" : ""}>
+							<span className={mergeMethod !== method ? "ml-6" : ""}>
 								{methodLabels[method]}
 							</span>
 						</button>
