@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
 import { useSetRepo } from '@/hooks/useGitData';
@@ -24,6 +24,7 @@ export function RepoSelector() {
     // GitHub State
     const [selectedRepo, setSelectedRepo] = useState('');
     const [downloading, setDownloading] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     const setRepoInfoStore = useAppStore((state) => state.setRepoInfo);
     const setRepo = useSetRepo();
@@ -130,6 +131,14 @@ export function RepoSelector() {
         retry: 2,
     });
 
+    const filteredRepos = useMemo(() => {
+        const query = searchQuery.toLowerCase();
+        return repos.filter((repo: Repo) =>
+            repo.full_name.toLowerCase().includes(query) ||
+            repo.name.toLowerCase().includes(query)
+        );
+    }, [repos, searchQuery]);
+
     const handleGithubSubmit = async () => {
         if (!selectedRepo) return;
 
@@ -230,33 +239,59 @@ export function RepoSelector() {
                                                 SIN
                                             </span>
                                         </label>
-                                        <div className="relative">
-                                            <select
-                                                value={selectedRepo}
-                                                onChange={(e) => setSelectedRepo(e.target.value)}
-                                                disabled={loadingRepos || downloading}
-                                                className="w-full px-4 py-3.5 bg-background border-2 border-border rounded-lg 
-                                                         text-foreground font-medium
+                                        {/* Search input */}
+                                        <div className="relative mb-3">
+                                            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                            </svg>
+                                            <input
+                                                type="text"
+                                                placeholder="Search repositories..."
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                className="w-full pl-10 pr-4 py-3 bg-background border-2 border-border rounded-lg 
+                                                         text-foreground font-medium text-sm
                                                          focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary
-                                                         transition-all duration-200 appearance-none
-                                                         hover:border-primary/50 disabled:opacity-50 disabled:cursor-not-allowed
-                                                         shadow-lg"
-                                            >
-                                                <option value="" disabled>
-                                                    {loadingRepos ? 'Loading repositories...' : 'Choose your repository...'}
-                                                </option>
-                                                {repos.map((repo) => (
-                                                    <option key={repo.id} value={repo.full_name}>
-                                                        {repo.full_name} {repo.private ? '🔒' : '🌐'}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                                                <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                </svg>
-                                            </div>
+                                                         transition-all duration-200 placeholder-muted-foreground
+                                                         hover:border-primary/50"
+                                            />
                                         </div>
+                                        {/* Repository list */}
+                                        <div role="listbox" aria-label="Repositories" className="max-h-64 overflow-y-auto rounded-lg border-2 border-border bg-background shadow-lg">
+                                            {loadingRepos ? (
+                                                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                                                    Loading repositories...
+                                                </div>
+                                            ) : filteredRepos.length === 0 ? (
+                                                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                                                    {searchQuery ? 'No repositories match your search' : 'No repositories found'}
+                                                </div>
+                                            ) : (
+                                                filteredRepos.map((repo: Repo) => (
+                                                    <button
+                                                        key={repo.id}
+                                                        type="button"
+                                                        role="option"
+                                                        aria-selected={selectedRepo === repo.full_name}
+                                                        onClick={() => setSelectedRepo(repo.full_name)}
+                                                        disabled={downloading}
+                                                        className={`w-full text-left px-4 py-3 border-b border-border/50 last:border-b-0
+                                                                   hover:bg-primary/5 transition-colors cursor-pointer
+                                                                   ${selectedRepo === repo.full_name ? 'bg-primary/10 border-l-2 border-l-primary' : ''}`}
+                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-sm font-medium text-foreground">{repo.full_name}</span>
+                                                            <span className="text-xs">{repo.private ? '🔒' : '🌐'}</span>
+                                                        </div>
+                                                    </button>
+                                                ))
+                                            )}
+                                        </div>
+                                        {filteredRepos.length > 0 && (
+                                            <div className="mt-2 text-xs text-muted-foreground text-right">
+                                                {filteredRepos.length} of {repos.length} repositories
+                                            </div>
+                                        )}
                                     </div>
                                     
                                     <button
