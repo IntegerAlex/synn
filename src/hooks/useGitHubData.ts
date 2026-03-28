@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/store/useAppStore";
 
 // Types for GitHub data
@@ -151,4 +151,207 @@ export function useRepoInsights() {
 		enabled: !!repoFullName,
 		staleTime: 5 * 60 * 1000,
 	});
+}
+
+// ============ Comment Types ============
+
+export interface GitHubComment {
+id: number;
+body: string;
+created_at: string;
+updated_at: string;
+user: { login: string; avatar_url: string };
+}
+
+// ============ PR Detail Types ============
+
+export interface PRFile {
+filename: string;
+status: string;
+additions: number;
+deletions: number;
+changes: number;
+patch?: string;
+}
+
+export interface PRDetail extends GitHubPullRequest {
+merged: boolean;
+mergeable: boolean | null;
+mergeable_state: string;
+files: PRFile[];
+}
+
+// ============ Comments Hook ============
+
+export function useIssueComments(issueNumber: number | null) {
+const repoFullName = useRepoFullName();
+
+return useQuery<{ data: GitHubComment[] }>({
+queryKey: ["github-comments", repoFullName, issueNumber],
+queryFn: async () => {
+const params = new URLSearchParams({
+repo: repoFullName!,
+issue_number: issueNumber!.toString(),
+});
+const res = await fetch(`/api/github/issues/comments?${params}`);
+if (!res.ok) throw new Error("Failed to fetch comments");
+return res.json();
+},
+enabled: !!repoFullName && issueNumber !== null,
+staleTime: 30 * 1000,
+});
+}
+
+// ============ PR Detail Hook ============
+
+export function usePRDetail(prNumber: number | null) {
+const repoFullName = useRepoFullName();
+
+return useQuery<{ data: PRDetail }>({
+queryKey: ["github-pr-detail", repoFullName, prNumber],
+queryFn: async () => {
+const res = await fetch(
+`/api/github/pulls/${prNumber}?repo=${encodeURIComponent(repoFullName!)}`,
+);
+if (!res.ok) throw new Error("Failed to fetch PR details");
+return res.json();
+},
+enabled: !!repoFullName && prNumber !== null,
+staleTime: 30 * 1000,
+});
+}
+
+// ============ Mutation Hooks ============
+
+/** Create a new issue */
+export function useCreateIssue() {
+const queryClient = useQueryClient();
+const repoFullName = useRepoFullName();
+
+return useMutation({
+mutationFn: async (params: {
+title: string;
+body?: string;
+labels?: string[];
+assignees?: string[];
+}) => {
+const res = await fetch("/api/github/issues", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ repo: repoFullName, ...params }),
+});
+if (!res.ok) {
+const err = await res.json();
+throw new Error(err.error || "Failed to create issue");
+}
+return res.json();
+},
+onSuccess: () => {
+queryClient.invalidateQueries({ queryKey: ["github-issues"] });
+},
+});
+}
+
+/** Add a comment to an issue or PR */
+export function useAddComment() {
+const queryClient = useQueryClient();
+const repoFullName = useRepoFullName();
+
+return useMutation({
+mutationFn: async (params: { issue_number: number; body: string }) => {
+const res = await fetch("/api/github/issues/comments", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ repo: repoFullName, ...params }),
+});
+if (!res.ok) {
+const err = await res.json();
+throw new Error(err.error || "Failed to add comment");
+}
+return res.json();
+},
+onSuccess: (_data, variables) => {
+queryClient.invalidateQueries({
+queryKey: ["github-comments", repoFullName, variables.issue_number],
+});
+},
+});
+}
+
+/** Close or reopen an issue */
+export function useUpdateIssueState() {
+const queryClient = useQueryClient();
+const repoFullName = useRepoFullName();
+
+return useMutation({
+mutationFn: async (params: { number: number; state: "open" | "closed" }) => {
+const res = await fetch(`/api/github/issues/${params.number}`, {
+method: "PATCH",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ repo: repoFullName, state: params.state }),
+});
+if (!res.ok) {
+const err = await res.json();
+throw new Error(err.error || "Failed to update issue");
+}
+return res.json();
+},
+onSuccess: () => {
+queryClient.invalidateQueries({ queryKey: ["github-issues"] });
+},
+});
+}
+
+/** Merge a pull request */
+export function useMergePR() {
+const queryClient = useQueryClient();
+const repoFullName = useRepoFullName();
+
+return useMutation({
+mutationFn: async (params: {
+pull_number: number;
+merge_method?: "merge" | "squash" | "rebase";
+commit_title?: string;
+}) => {
+const res = await fetch("/api/github/pulls/merge", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ repo: repoFullName, ...params }),
+});
+if (!res.ok) {
+const err = await res.json();
+throw new Error(err.error || "Failed to merge pull request");
+}
+return res.json();
+},
+onSuccess: () => {
+queryClient.invalidateQueries({ queryKey: ["github-pulls"] });
+queryClient.invalidateQueries({ queryKey: ["github-pr-detail"] });
+},
+});
+}
+
+/** Close or reopen a pull request */
+export function useUpdatePRState() {
+const queryClient = useQueryClient();
+const repoFullName = useRepoFullName();
+
+return useMutation({
+mutationFn: async (params: { number: number; state: "open" | "closed" }) => {
+const res = await fetch(`/api/github/pulls/${params.number}`, {
+method: "PATCH",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ repo: repoFullName, state: params.state }),
+});
+if (!res.ok) {
+const err = await res.json();
+throw new Error(err.error || "Failed to update PR");
+}
+return res.json();
+},
+onSuccess: () => {
+queryClient.invalidateQueries({ queryKey: ["github-pulls"] });
+queryClient.invalidateQueries({ queryKey: ["github-pr-detail"] });
+},
+});
 }
