@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
 import { useSetRepo } from '@/hooks/useGitData';
@@ -131,13 +131,13 @@ export function RepoSelector() {
         retry: 2,
     });
 
-    const filteredRepos = (() => {
+    const filteredRepos = useMemo(() => {
         const query = searchQuery.toLowerCase();
         return repos.filter((repo: Repo) =>
             repo.full_name.toLowerCase().includes(query) ||
             repo.name.toLowerCase().includes(query)
         );
-    })();
+    }, [repos, searchQuery]);
 
     const handleGithubSubmit = async () => {
         if (!selectedRepo) return;

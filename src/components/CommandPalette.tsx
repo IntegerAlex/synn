@@ -176,12 +176,7 @@ return (
 <div
 className="absolute inset-0 bg-black/60 backdrop-blur-sm"
 onClick={close}
-onKeyDown={(e) => {
-if (e.key === "Escape") close();
-}}
-role="button"
-tabIndex={-1}
-aria-label="Close command palette"
+role="presentation"
 />
 
 {/* Palette */}

@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
 			([name, bytes]) => ({
 				name,
 				bytes,
-				percentage: totalBytes > 0 ? Math.round((bytes / totalBytes) * 1000) / 10 : 0,
+				percentage: totalBytes > 0 ? Math.round((bytes / totalBytes) * 1000) / 10 : 0, // Round to 1 decimal place
 			}),
 		);
 
