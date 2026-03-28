@@ -5,7 +5,7 @@ import type { AppTab } from '@/store/useAppStore';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { User, ChevronLeft, Code, AlertCircle, GitPullRequest, BarChart3, Settings } from 'lucide-react';
+import { User, ChevronLeft, Code, AlertCircle, GitPullRequest, BarChart3, Settings, Search } from 'lucide-react';
 
 const TABS: Array<{ id: AppTab; label: string; icon: any }> = [
     { id: 'code', label: 'Code', icon: Code },
@@ -56,6 +56,22 @@ export function Header() {
 
                 {/* Right: Actions */}
                 <div className="flex items-center gap-3">
+                    {/* Command palette trigger */}
+                    {showRepoInfo && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
+                            }}
+                            className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 text-sm text-gray-500 bg-[#0d1117] border border-[#30363d] rounded-lg hover:border-[#484f58] transition-colors"
+                            aria-label="Open command palette"
+                        >
+                            <Search className="w-3.5 h-3.5" />
+                            <span>Search or jump to...</span>
+                            <kbd className="ml-2 px-1.5 py-0.5 text-xs bg-[#21262d] rounded border border-[#30363d]">⌘K</kbd>
+                        </button>
+                    )}
+
                     {/* Back to App button - show on profile page */}
                     {isProfilePage && (
                         <Link
