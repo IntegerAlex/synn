@@ -678,22 +678,22 @@ function PRRow({
 				</div>
 			</div>
 			<div className="flex items-center gap-3 text-xs text-gray-500 flex-shrink-0">
-				{(pr.additions > 0 || pr.deletions > 0) && (
+				{((pr.additions ?? 0) > 0 || (pr.deletions ?? 0) > 0) && (
 					<span className="flex items-center gap-1">
-						<span className="text-green-500">+{pr.additions}</span>
-						<span className="text-red-500">-{pr.deletions}</span>
+						<span className="text-green-500">+{pr.additions ?? 0}</span>
+						<span className="text-red-500">-{pr.deletions ?? 0}</span>
 					</span>
 				)}
-				{pr.changed_files > 0 && (
+				{(pr.changed_files ?? 0) > 0 && (
 					<span className="flex items-center gap-1">
 						<FileText className="w-3.5 h-3.5" />
-						{pr.changed_files}
+						{pr.changed_files ?? 0}
 					</span>
 				)}
-				{(pr.comments > 0 || pr.review_comments > 0) && (
+				{((pr.comments ?? 0) > 0 || (pr.review_comments ?? 0) > 0) && (
 					<span className="flex items-center gap-1">
 						<MessageSquare className="w-3.5 h-3.5" />
-						{pr.comments + pr.review_comments}
+						{(pr.comments ?? 0) + (pr.review_comments ?? 0)}
 					</span>
 				)}
 			</div>
