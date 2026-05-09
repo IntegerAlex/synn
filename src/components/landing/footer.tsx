@@ -68,10 +68,31 @@ export function Footer() {
                         <p className="text-xs text-muted-foreground/80">
                             © {new Date().getFullYear()} Synn. All rights reserved.
                         </p>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground/60">
-                            <span>Built with</span>
-                            <span className="text-primary/60">🔥</span>
-                            <span>for developers</span>
+                        <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6 text-xs text-muted-foreground/60">
+                            <div className="flex items-center gap-1">
+                                <span>Built with</span>
+                                <span className="text-primary/60">🔥</span>
+                                <span>for developers</span>
+                            </div>
+                            <span className="hidden sm:block text-border/60">·</span>
+                            <a
+                                href="https://gossorg.in/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-semibold text-muted-foreground/70 hover:text-primary transition-colors duration-200"
+                            >
+                                GOSSORG
+                            </a>
+                            <span className="hidden sm:block text-border/60">·</span>
+                            <a
+                                href="https://www.akshatkotpalliwar.in/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="by Akshat Kotpalliwar"
+                                className="font-medium text-muted-foreground/70 hover:text-primary transition-colors duration-200"
+                            >
+                                by Akshat Kotpalliwar
+                            </a>
                         </div>
                     </div>
                 </div>
