@@ -279,35 +279,70 @@ export function RepoSelector() {
                                         />
                                     </div>
 
-                                    <div role="listbox" className="max-h-64 overflow-y-auto rounded-2xl border border-border-main bg-bg-main custom-scrollbar">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar">
                                         {loadingRepos ? (
-                                            <div className="py-16 flex flex-col items-center gap-4">
-                                                <div className="w-8 h-8 border-2 border-accent-main border-t-transparent rounded-full animate-spin" />
-                                                <span className="text-sm text-text-sub font-bold tracking-tight">Accessing GitHub Vault...</span>
+                                            <div className="col-span-full py-20 flex flex-col items-center gap-4">
+                                                <div className="w-10 h-10 border-4 border-accent-main border-t-transparent rounded-full animate-spin" />
+                                                <span className="text-lg text-text-sub font-bold tracking-tight">Accessing GitHub Vault...</span>
                                             </div>
                                         ) : filteredRepos.length === 0 ? (
-                                            <div className="py-16 text-center text-sm text-text-sub font-medium">
+                                            <div className="col-span-full py-20 text-center text-lg text-text-sub font-medium">
                                                 {searchQuery ? 'No matches found' : 'No repositories available'}
                                             </div>
                                         ) : (
-                                            filteredRepos.map((repo: Repo) => (
+                                            filteredRepos.map((repo: any) => (
                                                 <button
                                                     key={repo.id}
                                                     type="button"
-                                                    role="option"
-                                                    aria-selected={selectedRepo === repo.full_name}
                                                     onClick={() => setSelectedRepo(repo.full_name)}
-                                                    className={`w-full text-left px-6 py-4.5 border-b border-border-main/30 last:border-b-0
-                                                               hover:bg-bg-hover transition-all duration-200
-                                                               ${selectedRepo === repo.full_name ? 'bg-accent-main/10' : ''}`}
+                                                    onDoubleClick={handleGithubSubmit}
+                                                    className={`group relative text-left p-5 rounded-2xl border transition-all duration-300 flex flex-col h-full
+                                                               ${selectedRepo === repo.full_name 
+                                                                 ? 'bg-accent-main/10 border-accent-main ring-1 ring-accent-main shadow-lg shadow-accent-main/10' 
+                                                                 : 'bg-bg-main border-border-main hover:border-gray-500 hover:bg-bg-hover shadow-sm'}`}
                                                 >
-                                                    <div className="flex items-center justify-between">
-                                                        <span className={`text-sm font-bold transition-colors ${selectedRepo === repo.full_name ? 'text-accent-main' : 'text-text-main'}`}>
-                                                            {repo.full_name}
-                                                        </span>
-                                                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-bg-card text-text-sub border border-border-main">
-                                                            {repo.private ? 'Private' : 'Public'}
-                                                        </span>
+                                                    {/* Selection Indicator */}
+                                                    {selectedRepo === repo.full_name && (
+                                                        <div className="absolute top-3 right-3">
+                                                            <div className="w-2 h-2 rounded-full bg-accent-main shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                                                        </div>
+                                                    )}
+
+                                                    {/* Repo Header */}
+                                                    <div className="flex items-start gap-3 mb-3">
+                                                        <div className={`p-2 rounded-xl transition-colors ${selectedRepo === repo.full_name ? 'bg-accent-main text-white' : 'bg-bg-card text-text-sub'}`}>
+                                                            <Github className="w-5 h-5" />
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <h4 className={`text-sm font-bold truncate transition-colors ${selectedRepo === repo.full_name ? 'text-accent-main' : 'text-text-main'}`}>
+                                                                {repo.name}
+                                                            </h4>
+                                                            <p className="text-[10px] text-text-sub truncate opacity-60">
+                                                                {repo.owner.login}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Description */}
+                                                    <p className="text-xs text-text-sub line-clamp-2 mb-4 flex-1 font-medium leading-relaxed">
+                                                        {repo.description || "No description provided."}
+                                                    </p>
+
+                                                    {/* Metadata Footer */}
+                                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-4 border-t border-border-main/50 mt-auto">
+                                                        <div className="flex items-center gap-1.5 text-text-sub" title="Stars">
+                                                            <Star className="w-3.5 h-3.5 text-yellow-500/80" />
+                                                            <span className="text-[11px] font-bold">{repo.stargazers_count || 0}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5 text-text-sub" title="Issues">
+                                                            <AlertCircle className="w-3.5 h-3.5 text-orange-500/80" />
+                                                            <span className="text-[11px] font-bold">{repo.open_issues_count || 0}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5 text-text-sub" title="Visibility">
+                                                            <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md bg-bg-card border border-border-main">
+                                                                {repo.private ? 'Private' : 'Public'}
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </button>
                                             ))
@@ -315,24 +350,29 @@ export function RepoSelector() {
                                     </div>
                                 </div>
                                 
-                                <button
-                                    onClick={handleGithubSubmit}
-                                    disabled={downloading || !selectedRepo || setRepo.isPending}
-                                    className="w-full py-5 px-6 bg-accent-main hover:opacity-90 disabled:bg-bg-tertiary
-                                             disabled:text-text-sub disabled:cursor-not-allowed
-                                             text-white font-black uppercase tracking-widest rounded-2xl 
-                                             transition-all duration-300 shadow-xl shadow-accent-main/20
-                                             transform hover:scale-[1.01] active:scale-[0.99] border border-white/10"
-                                >
-                                    {downloading || setRepo.isPending ? (
-                                        <div className="flex items-center justify-center gap-3">
-                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                            <span>Building History...</span>
-                                        </div>
-                                    ) : (
-                                        <span>Start Visualizing</span>
-                                    )}
-                                </button>
+                                <div className="flex justify-end pt-4">
+                                    <button
+                                        onClick={handleGithubSubmit}
+                                        disabled={downloading || !selectedRepo || setRepo.isPending}
+                                        className="w-full sm:w-auto min-w-[200px] py-4 px-8 bg-accent-main hover:opacity-90 disabled:bg-bg-tertiary
+                                                 disabled:text-text-sub disabled:cursor-not-allowed
+                                                 text-white font-black uppercase tracking-widest rounded-2xl 
+                                                 transition-all duration-300 shadow-xl shadow-accent-main/20
+                                                 transform hover:scale-[1.01] active:scale-[0.99] border border-white/10"
+                                    >
+                                        {downloading || setRepo.isPending ? (
+                                            <div className="flex items-center justify-center gap-3">
+                                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                <span>Building History...</span>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center justify-center gap-2">
+                                                <span>Start Visualizing</span>
+                                                <ArrowRight className="w-4 h-4" />
+                                            </div>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </SignedIn>
