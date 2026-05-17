@@ -178,19 +178,34 @@ export function RepoSelector() {
         (repo: Repo) =>
           repo.full_name.toLowerCase().includes(query) ||
           repo.name.toLowerCase().includes(query) ||
-          (repo.description?.toLowerCase().includes(query) ?? false),
+          (repo.description?.toLowerCase().includes(query) ?? false) ||
+          (repo.metadata?.description?.toLowerCase().includes(query) ?? false),
       );
     }
 
     // Sorting
     result.sort((a, b) => {
       if (sortBy === "name") return a.name.localeCompare(b.name);
-      if (sortBy === "stars")
-        return (b.stargazers_count || 0) - (a.stargazers_count || 0);
-      if (sortBy === "updated")
-        return (
-          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-        );
+      
+      if (sortBy === "stars") {
+        const aStars = (a.stars_count ?? a.stargazers_count) || 0;
+        const bStars = (b.stars_count ?? b.stargazers_count) || 0;
+        return bStars - aStars;
+      }
+      
+      if (sortBy === "updated") {
+        const aDateStr = a.updated_at || a.metadata?.updatedAt || a.metadata?.pushedAt || 0;
+        const bDateStr = b.updated_at || b.metadata?.updatedAt || b.metadata?.pushedAt || 0;
+        
+        const aTime = aDateStr ? new Date(aDateStr).getTime() : 0;
+        const bTime = bDateStr ? new Date(bDateStr).getTime() : 0;
+        
+        // Handle invalid dates
+        const finalA = isNaN(aTime) ? 0 : aTime;
+        const finalB = isNaN(bTime) ? 0 : bTime;
+        
+        return finalB - finalA;
+      }
       return 0;
     });
 
@@ -321,33 +336,33 @@ export function RepoSelector() {
             </div>
 
             {/* Filter Bar */}
-            <div className="flex flex-col lg:flex-row gap-4 bg-bg-card/50 backdrop-blur-md border border-border-main p-4 rounded-2xl">
+            <div className="flex flex-col lg:flex-row gap-4 bg-bg-card border border-border-main p-5 rounded-3xl shadow-xl shadow-black/20">
               <div className="flex-1 relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-sub" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-sub group-focus-within:text-accent-main transition-colors" />
                 <input
                   type="text"
-                  placeholder="Search repositories..."
+                  placeholder="Search repositories by name or description..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-11 pr-4 py-2.5 bg-bg-main border border-border-main rounded-xl 
+                  className="w-full pl-11 pr-4 py-3 bg-bg-main border border-border-main rounded-2xl 
                                              text-text-main font-medium text-sm
-                                             focus:outline-none focus:ring-2 focus:ring-accent-main/30 focus:border-accent-main
-                                             transition-all duration-200 placeholder-text-sub/50 shadow-inner"
+                                             focus:outline-none focus:ring-2 focus:ring-accent-main/40 focus:border-accent-main
+                                             transition-all duration-200 placeholder-text-sub/40 shadow-inner"
                 />
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-4">
                 {/* Visibility Filter */}
-                <div className="flex items-center bg-bg-main border border-border-main rounded-xl p-1">
+                <div className="flex items-center bg-bg-main border border-border-main rounded-2xl p-1.5 shadow-inner">
                   {(["all", "public", "private"] as VisibilityFilter[]).map(
                     (v) => (
                       <button
                         key={v}
                         onClick={() => setVisibility(v)}
-                        className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 uppercase tracking-wider
+                        className={`px-6 py-2 text-xs font-black rounded-xl transition-all duration-300 uppercase tracking-widest
                                                       ${
                                                         visibility === v
-                                                          ? "bg-accent-main text-white shadow-lg shadow-accent-main/20"
+                                                          ? "bg-accent-main text-white shadow-lg shadow-accent-main/30 scale-105"
                                                           : "text-text-sub hover:text-text-main hover:bg-bg-hover"
                                                       }`}
                       >
@@ -357,20 +372,23 @@ export function RepoSelector() {
                   )}
                 </div>
 
-                <div className="h-6 w-px bg-border-main hidden sm:block" />
+                <div className="h-10 w-px bg-border-main hidden sm:block opacity-50" />
 
                 {/* Sort Dropdown */}
-                <div className="flex items-center gap-2 bg-bg-main border border-border-main rounded-xl px-3 py-2">
-                  <SortAsc className="w-4 h-4 text-text-sub" />
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as SortOption)}
-                    className="bg-transparent text-sm font-bold text-text-main focus:outline-none cursor-pointer"
-                  >
-                    <option value="updated">Recently Updated</option>
-                    <option value="stars">Most Stars</option>
-                    <option value="name">Alphabetical</option>
-                  </select>
+                <div className="flex items-center gap-3 bg-bg-main border border-border-main rounded-2xl px-4 py-2.5 shadow-inner hover:border-text-sub/30 transition-colors">
+                  <SortAsc className="w-4.5 h-4.5 text-accent-main" />
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-black uppercase text-text-sub leading-none mb-0.5 tracking-tighter">Sort by</span>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as SortOption)}
+                      className="bg-transparent text-xs font-bold text-text-main focus:outline-none cursor-pointer appearance-none pr-4"
+                    >
+                      <option value="updated">Recently Updated</option>
+                      <option value="stars">Popularity (Stars)</option>
+                      <option value="name">Repository Name</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
