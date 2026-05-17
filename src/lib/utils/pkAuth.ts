@@ -3,7 +3,7 @@ import { cookies, headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 const CHALLENGE_TTL_MS = 5 * 60 * 1000;
-const TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
+const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const TOKEN_COOKIE = 'admin_pk_token';
 const PK_SECRET = process.env.PK_AUTH_SECRET || 'fallback-dev-secret-change-me';
 

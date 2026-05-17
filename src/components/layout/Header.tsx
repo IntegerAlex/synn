@@ -45,7 +45,7 @@ export function Header() {
                     {showRepoInfo && (
                         <div className="flex items-center gap-2 text-sm">
                             <span className="text-gray-400">{repoInfo.name}</span>
-                            <span className="px-2 py-0.5 bg-[#21262d] rounded text-xs text-[#ef4444]">
+                            <span className="px-2 py-0.5 bg-[#21262d] rounded text-xs text-blue-500">
                                 {repoInfo.currentBranch}
                             </span>
                             {!repoInfo.isClean && (
@@ -77,7 +77,7 @@ export function Header() {
                     {isProfilePage && (
                         <Link
                             href="/app"
-                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-[#21262d] rounded-lg border border-[#30363d] hover:border-[#ef4444]/50 bg-[#0d1117]/50 backdrop-blur-sm transition-all duration-200 hover:shadow-lg hover:shadow-[#ef4444]/10 group"
+                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-[#21262d] rounded-lg border border-[#30363d] hover:border-blue-500/50 bg-[#0d1117]/50 backdrop-blur-sm transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/10 group"
                         >
                             <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
                             <span>Back to App</span>
@@ -88,7 +88,7 @@ export function Header() {
                     {!isProfilePage && (
                         <Link
                             href="/profile"
-                            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-[#21262d] rounded-lg border border-[#30363d] hover:border-[#ef4444]/50 bg-[#0d1117]/50 backdrop-blur-sm transition-all duration-200 hover:shadow-lg hover:shadow-[#ef4444]/10 group"
+                            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-[#21262d] rounded-lg border border-[#30363d] hover:border-blue-500/50 bg-[#0d1117]/50 backdrop-blur-sm transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/10 group"
                             title="View Profile"
                         >
                             <User className="w-4 h-4 transition-transform group-hover:scale-110" />
@@ -101,7 +101,7 @@ export function Header() {
                         <button
                             type="button"
                             onClick={closeRepo}
-                            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-[#21262d] rounded-lg border border-[#30363d] hover:border-[#ef4444]/50 bg-[#0d1117]/50 backdrop-blur-sm transition-all duration-200 hover:shadow-lg hover:shadow-[#ef4444]/10"
+                            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-[#21262d] rounded-lg border border-[#30363d] hover:border-blue-500/50 bg-[#0d1117]/50 backdrop-blur-sm transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/10"
                             aria-label="Close repository"
                         >
                             Close Repo
@@ -120,7 +120,7 @@ export function Header() {
                             onClick={() => setActiveTab(id)}
                             className={`flex items-center gap-1.5 px-3 py-2 text-sm border-b-2 transition-colors ${
                                 activeTab === id
-                                    ? 'border-[#ef4444] text-white font-medium'
+                                    ? 'border-blue-500 text-white font-medium'
                                     : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-[#30363d]'
                             }`}
                             aria-current={activeTab === id ? 'page' : undefined}

@@ -480,17 +480,15 @@ export async function syncContributions(options: SyncOptions): Promise<{
       return { reposSynced: 0, totalCommits: 0, errors: ['No repositories found'] };
     }
 
-    // Sync each repository
-    for (const repo of reposToSync) {
+    // Sync repositories in parallel for better performance
+    const syncPromises = reposToSync.map(async (repo) => {
       try {
         // Validate repo data
         if (!repo.id || !Number.isInteger(repo.id) || repo.id <= 0) {
-          errors.push(`Invalid repo ID for ${repo.fullName || 'unknown'}`);
-          continue;
+          throw new Error(`Invalid repo ID for ${repo.fullName || 'unknown'}`);
         }
         if (!repo.fullName || typeof repo.fullName !== 'string') {
-          errors.push(`Invalid repo fullName for repo ID ${repo.id}`);
-          continue;
+          throw new Error(`Invalid repo fullName for repo ID ${repo.id}`);
         }
 
         const githubService = new GitHubApiService(githubToken, repo.fullName, repo.defaultBranch || 'main', {
@@ -498,18 +496,26 @@ export async function syncContributions(options: SyncOptions): Promise<{
           clerkUserId,
         });
         const commitCount = await syncRepoCommits(userId, repo.id, githubService);
-        totalCommits += commitCount;
-        reposSynced++;
+        return { success: true, commitCount };
       } catch (error: any) {
-        const errorMsg = `Failed to sync ${repo.fullName}: ${error.message || 'Unknown error'}`;
-        const errorDetails = error.stack ? `${errorMsg}\nStack: ${error.stack}` : errorMsg;
-        errors.push(errorDetails);
         logger.error('Failed to sync repository', error, {
           repoFullName: repo.fullName,
           userId,
           clerkUserId,
           code: error.code,
         });
+        return { success: false, error: error.message || 'Unknown error', repoFullName: repo.fullName };
+      }
+    });
+
+    const results = await Promise.all(syncPromises);
+
+    for (const result of results) {
+      if (result.success) {
+        totalCommits += (result as any).commitCount;
+        reposSynced++;
+      } else {
+        errors.push(`Failed to sync ${(result as any).repoFullName}: ${(result as any).error}`);
       }
     }
 

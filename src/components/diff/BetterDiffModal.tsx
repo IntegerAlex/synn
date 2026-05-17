@@ -119,35 +119,26 @@ export function BetterDiffModal({
   const currentFile = parsedDiff?.files[selectedFileIndex];
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          onClick={onClose}
-        >
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
+        onClick={onClose}
+        aria-hidden="true"
+      />
 
-          {/* Modal */}
-          <motion.div
-            ref={modalRef}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-            className="relative w-[95vw] h-[90vh] max-w-7xl bg-[#0d1117] border border-[#30363d] rounded-lg shadow-2xl flex flex-col overflow-hidden min-h-0"
-            onClick={(e) => e.stopPropagation()}
-            tabIndex={-1}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Better Diff View"
-          >
-            {/* Header */}
-            <header className="flex items-center justify-between px-4 py-3 border-b border-[#30363d] bg-[#161b22]">
+      {/* Modal */}
+      <div
+        ref={modalRef}
+        className="relative w-[95vw] h-[90vh] max-w-7xl bg-[#0d1117] border border-[#30363d] rounded-lg shadow-2xl flex flex-col overflow-hidden min-h-0"
+        onClick={(e) => e.stopPropagation()}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Diff View"
+      >
+        {/* Header */}
+        <header className="flex items-center justify-between px-4 py-3 border-b border-[#30363d] bg-[#161b22]">
               <div className="flex items-center gap-4">
                 <h2 className="text-lg font-semibold text-white">Better Diff</h2>
                 {commitHash && (
@@ -388,9 +379,7 @@ export function BetterDiffModal({
                 </motion.div>
               )}
             </AnimatePresence>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+          </div>
+        </div>
   );
 }

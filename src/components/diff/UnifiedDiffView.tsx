@@ -112,19 +112,19 @@ export const UnifiedDiffView = memo(function UnifiedDiffView({
             }
             let bgClass = '';
             if (line.type === 'add') {
-              bgClass = 'bg-[#1f3d1f]';
+              bgClass = 'bg-[#1f3d1f]/40';
             } else if (line.type === 'remove') {
-              bgClass = 'bg-[#3d1f1f]';
+              bgClass = 'bg-[#3d1f1f]/40';
             } else if (line.type === 'modify') {
-              bgClass = 'bg-[#3d3d1f]';
+              bgClass = 'bg-[#3d3d1f]/40';
             }
-            let textClass = 'text-gray-300';
+            let textClass = 'text-gray-400';
             if (line.type === 'add') {
-              textClass = 'text-[#7ee787]';
+              textClass = 'text-[#58a6ff]'; // Blueish for additions to be different
             } else if (line.type === 'remove') {
-              textClass = 'text-[#ffa198]';
+              textClass = 'text-[#f85149]';
             } else if (line.type === 'modify') {
-              textClass = 'text-[#e3b341]';
+              textClass = 'text-[#d29922]';
             }
 
             return (

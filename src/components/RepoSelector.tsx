@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useSetRepo } from '@/hooks/useGitData';
 import { useAppStore } from '@/store/useAppStore';
 import { SignedIn, SignedOut, SignInButton, useAuth, UserButton } from '@clerk/nextjs';
-import { Github, Sparkles } from 'lucide-react';
+import { Github, Sparkles, Search, History } from 'lucide-react';
 
 interface Repo {
     id: number;
@@ -54,21 +54,21 @@ export function RepoSelector() {
         }
 
         const nodes: Node[] = [];
-        const nodeCount = 40;
+        const nodeCount = 30; // Reduced for performance
 
         for (let i = 0; i < nodeCount; i++) {
             nodes.push({
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
-                vx: (Math.random() - 0.5) * 0.3,
-                vy: (Math.random() - 0.5) * 0.3,
-                radius: Math.random() * 2 + 1,
+                vx: (Math.random() - 0.5) * 0.2,
+                vy: (Math.random() - 0.5) * 0.2,
+                radius: Math.random() * 1.5 + 1,
             });
         }
 
         let animationId: number;
         const animate = () => {
-            ctx.fillStyle = 'hsl(0 0% 2%)';
+            ctx.fillStyle = '#0d1117';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             nodes.forEach((node, i) => {
@@ -84,11 +84,11 @@ export function RepoSelector() {
                     const dy = node.y - other.y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
 
-                    if (dist < 150) {
+                    if (dist < 180) {
                         ctx.beginPath();
                         ctx.moveTo(node.x, node.y);
                         ctx.lineTo(other.x, other.y);
-                        ctx.strokeStyle = `hsla(356, 100%, 35%, ${0.1 * (1 - dist / 150)})`;
+                        ctx.strokeStyle = `rgba(59, 130, 246, ${0.05 * (1 - dist / 180)})`;
                         ctx.lineWidth = 0.5;
                         ctx.stroke();
                     }
@@ -96,7 +96,7 @@ export function RepoSelector() {
 
                 ctx.beginPath();
                 ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
-                ctx.fillStyle = 'hsla(356, 100%, 40%, 0.4)';
+                ctx.fillStyle = 'rgba(59, 130, 246, 0.15)';
                 ctx.fill();
             });
 
@@ -115,7 +115,6 @@ export function RepoSelector() {
     const {
         data: repos = [],
         isLoading: loadingRepos,
-        error: reposError,
     } = useQuery({
         queryKey: ['repos'],
         queryFn: async () => {
@@ -127,7 +126,7 @@ export function RepoSelector() {
             return Array.isArray(data) ? data : [];
         },
         enabled: isLoaded && isSignedIn,
-        staleTime: 5 * 60 * 1000, // 5 minutes
+        staleTime: 5 * 60 * 1000,
         retry: 2,
     });
 
@@ -138,6 +137,26 @@ export function RepoSelector() {
             repo.name.toLowerCase().includes(query)
         );
     }, [repos, searchQuery]);
+
+    // Repository usage state
+    const [recentRepos, setRecentRepos] = useState<string[]>([]);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('recent_repos');
+        if (saved) {
+            try {
+                setRecentRepos(JSON.parse(saved));
+            } catch (e) {
+                console.error('Failed to load recent repos', e);
+            }
+        }
+    }, []);
+
+    const addToRecent = (fullName: string) => {
+        const updated = [fullName, ...recentRepos.filter(r => r !== fullName)].slice(0, 5);
+        setRecentRepos(updated);
+        localStorage.setItem('recent_repos', JSON.stringify(updated));
+    };
 
     const handleGithubSubmit = async () => {
         if (!selectedRepo) return;
@@ -152,6 +171,7 @@ export function RepoSelector() {
                 repoFullName: repo.full_name, 
                 defaultBranch: repo.default_branch || 'main'
             });
+            addToRecent(repo.full_name);
             setRepoInfoStore(repoInfo);
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Failed to open repository');
@@ -161,210 +181,174 @@ export function RepoSelector() {
     };
 
     return (
-        <div className="relative min-h-screen flex items-center justify-center bg-background overflow-hidden">
-            {/* Canvas background matching home screen */}
-            <canvas
-                ref={canvasRef}
-                className="absolute inset-0 opacity-50"
-            />
-
-            {/* Gradient overlays */}
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background pointer-events-none" />
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/5 rounded-full blur-3xl" />
-
-            <div className="relative z-10 w-full max-w-2xl mx-auto px-6 lg:px-8">
-                {/* Logo and branding */}
+        <div className="relative min-h-screen flex items-center justify-center bg-[#0d1117] overflow-hidden">
+            <canvas ref={canvasRef} className="absolute inset-0" />
+            
+            <div className="relative z-10 w-full max-w-2xl mx-auto px-6 lg:px-8 py-12">
                 <div className="flex flex-col items-center mb-12">
-                    <div className="relative mb-6">
+                    <div className="relative mb-6 transform hover:scale-105 transition-transform duration-500">
                         <Image
                             src="/logo.png"
                             alt="Synn Logo"
-                            width={280}
-                            height={280}
-                            className="drop-shadow-2xl"
+                            width={160}
+                            height={160}
+                            className="drop-shadow-[0_0_40px_rgba(59,130,246,0.4)]"
                             priority
                         />
                     </div>
-                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground tracking-tight mb-3">
-                        <span className="text-balance">
-                            Select your{' '}
-                            <span className="text-primary">SIN</span>
-                        </span>
+                    <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-3">
+                        Synn <span className="text-blue-500 text-3xl font-medium ml-2 opacity-80 italic">v2.0</span>
                     </h1>
-                    <p className="text-lg md:text-xl text-muted-foreground text-center max-w-xl">
-                        Choose a repository to visualize your Git history
+                    <p className="text-gray-400 text-center max-w-md text-lg">
+                        Visualize your development journey
                     </p>
                 </div>
 
-                <div className="min-h-[300px]">
-                    <div className="space-y-6">
-                        <SignedOut>
-                            <div className="text-center py-12 bg-card/50 backdrop-blur-sm border border-border rounded-xl p-8">
-                                <Github className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                                <p className="text-foreground mb-2 text-lg font-medium">Connect your GitHub</p>
-                                <p className="text-muted-foreground mb-6 text-sm">Sign in to access your repositories</p>
-                                <SignInButton mode="modal">
-                                    <button className="relative inline-flex items-center gap-2 py-3.5 px-8 
-                                                 bg-gradient-to-r from-[#dc2626] via-[#ea580c] to-[#f59e0b]
-                                                 hover:from-[#b91c1c] hover:via-[#c2410c] hover:to-[#d97706]
-                                                 text-white font-bold rounded-lg 
-                                                 transition-all duration-300
-                                                 shadow-[0_0_20px_rgba(220,38,38,0.5),0_0_40px_rgba(234,88,12,0.3)]
-                                                 hover:shadow-[0_0_30px_rgba(220,38,38,0.7),0_0_60px_rgba(234,88,12,0.5)]
-                                                 transform hover:scale-[1.05] active:scale-[0.98]
-                                                 overflow-hidden group">
-                                        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent 
-                                                       translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                                        <Github className="w-5 h-5 relative z-10 drop-shadow-[0_0_4px_rgba(0,0,0,0.5)]" />
-                                        <span className="relative z-10 drop-shadow-[0_0_4px_rgba(0,0,0,0.5)]">Sign In with GitHub</span>
-                                    </button>
-                                </SignInButton>
+                <div className="space-y-6">
+                    <SignedOut>
+                        <div className="text-center py-12 bg-[#161b22]/80 backdrop-blur-xl border border-[#30363d] rounded-2xl p-8 shadow-2xl">
+                            <Github className="w-16 h-16 text-gray-500 mx-auto mb-6" />
+                            <h2 className="text-2xl font-bold text-white mb-2">Connect GitHub</h2>
+                            <p className="text-gray-400 mb-8 max-w-sm mx-auto font-medium">Sync your repositories to start visualizing your commit patterns and branch history.</p>
+                            <SignInButton mode="modal">
+                                <button className="w-full flex items-center justify-center gap-3 py-4 px-8 
+                                             bg-white hover:bg-gray-100 text-black font-bold rounded-xl
+                                             transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]
+                                             shadow-xl">
+                                    <Github className="w-5 h-5" />
+                                    <span>Sign In with GitHub</span>
+                                </button>
+                            </SignInButton>
+                        </div>
+                    </SignedOut>
+
+                    <SignedIn>
+                        <div className="bg-[#161b22]/90 backdrop-blur-xl border border-[#30363d] rounded-2xl p-8 shadow-2xl">
+                            <div className="flex justify-between items-center mb-8 bg-[#0d1117]/50 p-4 rounded-xl border border-[#30363d]">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] animate-pulse" />
+                                    <span className="text-sm font-semibold text-gray-300 tracking-wide uppercase">GitHub Connected</span>
+                                </div>
+                                <UserButton />
                             </div>
-                        </SignedOut>
-                        <SignedIn>
-                            <div className="bg-card/50 backdrop-blur-sm border border-border rounded-xl p-8">
-                                <div className="flex justify-between items-center mb-6">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                                        <span className="text-sm text-muted-foreground font-medium">Connected to GitHub</span>
+                            
+                            <div className="space-y-8">
+                                {recentRepos.length > 0 && !searchQuery && (
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-3 px-1">
+                                            <History className="w-4 h-4 text-blue-500" />
+                                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Recently Viewed</h3>
+                                        </div>
+                                        <div className="grid grid-cols-1 gap-2">
+                                            {recentRepos.map((repoName) => (
+                                                <button
+                                                    key={repoName}
+                                                    onClick={() => setSelectedRepo(repoName)}
+                                                    className={`text-left px-4 py-3.5 rounded-xl border transition-all duration-200 group
+                                                               ${selectedRepo === repoName 
+                                                                 ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-900/40' 
+                                                                 : 'bg-[#0d1117] border-[#30363d] text-gray-400 hover:border-gray-500 hover:bg-[#161b22]'}`}
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-sm font-semibold truncate">{repoName}</span>
+                                                        <Sparkles className={`w-4 h-4 transition-all duration-300 ${selectedRepo === repoName ? 'opacity-100 scale-110' : 'opacity-0 scale-50'}`} />
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                    <UserButton />
+                                )}
+
+                                <div>
+                                    <div className="flex items-center gap-2 mb-3 px-1">
+                                        <Search className="w-4 h-4 text-gray-500" />
+                                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                                            {searchQuery ? 'Search Results' : 'Select Repository'}
+                                        </h3>
+                                    </div>
+                                    <div className="relative mb-4">
+                                        <input
+                                            type="text"
+                                            placeholder="Type to search your repos..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="w-full pl-6 pr-4 py-4 bg-[#0d1117] border border-[#30363d] rounded-2xl 
+                                                     text-white font-medium text-base
+                                                     focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500
+                                                     transition-all duration-200 placeholder-gray-700 shadow-inner"
+                                        />
+                                    </div>
+
+                                    <div role="listbox" className="max-h-64 overflow-y-auto rounded-2xl border border-[#30363d] bg-[#0d1117] custom-scrollbar">
+                                        {loadingRepos ? (
+                                            <div className="py-16 flex flex-col items-center gap-4">
+                                                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                                <span className="text-sm text-gray-500 font-bold tracking-tight">Accessing GitHub Vault...</span>
+                                            </div>
+                                        ) : filteredRepos.length === 0 ? (
+                                            <div className="py-16 text-center text-sm text-gray-500 font-medium">
+                                                {searchQuery ? 'No matches found' : 'No repositories available'}
+                                            </div>
+                                        ) : (
+                                            filteredRepos.map((repo: Repo) => (
+                                                <button
+                                                    key={repo.id}
+                                                    type="button"
+                                                    role="option"
+                                                    aria-selected={selectedRepo === repo.full_name}
+                                                    onClick={() => setSelectedRepo(repo.full_name)}
+                                                    className={`w-full text-left px-6 py-4.5 border-b border-[#30363d]/30 last:border-b-0
+                                                               hover:bg-blue-500/5 transition-all duration-200
+                                                               ${selectedRepo === repo.full_name ? 'bg-blue-500/10' : ''}`}
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <span className={`text-sm font-bold transition-colors ${selectedRepo === repo.full_name ? 'text-blue-400' : 'text-gray-300'}`}>
+                                                            {repo.full_name}
+                                                        </span>
+                                                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-[#161b22] text-gray-600 border border-[#30363d]">
+                                                            {repo.private ? 'Private' : 'Public'}
+                                                        </span>
+                                                    </div>
+                                                </button>
+                                            ))
+                                        )}
+                                    </div>
                                 </div>
                                 
-                                <div className="space-y-6">
-                                    <div>
-                                        <label className="block text-sm font-semibold text-foreground mb-3">
-                                            <span className="text-foreground">Select your </span>
-                                            <span className="text-primary font-black text-xl tracking-wider">
-                                                SIN
-                                            </span>
-                                        </label>
-                                        {/* Search input */}
-                                        <div className="relative mb-3">
-                                            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                            </svg>
-                                            <input
-                                                type="text"
-                                                placeholder="Search repositories..."
-                                                value={searchQuery}
-                                                onChange={(e) => setSearchQuery(e.target.value)}
-                                                className="w-full pl-10 pr-4 py-3 bg-background border-2 border-border rounded-lg 
-                                                         text-foreground font-medium text-sm
-                                                         focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary
-                                                         transition-all duration-200 placeholder-muted-foreground
-                                                         hover:border-primary/50"
-                                            />
+                                <button
+                                    onClick={handleGithubSubmit}
+                                    disabled={downloading || !selectedRepo || setRepo.isPending}
+                                    className="w-full py-5 px-6 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800
+                                             disabled:text-gray-600 disabled:cursor-not-allowed
+                                             text-white font-black uppercase tracking-widest rounded-2xl 
+                                             transition-all duration-300 shadow-xl shadow-blue-900/20
+                                             transform hover:scale-[1.01] active:scale-[0.98] border border-blue-400/20"
+                                >
+                                    {downloading || setRepo.isPending ? (
+                                        <div className="flex items-center justify-center gap-3">
+                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            <span>Building History...</span>
                                         </div>
-                                        {/* Repository list */}
-                                        <div role="listbox" aria-label="Repositories" className="max-h-64 overflow-y-auto rounded-lg border-2 border-border bg-background shadow-lg">
-                                            {loadingRepos ? (
-                                                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                                                    Loading repositories...
-                                                </div>
-                                            ) : filteredRepos.length === 0 ? (
-                                                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                                                    {searchQuery ? 'No repositories match your search' : 'No repositories found'}
-                                                </div>
-                                            ) : (
-                                                filteredRepos.map((repo: Repo) => (
-                                                    <button
-                                                        key={repo.id}
-                                                        type="button"
-                                                        role="option"
-                                                        aria-selected={selectedRepo === repo.full_name}
-                                                        onClick={() => setSelectedRepo(repo.full_name)}
-                                                        disabled={downloading}
-                                                        className={`w-full text-left px-4 py-3 border-b border-border/50 last:border-b-0
-                                                                   hover:bg-primary/5 transition-colors cursor-pointer
-                                                                   ${selectedRepo === repo.full_name ? 'bg-primary/10 border-l-2 border-l-primary' : ''}`}
-                                                    >
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="text-sm font-medium text-foreground">{repo.full_name}</span>
-                                                            <span className="text-xs">{repo.private ? '🔒' : '🌐'}</span>
-                                                        </div>
-                                                    </button>
-                                                ))
-                                            )}
-                                        </div>
-                                        {filteredRepos.length > 0 && (
-                                            <div className="mt-2 text-xs text-muted-foreground text-right">
-                                                {filteredRepos.length} of {repos.length} repositories
-                                            </div>
-                                        )}
-                                    </div>
-                                    
-                                    <button
-                                        onClick={handleGithubSubmit}
-                                        disabled={downloading || !selectedRepo || setRepo.isPending}
-                                        className="relative w-full py-4 px-6 
-                                                 bg-gradient-to-r from-[#1a0a0a] via-[#2d0f0f] to-[#1a0a0a]
-                                                 hover:from-[#2d0f0f] hover:via-[#3d1515] hover:to-[#2d0f0f]
-                                                 disabled:from-gray-800 disabled:via-gray-700 disabled:to-gray-800
-                                                 disabled:text-gray-500 disabled:cursor-not-allowed
-                                                 text-white font-semibold rounded-lg 
-                                                 border border-[#dc2626]/30 hover:border-[#dc2626]/60
-                                                 transition-all duration-500
-                                                 shadow-[0_0_15px_rgba(220,38,38,0.2),inset_0_1px_0_rgba(255,255,255,0.1)]
-                                                 hover:shadow-[0_0_25px_rgba(220,38,38,0.4),0_0_40px_rgba(139,26,26,0.2),inset_0_1px_0_rgba(255,255,255,0.15)]
-                                                 disabled:shadow-none disabled:border-gray-700
-                                                 focus:outline-none focus:ring-2 focus:ring-[#dc2626]/50 focus:ring-offset-2 focus:ring-offset-background
-                                                 transform hover:scale-[1.01] active:scale-[0.99] disabled:transform-none
-                                                 overflow-hidden group"
-                                    >
-                                        {/* Subtle inner glow */}
-                                        <span className="absolute inset-0 bg-gradient-to-r from-[#dc2626]/0 via-[#dc2626]/10 to-[#dc2626]/0 
-                                                       opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                        
-                                        {/* Shimmer effect */}
-                                        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent 
-                                                       translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 
-                                                       disabled:translate-x-0" />
-                                        
-                                        {/* Subtle pulsing glow at edges */}
-                                        <span className="absolute inset-0 rounded-lg bg-gradient-to-r from-[#dc2626]/0 via-transparent to-[#dc2626]/0 
-                                                       opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                        
-                                        {downloading || setRepo.isPending ? (
-                                            <span className="relative z-10 flex items-center justify-center gap-2">
-                                                <svg className="animate-spin h-5 w-5 text-[#dc2626]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                                <span className="text-gray-300">Entering Hell...</span>
-                                            </span>
-                                        ) : (
-                                            <span className="relative z-10 flex items-center justify-center gap-2">
-                                                {/* <Sparkles className="w-5 h-5 text-[#dc2626] opacity-80" /> */}
-                                                <span className="text-gray-200">Enter</span>
-                                            </span>
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-                        </SignedIn>
-                    </div>
-
-                    {error && (
-                        <div className="mt-6 p-4 bg-destructive/20 border-2 border-destructive/50 rounded-lg text-destructive text-sm backdrop-blur-sm">
-                            <div className="flex items-center gap-2">
-                                <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                </svg>
-                                <span>{error}</span>
+                                    ) : (
+                                        <span>Start Visualizing</span>
+                                    )}
+                                </button>
                             </div>
                         </div>
-                    )}
-                </div>
-
-                <div className="mt-12 text-center">
-                    <p className="text-sm text-muted-foreground">
-                        Select your <span className="text-primary font-bold">SIN</span> to begin visualizing
-                    </p>
+                    </SignedIn>
                 </div>
             </div>
 
-            <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+            {error && (
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4">
+                    <div className="p-4 bg-red-500/10 border border-red-500/50 rounded-2xl text-red-500 text-sm font-bold backdrop-blur-xl shadow-2xl flex items-center gap-3">
+                        <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>{error}</span>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

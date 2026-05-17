@@ -13,11 +13,10 @@ interface ShareModalProps {
     totalCommits: number;
     maxCount: number;
   } | null;
-  roastData: { roast?: string } | null;
   profileContentRef?: React.RefObject<HTMLDivElement | null>;
 }
 
-export function ShareModal({ isOpen, onClose, contributionsData, roastData, profileContentRef }: ShareModalProps) {
+export function ShareModal({ isOpen, onClose, contributionsData, profileContentRef }: ShareModalProps) {
   const { user } = useUser();
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -29,9 +28,9 @@ export function ShareModal({ isOpen, onClose, contributionsData, roastData, prof
   };
 
   const getShareText = () => {
-    const totalSins = contributionsData?.totalCommits || 0;
-    const peakWickedness = contributionsData?.maxCount || 0;
-    return `Check out my developer profile on Synn! 🔥\n\n${totalSins.toLocaleString()} total sins • Peak wickedness: ${peakWickedness}\n\n${getShareUrl()}`;
+    const totalCommits = contributionsData?.totalCommits || 0;
+    const peakActivity = contributionsData?.maxCount || 0;
+    return `Check out my developer profile on Synn! 🚀\n\n${totalCommits.toLocaleString()} total commits • Peak daily activity: ${peakActivity}\n\n${getShareUrl()}`;
   };
 
   const handleShare = (platform: 'linkedin' | 'twitter' | 'peerlist' | 'reddit') => {
@@ -52,7 +51,6 @@ export function ShareModal({ isOpen, onClose, contributionsData, roastData, prof
         shareUrl = `https://reddit.com/submit?url=${url}&title=${title}`;
         break;
       case 'peerlist':
-        // Peerlist uses a similar pattern - check their docs, but this is a common pattern
         shareUrl = `https://peerlist.io/share?url=${url}&text=${text}`;
         break;
     }
@@ -91,7 +89,7 @@ export function ShareModal({ isOpen, onClose, contributionsData, roastData, prof
         align-items: flex-start;
       `;
 
-      // Add logo at the top (no top margin/padding)
+      // Add logo at the top
       const logoContainer = document.createElement('div');
       logoContainer.style.cssText = 'display: flex; justify-content: flex-start; margin-bottom: 32px; width: 100%;';
       const logoImg = document.createElement('img');
@@ -101,29 +99,25 @@ export function ShareModal({ isOpen, onClose, contributionsData, roastData, prof
       logoContainer.appendChild(logoImg);
       wrapper.appendChild(logoContainer);
 
-      // Clone the profile content with deep clone to preserve styles
+      // Clone the profile content
       const clonedContent = profileContent.cloneNode(true) as HTMLElement;
       
-      // Remove header if exists
       const headerInClone = clonedContent.querySelector('header');
       if (headerInClone) {
         headerInClone.remove();
       }
 
-      // Copy computed styles to cloned elements
+      // Copy computed styles
       const copyStyles = (source: Element, target: Element) => {
         const computedStyle = window.getComputedStyle(source);
         const targetEl = target as HTMLElement;
         Array.from(computedStyle).forEach((key) => {
           try {
             targetEl.style.setProperty(key, computedStyle.getPropertyValue(key), computedStyle.getPropertyPriority(key));
-          } catch (e) {
-            // Ignore errors for certain properties
-          }
+          } catch (e) {}
         });
       };
 
-      // Copy styles from original to clone
       const originalElements = profileContent.querySelectorAll('*');
       const clonedElements = clonedContent.querySelectorAll('*');
       originalElements.forEach((original, index) => {
@@ -132,7 +126,6 @@ export function ShareModal({ isOpen, onClose, contributionsData, roastData, prof
         }
       });
 
-      // Copy styles for the main element
       copyStyles(profileContent, clonedContent);
 
       clonedContent.style.cssText += `
@@ -144,11 +137,8 @@ export function ShareModal({ isOpen, onClose, contributionsData, roastData, prof
       `;
 
       wrapper.appendChild(clonedContent);
-
-      // Add to DOM
       document.body.appendChild(wrapper);
 
-      // Wait for logo to load
       await new Promise((resolve) => {
         if (logoImg.complete && logoImg.naturalWidth > 0) {
           resolve(true);
@@ -159,7 +149,6 @@ export function ShareModal({ isOpen, onClose, contributionsData, roastData, prof
         }
       });
 
-      // Wait for all images in cloned content to load
       const images = clonedContent.querySelectorAll('img');
       await Promise.all(
         Array.from(images).map((img) => {
@@ -172,29 +161,14 @@ export function ShareModal({ isOpen, onClose, contributionsData, roastData, prof
         })
       );
 
-      // Wait for rendering and force reflow
       await new Promise(resolve => setTimeout(resolve, 1500));
       wrapper.offsetHeight;
-      clonedContent.offsetHeight;
 
-      // Calculate full dimensions including scroll
       const fullWidth = Math.max(wrapper.scrollWidth, wrapper.offsetWidth, 1200);
       const fullHeight = Math.max(wrapper.scrollHeight, wrapper.offsetHeight, clonedContent.scrollHeight + 200);
 
-      // Verify dimensions
-      if (fullWidth === 0 || fullHeight === 0) {
-        console.error('Wrapper dimensions:', {
-          scrollWidth: wrapper.scrollWidth,
-          scrollHeight: wrapper.scrollHeight,
-          offsetWidth: wrapper.offsetWidth,
-          offsetHeight: wrapper.offsetHeight,
-        });
-        throw new Error('Wrapper has no dimensions');
-      }
-
       logger.debug('Capturing wrapper', { fullWidth, fullHeight });
 
-      // Ensure wrapper has enough space
       wrapper.style.width = `${fullWidth}px`;
       wrapper.style.minHeight = `${fullHeight}px`;
       wrapper.style.overflow = 'visible';
@@ -207,21 +181,13 @@ export function ShareModal({ isOpen, onClose, contributionsData, roastData, prof
         cacheBust: true,
         width: fullWidth,
         height: fullHeight,
-        style: {
-          width: `${fullWidth}px`,
-          height: `${fullHeight}px`,
-        },
       });
       
-      // Remove wrapper from DOM
       document.body.removeChild(wrapper);
       
-      // Check if image was generated
       if (!dataUrl || dataUrl.length < 100) {
         throw new Error('Generated image appears to be empty');
       }
-      
-      logger.debug('Image generated', { length: dataUrl.length });
       
       const link = document.createElement('a');
       link.download = `synn-profile-${user?.username || 'user'}-${new Date().toISOString().split('T')[0]}.png`;
@@ -231,7 +197,7 @@ export function ShareModal({ isOpen, onClose, contributionsData, roastData, prof
       document.body.removeChild(link);
     } catch (error) {
       console.error('Error generating PNG:', error);
-      alert(`Failed to generate image: ${error instanceof Error ? error.message : 'Unknown error'}. Please check console for details.`);
+      alert(`Failed to generate image: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsGenerating(false);
     }
@@ -239,95 +205,85 @@ export function ShareModal({ isOpen, onClose, contributionsData, roastData, prof
 
   return (
     <>
-      {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4"
         onClick={onClose}
       >
-        {/* Modal */}
         <div
-          className="bg-[#161b22] border border-[#30363d] rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          className="bg-[#161b22] border border-[#30363d] rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-[#30363d]">
-            <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-              <Download className="w-5 h-5 text-[#ef4444]" />
+          <div className="flex items-center justify-between p-8 border-b border-[#30363d]">
+            <h2 className="text-2xl font-black text-white flex items-center gap-3">
+              <Download className="w-6 h-6 text-blue-500" />
               Share Profile
             </h2>
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-white hover:bg-[#21262d] rounded transition-colors"
+              className="p-2 text-gray-500 hover:text-white hover:bg-[#21262d] rounded-xl transition-all"
             >
-              <X className="w-5 h-5" />
+              <X className="w-6 h-6" />
             </button>
           </div>
 
-          {/* Content */}
-          <div className="p-6">
-            <p className="text-gray-400 text-sm mb-6">
+          <div className="p-8">
+            <p className="text-gray-400 font-medium mb-8">
               Share your developer profile or download it as a high-quality PNG image.
             </p>
 
-            {/* Share Options Grid */}
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              {/* LinkedIn */}
+            <div className="grid grid-cols-2 gap-4 mb-8">
               <button
                 onClick={() => handleShare('linkedin')}
-                className="flex items-center gap-3 p-4 bg-[#0d1117] border border-[#30363d] rounded-lg hover:border-[#0077b5]/50 hover:bg-[#21262d] transition-all group"
+                className="flex items-center gap-4 p-5 bg-[#0d1117] border border-[#30363d] rounded-2xl hover:border-blue-500/50 hover:bg-[#21262d] transition-all group"
               >
-                <Linkedin className="w-5 h-5 text-[#0077b5] group-hover:scale-110 transition-transform" />
-                <span className="text-white font-medium text-sm">LinkedIn</span>
+                <Linkedin className="w-6 h-6 text-[#0077b5] group-hover:scale-110 transition-transform" />
+                <span className="text-white font-bold text-sm">LinkedIn</span>
               </button>
 
-              {/* X (Twitter) */}
               <button
                 onClick={() => handleShare('twitter')}
-                className="flex items-center gap-3 p-4 bg-[#0d1117] border border-[#30363d] rounded-lg hover:border-[#1da1f2]/50 hover:bg-[#21262d] transition-all group"
+                className="flex items-center gap-4 p-5 bg-[#0d1117] border border-[#30363d] rounded-2xl hover:border-blue-400/50 hover:bg-[#21262d] transition-all group"
               >
-                <Twitter className="w-5 h-5 text-[#1da1f2] group-hover:scale-110 transition-transform" />
-                <span className="text-white font-medium text-sm">X (Twitter)</span>
+                <Twitter className="w-6 h-6 text-[#1da1f2] group-hover:scale-110 transition-transform" />
+                <span className="text-white font-bold text-sm">X (Twitter)</span>
               </button>
 
-              {/* Peerlist */}
               <button
                 onClick={() => handleShare('peerlist')}
-                className="flex items-center gap-3 p-4 bg-[#0d1117] border border-[#30363d] rounded-lg hover:border-[#ef4444]/50 hover:bg-[#21262d] transition-all group"
+                className="flex items-center gap-4 p-5 bg-[#0d1117] border border-[#30363d] rounded-2xl hover:border-blue-500/50 hover:bg-[#21262d] transition-all group"
               >
-                <MessageSquare className="w-5 h-5 text-[#ef4444] group-hover:scale-110 transition-transform" />
-                <span className="text-white font-medium text-sm">Peerlist</span>
+                <MessageSquare className="w-6 h-6 text-blue-500 group-hover:scale-110 transition-transform" />
+                <span className="text-white font-bold text-sm">Peerlist</span>
               </button>
 
-              {/* Reddit */}
               <button
                 onClick={() => handleShare('reddit')}
-                className="flex items-center gap-3 p-4 bg-[#0d1117] border border-[#30363d] rounded-lg hover:border-[#ff4500]/50 hover:bg-[#21262d] transition-all group"
+                className="flex items-center gap-4 p-5 bg-[#0d1117] border border-[#30363d] rounded-2xl hover:border-orange-500/50 hover:bg-[#21262d] transition-all group"
               >
-                <div className="relative w-5 h-5">
-                  <Circle className="w-5 h-5 text-[#ff4500] group-hover:scale-110 transition-transform" fill="#ff4500" />
-                  <Circle className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white" />
+                <div className="relative w-6 h-6">
+                  <Circle className="w-6 h-6 text-[#ff4500] group-hover:scale-110 transition-transform" fill="#ff4500" />
+                  <Circle className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white" />
                 </div>
-                <span className="text-white font-medium text-sm">Reddit</span>
+                <span className="text-white font-bold text-sm">Reddit</span>
               </button>
             </div>
 
-            {/* Download Button */}
             <button
               onClick={handleDownload}
               disabled={isGenerating}
-              className="w-full flex flex-col items-center gap-3 p-6 bg-[#0d1117] border border-[#30363d] rounded-lg hover:border-[#ef4444]/50 hover:bg-[#21262d] transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex flex-col items-center gap-4 p-8 bg-blue-600 hover:bg-blue-500 rounded-2xl transition-all group disabled:opacity-50 disabled:cursor-not-allowed shadow-xl shadow-blue-900/20"
             >
               {isGenerating ? (
                 <>
-                  <div className="w-10 h-10 border-2 border-t-transparent border-[#ef4444] rounded-full animate-spin" />
-                  <div className="text-white font-medium">Generating image...</div>
+                  <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="text-white font-black uppercase tracking-widest">Generating Blueprint...</div>
                 </>
               ) : (
                 <>
-                  <ImageIcon className="w-10 h-10 text-[#ef4444] group-hover:scale-110 transition-transform" />
+                  <ImageIcon className="w-12 h-12 text-white group-hover:scale-110 transition-transform" />
                   <div className="text-center">
-                    <div className="text-white font-medium mb-1">Download PNG Image</div>
-                    <div className="text-xs text-gray-400">High quality profile image</div>
+                    <div className="text-white font-black uppercase tracking-widest mb-1">Download PNG Image</div>
+                    <div className="text-blue-200 text-xs font-bold">High quality profile snapshot</div>
                   </div>
                 </>
               )}
@@ -335,8 +291,6 @@ export function ShareModal({ isOpen, onClose, contributionsData, roastData, prof
           </div>
         </div>
       </div>
-
     </>
   );
 }
-
