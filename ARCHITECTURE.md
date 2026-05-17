@@ -28,7 +28,7 @@ Synn is a Git visualization tool that allows developers to explore their GitHub 
 
 - **Git Repository Visualization**: Interactive graph showing commits, branches, and merges
 - **GitHub Integration**: OAuth-based authentication and repository access
-- **User Profiles**: Contribution graphs and personalized roasts
+- **User Profiles**: Contribution graphs and user statistics
 - **Real-time Sync**: Background synchronization of repository data
 - **Security**: End-to-end encryption for sensitive data, GDPR compliance
 
@@ -323,7 +323,7 @@ All API routes follow REST conventions:
 
 #### User Profile
 
-- `GET /api/roast` - Get AI-generated roast
+- `GET /api/contributions` - Get user contribution data
 
 #### Admin
 
@@ -422,12 +422,6 @@ Rate limiting is implemented on all API routes:
 - `count` (integer)
 - `repoId` (foreign key → repos.id)
 
-#### `roasts`
-- `id` (serial, primary key)
-- `userId` (foreign key → users.id)
-- `content` (text)
-- `createdAt`
-
 #### `activity_logs`
 - `id` (serial, primary key)
 - `userId` (encrypted)
@@ -446,7 +440,6 @@ Rate limiting is implemented on all API routes:
 users (1) ──< (many) repos
 repos (1) ──< (many) commits
 users (1) ──< (many) contributions
-users (1) ──< (1) roasts
 ```
 
 ---

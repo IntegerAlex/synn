@@ -13,7 +13,7 @@ const achievements = [
   {
     title: "Profile (/profile)",
     detail:
-      "Roast, contributions graph, and profile details with Clerk session support.",
+      "Contributions graph, and profile details with Clerk session support.",
   },
   {
     title: "Clerk integration",

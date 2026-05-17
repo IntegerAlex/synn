@@ -24,13 +24,6 @@ const optionalEnvSchema = z.object({
   // Admin Configuration
   ADMIN_USER_IDS: z.string().optional(),
 
-  // Azure OpenAI (for Roast Feature) - optional
-  AZURE_PHI_4_ENDPOINT: z.string().url().optional().or(z.literal("")),
-  AZURE_PHI_4_API_KEY: z.string().optional(),
-  AZURE_PHI_4_DEPLOYMENT: z.string().default("phi-4"),
-  // Legacy support
-  AZURE_PHI_4: z.string().optional(),
-
   // Encryption (Optional - for Production)
   ENCRYPTION_PUBLIC_KEY_PATH: z.string().optional(),
 
@@ -77,10 +70,6 @@ function validateEnv(): Env {
         process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
       CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
       ADMIN_USER_IDS: process.env.ADMIN_USER_IDS,
-      AZURE_PHI_4_ENDPOINT: process.env.AZURE_PHI_4_ENDPOINT,
-      AZURE_PHI_4_API_KEY: process.env.AZURE_PHI_4_API_KEY,
-      AZURE_PHI_4_DEPLOYMENT: process.env.AZURE_PHI_4_DEPLOYMENT || "phi-4",
-      AZURE_PHI_4: process.env.AZURE_PHI_4,
       ENCRYPTION_PUBLIC_KEY_PATH: process.env.ENCRYPTION_PUBLIC_KEY_PATH,
       LOG_LEVEL:
         (process.env.LOG_LEVEL as "debug" | "info" | "warn" | "error") ||

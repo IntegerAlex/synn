@@ -35,7 +35,6 @@ Go beyond surface-level metrics and dive into the code.
 Gain a macro view of project health and team dynamics.
 - Track commit activity and contributor statistics over time.
 - Integrated tracking of GitHub Issues and Pull Requests.
-- **AI Code Roasting:** Integrated Azure OpenAI (Phi-4) to generate insightful (and entertaining) analysis of your code changes.
 
 ### 🛡️ Enterprise-Grade Admin & Audit
 Built-in security and telemetry for complete oversight.
@@ -56,7 +55,6 @@ Built-in security and telemetry for complete oversight.
 - **Authentication:** Clerk
 - **Database:** Neon Serverless Postgres + Drizzle ORM
 - **Visualization:** Cytoscape.js
-- **AI Integration:** Azure OpenAI
 
 ---
 
@@ -87,7 +85,7 @@ Copy the example environment file and fill in your credentials.
 ```bash
 cp .env.example .env
 ```
-Ensure you provide your **Database URL**, **Clerk API Keys**, and **Azure OpenAI endpoints** (if using AI features). Refer to the inline comments in `.env.example` for guidance.
+Ensure you provide your **Database URL** and **Clerk API Keys**. Refer to the inline comments in `.env.example` for guidance.
 
 ### 4. Database Setup
 Run the Drizzle migrations to set up your Neon Postgres schema.
