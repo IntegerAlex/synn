@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto from "node:crypto";
 
 /**
  * Encryption service using RSA public/private key pairs
@@ -52,40 +52,40 @@ function generateIV(): Buffer {
 export function encryptData(data: string): string {
   try {
     const publicKey = loadPublicKey();
-    
+
     // Generate AES key and IV
     const aesKey = generateAESKey();
     const iv = generateIV();
-    
+
     // Encrypt data with AES-256-GCM
-    const cipher = crypto.createCipheriv('aes-256-gcm', aesKey, iv);
-    let encryptedData = cipher.update(data, 'utf8', 'base64');
-    encryptedData += cipher.final('base64');
+    const cipher = crypto.createCipheriv("aes-256-gcm", aesKey, iv);
+    let encryptedData = cipher.update(data, "utf8", "base64");
+    encryptedData += cipher.final("base64");
     const authTag = cipher.getAuthTag();
-    
+
     // Encrypt AES key with RSA public key
     const encryptedKey = crypto.publicEncrypt(
       {
         key: publicKey,
         padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-        oaepHash: 'sha256',
+        oaepHash: "sha256",
       },
-      aesKey
+      aesKey,
     );
-    
+
     // Package everything together
     const package_ = {
       v: 1, // Version for future compatibility
-      key: encryptedKey.toString('base64'),
-      iv: iv.toString('base64'),
-      tag: authTag.toString('base64'),
+      key: encryptedKey.toString("base64"),
+      iv: iv.toString("base64"),
+      tag: authTag.toString("base64"),
       data: encryptedData,
     };
-    
-    return Buffer.from(JSON.stringify(package_)).toString('base64');
+
+    return Buffer.from(JSON.stringify(package_)).toString("base64");
   } catch (error) {
-    console.error('Encryption failed:', error);
-    throw new Error('Failed to encrypt data');
+    console.error("Encryption failed:", error);
+    throw new Error("Failed to encrypt data");
   }
 }
 
@@ -94,39 +94,44 @@ export function encryptData(data: string): string {
  * @param encryptedPackage - Base64 encoded encrypted package
  * @param privateKeyPem - PEM formatted private key
  */
-export function decryptData(encryptedPackage: string, privateKeyPem: string): string {
+export function decryptData(
+  encryptedPackage: string,
+  privateKeyPem: string,
+): string {
   try {
     // Parse the package
-    const package_ = JSON.parse(Buffer.from(encryptedPackage, 'base64').toString('utf8'));
-    
+    const package_ = JSON.parse(
+      Buffer.from(encryptedPackage, "base64").toString("utf8"),
+    );
+
     if (package_.v !== 1) {
-      throw new Error('Unsupported encryption version');
+      throw new Error("Unsupported encryption version");
     }
-    
+
     // Decrypt AES key with RSA private key
-    const encryptedKey = Buffer.from(package_.key, 'base64');
+    const encryptedKey = Buffer.from(package_.key, "base64");
     const aesKey = crypto.privateDecrypt(
       {
         key: privateKeyPem,
         padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-        oaepHash: 'sha256',
+        oaepHash: "sha256",
       },
-      encryptedKey
+      encryptedKey,
     );
-    
+
     // Decrypt data with AES
-    const iv = Buffer.from(package_.iv, 'base64');
-    const authTag = Buffer.from(package_.tag, 'base64');
-    const decipher = crypto.createDecipheriv('aes-256-gcm', aesKey, iv);
+    const iv = Buffer.from(package_.iv, "base64");
+    const authTag = Buffer.from(package_.tag, "base64");
+    const decipher = crypto.createDecipheriv("aes-256-gcm", aesKey, iv);
     decipher.setAuthTag(authTag);
-    
-    let decryptedData = decipher.update(package_.data, 'base64', 'utf8');
-    decryptedData += decipher.final('utf8');
-    
+
+    let decryptedData = decipher.update(package_.data, "base64", "utf8");
+    decryptedData += decipher.final("utf8");
+
     return decryptedData;
-  } catch (error) {
+  } catch (_error) {
     // Downstream callers often want best-effort; rethrow to let them handle
-    throw new Error('Failed to decrypt data. Invalid key or corrupted data.');
+    throw new Error("Failed to decrypt data. Invalid key or corrupted data.");
   }
 }
 
@@ -136,18 +141,18 @@ export function decryptData(encryptedPackage: string, privateKeyPem: string): st
  */
 export function encryptSensitiveFields<T extends Record<string, any>>(
   data: T,
-  fieldsToEncrypt: (keyof T)[]
+  fieldsToEncrypt: (keyof T)[],
 ): T {
   const result = { ...data };
-  
+
   for (const field of fieldsToEncrypt) {
-    if (typeof result[field] === 'string' && result[field]) {
+    if (typeof result[field] === "string" && result[field]) {
       (result as any)[field] = encryptData(result[field]);
-    } else if (typeof result[field] === 'object' && result[field] !== null) {
+    } else if (typeof result[field] === "object" && result[field] !== null) {
       (result as any)[field] = encryptData(JSON.stringify(result[field]));
     }
   }
-  
+
   return result;
 }
 
@@ -157,12 +162,12 @@ export function encryptSensitiveFields<T extends Record<string, any>>(
 export function decryptSensitiveFields<T extends Record<string, any>>(
   data: T,
   fieldsToDecrypt: (keyof T)[],
-  privateKeyPem: string
+  privateKeyPem: string,
 ): T {
   const result = { ...data };
-  
+
   for (const field of fieldsToDecrypt) {
-    if (typeof result[field] === 'string' && result[field]) {
+    if (typeof result[field] === "string" && result[field]) {
       try {
         const decrypted = decryptData(result[field], privateKeyPem);
         // Try to parse as JSON, otherwise keep as string
@@ -177,7 +182,7 @@ export function decryptSensitiveFields<T extends Record<string, any>>(
       }
     }
   }
-  
+
   return result;
 }
 
@@ -193,6 +198,5 @@ export function isEncryptionAvailable(): boolean {
  * Simple hash function for non-reversible data (like tokens for comparison)
  */
 export function hashData(data: string): string {
-  return crypto.createHash('sha256').update(data).digest('hex');
+  return crypto.createHash("sha256").update(data).digest("hex");
 }
-

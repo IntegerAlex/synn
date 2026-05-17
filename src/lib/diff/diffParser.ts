@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { diffLines, diffWords, Change } from 'diff';
+import { type Change, diffWords } from "diff";
 
 export interface DiffHunk {
   oldStart: number;
@@ -11,7 +11,7 @@ export interface DiffHunk {
 }
 
 export interface DiffChange {
-  type: 'add' | 'remove' | 'context';
+  type: "add" | "remove" | "context";
   oldLineNumber?: number;
   newLineNumber?: number;
   content: string;
@@ -19,7 +19,7 @@ export interface DiffChange {
 }
 
 export interface WordChange {
-  type: 'add' | 'remove' | 'unchanged';
+  type: "add" | "remove" | "unchanged";
   value: string;
 }
 
@@ -74,7 +74,7 @@ export function parseUnifiedDiff(diffText: string): ParsedDiff {
  * Parse a single file's diff
  */
 function parseFileDiff(fileDiff: string): ParsedFileDiff | null {
-  const lines = fileDiff.split('\n');
+  const lines = fileDiff.split("\n");
   if (lines.length === 0) return null;
 
   // Extract file paths
@@ -85,13 +85,13 @@ function parseFileDiff(fileDiff: string): ParsedFileDiff | null {
   let newPath = gitDiffMatch[2];
 
   // Handle quoted paths
-  oldPath = oldPath.replace(/^"|"$/g, '');
-  newPath = newPath.replace(/^"|"$/g, '');
+  oldPath = oldPath.replace(/^"|"$/g, "");
+  newPath = newPath.replace(/^"|"$/g, "");
 
   // Check for special cases
-  const isBinary = fileDiff.includes('Binary files');
-  const isNew = fileDiff.includes('new file mode');
-  const isDeleted = fileDiff.includes('deleted file mode');
+  const isBinary = fileDiff.includes("Binary files");
+  const isNew = fileDiff.includes("new file mode");
+  const isDeleted = fileDiff.includes("deleted file mode");
   const isRenamed = oldPath !== newPath;
 
   // Parse hunks
@@ -102,7 +102,14 @@ function parseFileDiff(fileDiff: string): ParsedFileDiff | null {
   // Find hunk starts
   const hunkRegex = /@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/g;
   let match: RegExpExecArray | null;
-  const hunkPositions: { index: number; header: string; oldStart: number; oldLines: number; newStart: number; newLines: number }[] = [];
+  const hunkPositions: {
+    index: number;
+    header: string;
+    oldStart: number;
+    oldLines: number;
+    newStart: number;
+    newLines: number;
+  }[] = [];
 
   while ((match = hunkRegex.exec(fileDiff)) !== null) {
     hunkPositions.push({
@@ -126,34 +133,34 @@ function parseFileDiff(fileDiff: string): ParsedFileDiff | null {
     const hunkContent = fileDiff.slice(hunkStart, hunkEnd);
 
     const changes: DiffChange[] = [];
-    const hunkLines = hunkContent.split('\n');
+    const hunkLines = hunkContent.split("\n");
 
     let oldLineNum = hunkPos.oldStart;
     let newLineNum = hunkPos.newStart;
 
     for (const line of hunkLines) {
-      if (line.startsWith('+') && !line.startsWith('+++')) {
+      if (line.startsWith("+") && !line.startsWith("+++")) {
         changes.push({
-          type: 'add',
+          type: "add",
           newLineNumber: newLineNum,
           content: line.slice(1),
         });
         newLineNum++;
         additions++;
-      } else if (line.startsWith('-') && !line.startsWith('---')) {
+      } else if (line.startsWith("-") && !line.startsWith("---")) {
         changes.push({
-          type: 'remove',
+          type: "remove",
           oldLineNumber: oldLineNum,
           content: line.slice(1),
         });
         oldLineNum++;
         deletions++;
-      } else if (line.startsWith(' ') || line === '') {
+      } else if (line.startsWith(" ") || line === "") {
         changes.push({
-          type: 'context',
+          type: "context",
           oldLineNumber: oldLineNum,
           newLineNumber: newLineNum,
-          content: line.startsWith(' ') ? line.slice(1) : line,
+          content: line.startsWith(" ") ? line.slice(1) : line,
         });
         oldLineNum++;
         newLineNum++;
@@ -185,10 +192,13 @@ function parseFileDiff(fileDiff: string): ParsedFileDiff | null {
 /**
  * Compute word-level changes between two lines
  */
-export function computeWordChanges(oldLine: string, newLine: string): WordChange[] {
+export function computeWordChanges(
+  oldLine: string,
+  newLine: string,
+): WordChange[] {
   const changes = diffWords(oldLine, newLine);
   return changes.map((change: Change) => ({
-    type: change.added ? 'add' : change.removed ? 'remove' : 'unchanged',
+    type: change.added ? "add" : change.removed ? "remove" : "unchanged",
     value: change.value,
   }));
 }
@@ -200,16 +210,16 @@ export interface SideBySideLine {
   left?: {
     lineNumber: number;
     content: string;
-    type: 'remove' | 'context';
+    type: "remove" | "context";
     wordChanges?: WordChange[];
   };
   right?: {
     lineNumber: number;
     content: string;
-    type: 'add' | 'context';
+    type: "add" | "context";
     wordChanges?: WordChange[];
   };
-  type: 'add' | 'remove' | 'modify' | 'context';
+  type: "add" | "remove" | "modify" | "context";
 }
 
 export function createSideBySideData(hunks: DiffHunk[]): SideBySideLine[] {
@@ -220,31 +230,31 @@ export function createSideBySideData(hunks: DiffHunk[]): SideBySideLine[] {
     while (i < hunk.changes.length) {
       const change = hunk.changes[i];
 
-      if (change.type === 'context') {
+      if (change.type === "context") {
         result.push({
           left: {
             lineNumber: change.oldLineNumber!,
             content: change.content,
-            type: 'context',
+            type: "context",
           },
           right: {
             lineNumber: change.newLineNumber!,
             content: change.content,
-            type: 'context',
+            type: "context",
           },
-          type: 'context',
+          type: "context",
         });
         i++;
-      } else if (change.type === 'remove') {
+      } else if (change.type === "remove") {
         // Look ahead for matching add (modification)
         const removes: DiffChange[] = [];
-        while (i < hunk.changes.length && hunk.changes[i].type === 'remove') {
+        while (i < hunk.changes.length && hunk.changes[i].type === "remove") {
           removes.push(hunk.changes[i]);
           i++;
         }
 
         const adds: DiffChange[] = [];
-        while (i < hunk.changes.length && hunk.changes[i].type === 'add') {
+        while (i < hunk.changes.length && hunk.changes[i].type === "add") {
           adds.push(hunk.changes[i]);
           i++;
         }
@@ -262,16 +272,16 @@ export function createSideBySideData(hunks: DiffHunk[]): SideBySideLine[] {
               left: {
                 lineNumber: remove.oldLineNumber!,
                 content: remove.content,
-                type: 'remove',
-                wordChanges: wordChanges.filter(w => w.type !== 'add'),
+                type: "remove",
+                wordChanges: wordChanges.filter((w) => w.type !== "add"),
               },
               right: {
                 lineNumber: add.newLineNumber!,
                 content: add.content,
-                type: 'add',
-                wordChanges: wordChanges.filter(w => w.type !== 'remove'),
+                type: "add",
+                wordChanges: wordChanges.filter((w) => w.type !== "remove"),
               },
-              type: 'modify',
+              type: "modify",
             });
           } else if (remove) {
             // Pure deletion
@@ -279,9 +289,9 @@ export function createSideBySideData(hunks: DiffHunk[]): SideBySideLine[] {
               left: {
                 lineNumber: remove.oldLineNumber!,
                 content: remove.content,
-                type: 'remove',
+                type: "remove",
               },
-              type: 'remove',
+              type: "remove",
             });
           } else if (add) {
             // Pure addition
@@ -289,21 +299,21 @@ export function createSideBySideData(hunks: DiffHunk[]): SideBySideLine[] {
               right: {
                 lineNumber: add.newLineNumber!,
                 content: add.content,
-                type: 'add',
+                type: "add",
               },
-              type: 'add',
+              type: "add",
             });
           }
         }
-      } else if (change.type === 'add') {
+      } else if (change.type === "add") {
         // Pure addition (no preceding remove)
         result.push({
           right: {
             lineNumber: change.newLineNumber!,
             content: change.content,
-            type: 'add',
+            type: "add",
           },
-          type: 'add',
+          type: "add",
         });
         i++;
       }

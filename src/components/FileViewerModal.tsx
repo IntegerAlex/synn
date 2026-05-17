@@ -1,40 +1,40 @@
-'use client';
+"use client";
 
-import { useState, useMemo, useRef } from 'react';
-import { X, Copy, Download, GitCommit, User, Calendar, GitBranch } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useFileContents, useFileBlame } from '@/hooks/useGitData';
-import { useAppStore } from '@/store/useAppStore';
-import { useToast } from '@/hooks/useToast';
-import Prism from 'prismjs';
+import { AnimatePresence, motion } from "framer-motion";
+import { Copy, Download, GitBranch, GitCommit, User, X } from "lucide-react";
+import Prism from "prismjs";
+import { useMemo, useRef, useState } from "react";
+import { useFileBlame, useFileContents } from "@/hooks/useGitData";
+import { useToast } from "@/hooks/useToast";
+import { useAppStore } from "@/store/useAppStore";
 // Core language components (load in dependency order)
-import 'prismjs/components/prism-markup'; // Base for HTML/XML - must load first
-import 'prismjs/components/prism-markup-templating'; // Required by PHP - must load after markup
-import 'prismjs/components/prism-javascript';
-import 'prismjs/components/prism-typescript';
-import 'prismjs/components/prism-jsx';
-import 'prismjs/components/prism-tsx';
-import 'prismjs/components/prism-json';
-import 'prismjs/components/prism-css';
-import 'prismjs/components/prism-markdown';
-import 'prismjs/components/prism-python';
-import 'prismjs/components/prism-bash';
-import 'prismjs/components/prism-yaml';
+import "prismjs/components/prism-markup"; // Base for HTML/XML - must load first
+import "prismjs/components/prism-markup-templating"; // Required by PHP - must load after markup
+import "prismjs/components/prism-javascript";
+import "prismjs/components/prism-typescript";
+import "prismjs/components/prism-jsx";
+import "prismjs/components/prism-tsx";
+import "prismjs/components/prism-json";
+import "prismjs/components/prism-css";
+import "prismjs/components/prism-markdown";
+import "prismjs/components/prism-python";
+import "prismjs/components/prism-bash";
+import "prismjs/components/prism-yaml";
 // Additional languages
-import 'prismjs/components/prism-rust';
-import 'prismjs/components/prism-go';
-import 'prismjs/components/prism-java';
-import 'prismjs/components/prism-c';
-import 'prismjs/components/prism-cpp';
-import 'prismjs/components/prism-csharp';
-import 'prismjs/components/prism-php'; // Requires markup-templating
-import 'prismjs/components/prism-ruby';
-import 'prismjs/components/prism-sql';
-import 'prismjs/components/prism-swift';
-import 'prismjs/components/prism-kotlin';
-import 'prismjs/components/prism-dart';
-import 'prismjs/components/prism-scala';
-import 'prismjs/themes/prism-tomorrow.css';
+import "prismjs/components/prism-rust";
+import "prismjs/components/prism-go";
+import "prismjs/components/prism-java";
+import "prismjs/components/prism-c";
+import "prismjs/components/prism-cpp";
+import "prismjs/components/prism-csharp";
+import "prismjs/components/prism-php"; // Requires markup-templating
+import "prismjs/components/prism-ruby";
+import "prismjs/components/prism-sql";
+import "prismjs/components/prism-swift";
+import "prismjs/components/prism-kotlin";
+import "prismjs/components/prism-dart";
+import "prismjs/components/prism-scala";
+import "prismjs/themes/prism-tomorrow.css";
 
 interface FileViewerModalProps {
   isOpen: boolean;
@@ -44,38 +44,38 @@ interface FileViewerModalProps {
 }
 
 function detectLanguage(filePath: string): string {
-  const ext = filePath.split('.').pop()?.toLowerCase() || '';
+  const ext = filePath.split(".").pop()?.toLowerCase() || "";
   const langMap: Record<string, string> = {
-    ts: 'typescript',
-    tsx: 'tsx',
-    js: 'javascript',
-    jsx: 'jsx',
-    json: 'json',
-    css: 'css',
-    scss: 'scss',
-    sass: 'scss',
-    md: 'markdown',
-    py: 'python',
-    sh: 'bash',
-    bash: 'bash',
-    yaml: 'yaml',
-    yml: 'yaml',
-    html: 'markup', // Prism uses 'markup' for HTML
-    htm: 'markup',
-    xml: 'markup', // Prism uses 'markup' for XML
-    rs: 'rust',
-    go: 'go',
-    java: 'java',
-    c: 'c',
-    cpp: 'cpp',
-    cc: 'cpp',
-    cxx: 'cpp',
-    cs: 'csharp',
-    php: 'php',
-    rb: 'ruby',
-    sql: 'sql',
+    ts: "typescript",
+    tsx: "tsx",
+    js: "javascript",
+    jsx: "jsx",
+    json: "json",
+    css: "css",
+    scss: "scss",
+    sass: "scss",
+    md: "markdown",
+    py: "python",
+    sh: "bash",
+    bash: "bash",
+    yaml: "yaml",
+    yml: "yaml",
+    html: "markup", // Prism uses 'markup' for HTML
+    htm: "markup",
+    xml: "markup", // Prism uses 'markup' for XML
+    rs: "rust",
+    go: "go",
+    java: "java",
+    c: "c",
+    cpp: "cpp",
+    cc: "cpp",
+    cxx: "cpp",
+    cs: "csharp",
+    php: "php",
+    rb: "ruby",
+    sql: "sql",
   };
-  return langMap[ext] || 'text';
+  return langMap[ext] || "text";
 }
 
 interface BlameTooltipProps {
@@ -91,13 +91,13 @@ function BlameTooltip({ blame, x, y }: BlameTooltipProps) {
       const now = new Date();
       const diffMs = now.getTime() - date.getTime();
       const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-      
+
       // Show relative time for recent commits
       if (diffDays === 0) {
         const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
         if (diffHours === 0) {
           const diffMins = Math.floor(diffMs / (1000 * 60));
-          return diffMins < 1 ? 'just now' : `${diffMins}m ago`;
+          return diffMins < 1 ? "just now" : `${diffMins}m ago`;
         }
         return `${diffHours}h ago`;
       } else if (diffDays < 7) {
@@ -106,12 +106,12 @@ function BlameTooltip({ blame, x, y }: BlameTooltipProps) {
         const weeks = Math.floor(diffDays / 7);
         return `${weeks}w ago`;
       }
-      
+
       // For older commits, show date
-      return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric',
-        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
       });
     } catch {
       return dateStr;
@@ -125,10 +125,10 @@ function BlameTooltip({ blame, x, y }: BlameTooltipProps) {
       exit={{ opacity: 0, scale: 0.9, y: -5 }}
       transition={{ duration: 0.15 }}
       className="fixed z-[100] pointer-events-none"
-      style={{ 
-        left: `${x}px`, 
+      style={{
+        left: `${x}px`,
         top: `${y}px`,
-        transform: 'translateY(-50%)'
+        transform: "translateY(-50%)",
       }}
     >
       {/* Glassmorphic container with enhanced effects */}
@@ -137,12 +137,12 @@ function BlameTooltip({ blame, x, y }: BlameTooltipProps) {
         <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-lg" />
         <div className="absolute inset-0 bg-[#0d1117]/40 backdrop-blur-xl rounded-lg" />
         <div className="absolute inset-0 bg-gradient-to-br from-[#58a6ff]/5 via-transparent to-transparent rounded-lg" />
-        
+
         {/* Main content container */}
         <div className="relative border border-white/10 rounded-lg shadow-2xl p-2.5 min-w-[200px] max-w-[280px] backdrop-blur-xl bg-[#0d1117]/30">
           {/* Subtle inner glow */}
           <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-white/[0.08] to-transparent pointer-events-none" />
-          
+
           {/* Content */}
           <div className="relative">
             {/* Compact header with author and date */}
@@ -151,24 +151,32 @@ function BlameTooltip({ blame, x, y }: BlameTooltipProps) {
                 <div className="p-0.5 rounded bg-white/5">
                   <User className="w-3 h-3 text-gray-300 shrink-0" />
                 </div>
-                <span className="text-xs font-medium text-white/90 truncate drop-shadow-sm">{blame.author}</span>
+                <span className="text-xs font-medium text-white/90 truncate drop-shadow-sm">
+                  {blame.author}
+                </span>
               </div>
-              <span className="text-[10px] text-gray-400/80 shrink-0 whitespace-nowrap backdrop-blur-sm px-1.5 py-0.5 rounded bg-white/5">{formatDate(blame.date)}</span>
+              <span className="text-[10px] text-gray-400/80 shrink-0 whitespace-nowrap backdrop-blur-sm px-1.5 py-0.5 rounded bg-white/5">
+                {formatDate(blame.date)}
+              </span>
             </div>
-            
+
             {/* Commit hash - compact with glassmorphic badge */}
             <div className="flex items-center gap-1.5 mb-1">
               <div className="p-0.5 rounded bg-white/5">
                 <GitCommit className="w-3 h-3 text-gray-300 shrink-0" />
               </div>
-              <code className="text-[10px] text-[#58a6ff] font-mono px-1.5 py-0.5 rounded bg-[#58a6ff]/10 border border-[#58a6ff]/20 backdrop-blur-sm">{blame.hash.substring(0, 7)}</code>
+              <code className="text-[10px] text-[#58a6ff] font-mono px-1.5 py-0.5 rounded bg-[#58a6ff]/10 border border-[#58a6ff]/20 backdrop-blur-sm">
+                {blame.hash.substring(0, 7)}
+              </code>
             </div>
-            
+
             {/* Commit message - single line, truncated with subtle background */}
-            <p className="text-[10px] text-gray-200/90 line-clamp-1 leading-tight px-1 py-0.5 rounded bg-white/5 backdrop-blur-sm">{blame.message}</p>
+            <p className="text-[10px] text-gray-200/90 line-clamp-1 leading-tight px-1 py-0.5 rounded bg-white/5 backdrop-blur-sm">
+              {blame.message}
+            </p>
           </div>
         </div>
-        
+
         {/* Outer glow effect */}
         <div className="absolute -inset-0.5 bg-gradient-to-br from-[#58a6ff]/20 via-transparent to-transparent rounded-lg blur-sm opacity-50 -z-10" />
       </div>
@@ -176,67 +184,87 @@ function BlameTooltip({ blame, x, y }: BlameTooltipProps) {
   );
 }
 
-export function FileViewerModal({ isOpen, onClose, filePath, branchRef }: FileViewerModalProps) {
-  const repoInfo = useAppStore((state) => state.repoInfo);
+export function FileViewerModal({
+  isOpen,
+  onClose,
+  filePath,
+  branchRef,
+}: FileViewerModalProps) {
+  const _repoInfo = useAppStore((state) => state.repoInfo);
   const selectedBranch = useAppStore((state) => state.selectedBranch);
   // Use branchRef prop if provided, otherwise use selected branch, fallback to undefined (default branch)
   const effectiveRef = branchRef || selectedBranch || undefined;
-  const { data: fileData, isLoading, error } = useFileContents(filePath, effectiveRef);
+  const {
+    data: fileData,
+    isLoading,
+    error,
+  } = useFileContents(filePath, effectiveRef);
   const [blameEnabled, setBlameEnabled] = useState(false);
-  
+
   // Prefetch blame data when file loads (but don't enable blame view yet)
   // This will automatically fetch when fileData is ready
-  const { data: prefetchedBlameData, isSuccess: isBlameReady, isLoading: isBlameLoading } = useFileBlame(
-    fileData && filePath ? filePath : null,
-    effectiveRef
-  );
-  
+  const {
+    data: prefetchedBlameData,
+    isSuccess: isBlameReady,
+    isLoading: isBlameLoading,
+  } = useFileBlame(fileData && filePath ? filePath : null, effectiveRef);
+
   // Use the prefetched data when blame is enabled
   const blameData = blameEnabled ? prefetchedBlameData : null;
-  
+
   const toast = useToast();
   const [hoveredLine, setHoveredLine] = useState<number | null>(null);
-  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const codeRef = useRef<HTMLDivElement>(null);
 
   const language = useMemo(() => detectLanguage(filePath), [filePath]);
 
   const lines = useMemo(() => {
     if (!fileData?.content) return [];
-    return fileData.content.split('\n');
+    return fileData.content.split("\n");
   }, [fileData?.content]);
 
   const highlightedLines = useMemo(() => {
     if (!fileData?.content) return [];
-    
+
     try {
       const grammar = Prism.languages[language] || Prism.languages.text;
       if (!grammar) {
         // Fallback to plain text if language not supported
-        return fileData.content.split('\n');
+        return fileData.content.split("\n");
       }
-      const fullHighlighted = Prism.highlight(fileData.content, grammar, language);
-      return fullHighlighted.split('\n');
+      const fullHighlighted = Prism.highlight(
+        fileData.content,
+        grammar,
+        language,
+      );
+      return fullHighlighted.split("\n");
     } catch (error) {
       // If highlighting fails (e.g., missing dependencies), return plain text
       console.warn(`Failed to highlight ${language}:`, error);
-      return fileData.content.split('\n');
+      return fileData.content.split("\n");
     }
   }, [fileData?.content, language]);
 
   const blameMap = useMemo(() => {
     if (!blameData || !Array.isArray(blameData) || blameData.length === 0) {
-      return new Map<number, { hash: string; author: string; date: string; message: string }>();
+      return new Map<
+        number,
+        { hash: string; author: string; date: string; message: string }
+      >();
     }
     const map = new Map();
     blameData.forEach((blame) => {
       // Only add if we have valid blame data
-      if (blame && blame.lineNumber && blame.hash) {
+      if (blame?.lineNumber && blame.hash) {
         map.set(blame.lineNumber, {
           hash: blame.hash,
-          author: blame.author || 'Unknown',
+          author: blame.author || "Unknown",
           date: blame.date || new Date().toISOString(),
-          message: blame.message || 'No message',
+          message: blame.message || "No message",
         });
       }
     });
@@ -251,11 +279,11 @@ export function FileViewerModal({ isOpen, onClose, filePath, branchRef }: FileVi
       const viewportHeight = window.innerHeight;
       const tooltipWidth = 280; // max-w-[280px]
       const tooltipHeight = 80; // Approximate height
-      
+
       // Always position tooltip to the right of the code
       // Add some padding from the code edge
       let x = rect.right + 16;
-      
+
       // Only move to left if there's absolutely no space on the right
       // (less than 100px available on right side)
       const spaceOnRight = viewportWidth - rect.right;
@@ -267,7 +295,7 @@ export function FileViewerModal({ isOpen, onClose, filePath, branchRef }: FileVi
           x = rect.left - tooltipWidth - 16;
         }
       }
-      
+
       // Position vertically centered on the line, but adjust if it would go off-screen
       let y = rect.top + rect.height / 2;
       if (y + tooltipHeight / 2 > viewportHeight - 20) {
@@ -275,7 +303,7 @@ export function FileViewerModal({ isOpen, onClose, filePath, branchRef }: FileVi
       } else if (y - tooltipHeight / 2 < 20) {
         y = tooltipHeight / 2 + 20;
       }
-      
+
       setTooltipPosition({
         x: Math.max(20, Math.min(x, viewportWidth - tooltipWidth - 20)),
         y: Math.max(20, Math.min(y, viewportHeight - 20)),
@@ -290,28 +318,28 @@ export function FileViewerModal({ isOpen, onClose, filePath, branchRef }: FileVi
 
   const copyToClipboard = async () => {
     if (!fileData?.content) return;
-    
+
     try {
       await navigator.clipboard.writeText(fileData.content);
-      toast.showSuccess('Copied to clipboard');
+      toast.showSuccess("Copied to clipboard");
     } catch {
-      toast.showError('Failed to copy');
+      toast.showError("Failed to copy");
     }
   };
 
   const downloadFile = () => {
     if (!fileData?.content) return;
-    
-    const blob = new Blob([fileData.content], { type: 'text/plain' });
+
+    const blob = new Blob([fileData.content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = filePath.split('/').pop() || 'file';
+    a.download = filePath.split("/").pop() || "file";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.showSuccess('File downloaded');
+    toast.showSuccess("File downloaded");
   };
 
   if (!isOpen) return null;
@@ -345,7 +373,9 @@ export function FileViewerModal({ isOpen, onClose, filePath, branchRef }: FileVi
             {/* Header */}
             <header className="flex items-center justify-between px-4 py-3 border-b border-[#30363d] bg-[#161b22] shrink-0">
               <div className="flex items-center gap-3 min-w-0">
-                <h2 className="text-lg font-semibold text-white truncate">{filePath}</h2>
+                <h2 className="text-lg font-semibold text-white truncate">
+                  {filePath}
+                </h2>
                 <span className="px-2 py-0.5 bg-[#21262d] rounded text-xs text-gray-400 shrink-0">
                   {language}
                 </span>
@@ -355,7 +385,7 @@ export function FileViewerModal({ isOpen, onClose, filePath, branchRef }: FileVi
                   </span>
                 )}
               </div>
-              
+
               <div className="flex items-center gap-2 shrink-0">
                 {fileData && (
                   <>
@@ -364,24 +394,24 @@ export function FileViewerModal({ isOpen, onClose, filePath, branchRef }: FileVi
                       disabled={!isBlameReady}
                       className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 ${
                         !isBlameReady
-                          ? 'text-gray-600 cursor-not-allowed opacity-50'
+                          ? "text-gray-600 cursor-not-allowed opacity-50"
                           : blameEnabled
-                          ? 'bg-[#1f6feb] text-white hover:bg-[#1a5cd8]'
-                          : 'text-gray-400 hover:text-white hover:bg-[#21262d]'
+                            ? "bg-[#1f6feb] text-white hover:bg-[#1a5cd8]"
+                            : "text-gray-400 hover:text-white hover:bg-[#21262d]"
                       }`}
                       title={
                         !isBlameReady
-                          ? 'Loading blame data...'
+                          ? "Loading blame data..."
                           : blameEnabled
-                          ? 'Disable blame view'
-                          : 'Enable blame view'
+                            ? "Disable blame view"
+                            : "Enable blame view"
                       }
                       aria-label={
                         !isBlameReady
-                          ? 'Loading blame data...'
+                          ? "Loading blame data..."
                           : blameEnabled
-                          ? 'Disable blame view'
-                          : 'Enable blame view'
+                            ? "Disable blame view"
+                            : "Enable blame view"
                       }
                     >
                       <GitBranch className="w-3.5 h-3.5" />
@@ -421,23 +451,29 @@ export function FileViewerModal({ isOpen, onClose, filePath, branchRef }: FileVi
                 <div className="flex items-center justify-center h-full">
                   <div className="flex flex-col items-center gap-3">
                     <div className="w-8 h-8 border-2 border-t-transparent border-[#1f6feb] rounded-full animate-spin" />
-                    <span className="text-sm text-gray-400">Loading file...</span>
+                    <span className="text-sm text-gray-400">
+                      Loading file...
+                    </span>
                   </div>
                 </div>
               ) : error ? (
                 <div className="flex items-center justify-center h-full text-red-400">
                   <div className="text-center px-4">
-                    <p className="text-sm font-medium mb-2">Failed to load file</p>
+                    <p className="text-sm font-medium mb-2">
+                      Failed to load file
+                    </p>
                     <p className="text-xs text-gray-500 mb-3">
                       {error instanceof Error ? error.message : String(error)}
                     </p>
                     {effectiveRef && (
                       <p className="text-xs text-gray-600">
-                        Trying to load from: <span className="font-mono">{effectiveRef}</span>
+                        Trying to load from:{" "}
+                        <span className="font-mono">{effectiveRef}</span>
                       </p>
                     )}
                     <p className="text-xs text-gray-600 mt-2">
-                      The file may not exist on this branch or the branch name may be invalid.
+                      The file may not exist on this branch or the branch name
+                      may be invalid.
                     </p>
                   </div>
                 </div>
@@ -465,17 +501,26 @@ export function FileViewerModal({ isOpen, onClose, filePath, branchRef }: FileVi
                           {lines.map((line, index) => {
                             const lineNumber = index + 1;
                             const hasBlame = blameMap.has(lineNumber);
-                            const highlightedLine = highlightedLines[index] || line;
-                            
+                            const highlightedLine =
+                              highlightedLines[index] || line;
+
                             return (
                               <div
                                 key={index}
                                 className={`group relative h-[1.5em] leading-[1.5em] whitespace-pre ${
-                                  blameEnabled && hasBlame ? 'cursor-help hover:bg-[#1c2128]/50' : ''
-                                } ${hoveredLine === lineNumber ? 'bg-[#1c2128]' : ''}`}
-                                onMouseEnter={(e) => blameEnabled && hasBlame && handleLineHover(lineNumber, e)}
+                                  blameEnabled && hasBlame
+                                    ? "cursor-help hover:bg-[#1c2128]/50"
+                                    : ""
+                                } ${hoveredLine === lineNumber ? "bg-[#1c2128]" : ""}`}
+                                onMouseEnter={(e) =>
+                                  blameEnabled &&
+                                  hasBlame &&
+                                  handleLineHover(lineNumber, e)
+                                }
                                 onMouseLeave={handleLineLeave}
-                                dangerouslySetInnerHTML={{ __html: highlightedLine || '&nbsp;' }}
+                                dangerouslySetInnerHTML={{
+                                  __html: highlightedLine || "&nbsp;",
+                                }}
                               />
                             );
                           })}
@@ -486,13 +531,15 @@ export function FileViewerModal({ isOpen, onClose, filePath, branchRef }: FileVi
 
                   {/* Blame tooltip */}
                   <AnimatePresence>
-                    {hoveredLine && tooltipPosition && blameMap.has(hoveredLine) && (
-                      <BlameTooltip
-                        blame={blameMap.get(hoveredLine)!}
-                        x={tooltipPosition.x}
-                        y={tooltipPosition.y}
-                      />
-                    )}
+                    {hoveredLine &&
+                      tooltipPosition &&
+                      blameMap.has(hoveredLine) && (
+                        <BlameTooltip
+                          blame={blameMap.get(hoveredLine)!}
+                          x={tooltipPosition.x}
+                          y={tooltipPosition.y}
+                        />
+                      )}
                   </AnimatePresence>
                 </div>
               ) : (

@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useMemo } from 'react';
-import { ChevronRight } from 'lucide-react';
-import { motion } from 'framer-motion';
-import type { ChangeGroup } from '@/lib/diff/changeGrouper';
-import { extractSemanticScope } from '@/lib/diff/semanticAnalyzer';
+import { motion } from "framer-motion";
+import { ChevronRight } from "lucide-react";
+import { useMemo } from "react";
+import type { ChangeGroup } from "@/lib/diff/changeGrouper";
+import { extractSemanticScope } from "@/lib/diff/semanticAnalyzer";
 
 interface BreadcrumbItem {
-  type: 'file' | 'function' | 'class' | 'block';
+  type: "file" | "function" | "class" | "block";
   name: string;
   lineNumber?: number;
 }
@@ -18,24 +18,30 @@ interface BreadcrumbsProps {
   semanticScope?: string;
 }
 
-export function Breadcrumbs({ filePath, currentGroup, semanticScope }: BreadcrumbsProps) {
+export function Breadcrumbs({
+  filePath,
+  currentGroup,
+  semanticScope,
+}: BreadcrumbsProps) {
   const breadcrumbs = useMemo<BreadcrumbItem[]>(() => {
     const items: BreadcrumbItem[] = [];
 
     // File path
-    const pathParts = filePath.split('/');
+    const pathParts = filePath.split("/");
     const fileName = pathParts.pop() || filePath;
     items.push({
-      type: 'file',
+      type: "file",
       name: fileName,
     });
 
     // Scope (function/class)
     if (semanticScope || currentGroup) {
-      const scope = semanticScope || (currentGroup ? extractSemanticScope(currentGroup) : null);
+      const scope =
+        semanticScope ||
+        (currentGroup ? extractSemanticScope(currentGroup) : null);
       if (scope && scope !== currentGroup?.title) {
         items.push({
-          type: currentGroup?.type === 'class' ? 'class' : 'function',
+          type: currentGroup?.type === "class" ? "class" : "function",
           name: scope,
           lineNumber: currentGroup?.startLine,
         });
@@ -43,11 +49,12 @@ export function Breadcrumbs({ filePath, currentGroup, semanticScope }: Breadcrum
     }
 
     // Change description
-    if (currentGroup && currentGroup.description) {
-      const desc = currentGroup.description.split(' - ')[1] || currentGroup.description;
+    if (currentGroup?.description) {
+      const desc =
+        currentGroup.description.split(" - ")[1] || currentGroup.description;
       if (desc && desc !== currentGroup.title) {
         items.push({
-          type: 'block',
+          type: "block",
           name: desc,
         });
       }
@@ -70,16 +77,14 @@ export function Breadcrumbs({ filePath, currentGroup, semanticScope }: Breadcrum
       <div className="flex items-center gap-2 text-xs">
         {breadcrumbs.map((item, idx) => (
           <div key={idx} className="flex items-center gap-2">
-            {idx > 0 && (
-              <ChevronRight className="w-3 h-3 text-gray-500" />
-            )}
+            {idx > 0 && <ChevronRight className="w-3 h-3 text-gray-500" />}
             <span
               className={
-                item.type === 'file'
-                  ? 'font-mono text-gray-300'
-                  : item.type === 'function' || item.type === 'class'
-                  ? 'text-[#79c0ff]'
-                  : 'text-gray-400'
+                item.type === "file"
+                  ? "font-mono text-gray-300"
+                  : item.type === "function" || item.type === "class"
+                    ? "text-[#79c0ff]"
+                    : "text-gray-400"
               }
             >
               {item.name}

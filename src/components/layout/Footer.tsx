@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
+import Link from "next/link";
 
 export function Footer() {
   return (
@@ -10,10 +10,16 @@ export function Footer() {
           © {new Date().getFullYear()} Synn. All rights reserved.
         </p>
         <div className="flex items-center gap-4 text-xs text-text-sub">
-          <Link href="/privacy" className="hover:text-text-main transition-colors">
+          <Link
+            href="/privacy"
+            className="hover:text-text-main transition-colors"
+          >
             Privacy
           </Link>
-          <Link href="/terms" className="hover:text-text-main transition-colors">
+          <Link
+            href="/terms"
+            className="hover:text-text-main transition-colors"
+          >
             Terms
           </Link>
           <span className="text-border-main">·</span>

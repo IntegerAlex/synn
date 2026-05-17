@@ -1,18 +1,24 @@
-'use client';
+"use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Info } from 'lucide-react';
-import type { SemanticChange } from '@/lib/diff/semanticAnalyzer';
+import { AnimatePresence, motion } from "framer-motion";
+import { Info } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import type { SemanticChange } from "@/lib/diff/semanticAnalyzer";
 
 interface SemanticSummaryProps {
   semanticChanges: SemanticChange[];
   children: React.ReactNode;
 }
 
-export function SemanticSummary({ semanticChanges, children }: SemanticSummaryProps) {
+export function SemanticSummary({
+  semanticChanges,
+  children,
+}: SemanticSummaryProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -29,7 +35,7 @@ export function SemanticSummary({ semanticChanges, children }: SemanticSummaryPr
     return <>{children}</>;
   }
 
-  const primaryChange = semanticChanges[0];
+  const _primaryChange = semanticChanges[0];
 
   return (
     <>
@@ -54,7 +60,7 @@ export function SemanticSummary({ semanticChanges, children }: SemanticSummaryPr
             style={{
               left: `${tooltipPosition.x}px`,
               top: `${tooltipPosition.y}px`,
-              transform: 'translate(-50%, -100%)',
+              transform: "translate(-50%, -100%)",
             }}
           >
             <div className="bg-[#161b22] border border-[#30363d] rounded-lg shadow-xl p-3 max-w-xs">
@@ -74,9 +80,13 @@ export function SemanticSummary({ semanticChanges, children }: SemanticSummaryPr
                     )}
                     {change.oldValue && change.newValue && (
                       <div className="text-gray-500 text-[10px] mt-0.5">
-                        <span className="text-[#f85149]">{change.oldValue}</span>
-                        {' → '}
-                        <span className="text-[#3fb950]">{change.newValue}</span>
+                        <span className="text-[#f85149]">
+                          {change.oldValue}
+                        </span>
+                        {" → "}
+                        <span className="text-[#3fb950]">
+                          {change.newValue}
+                        </span>
                       </div>
                     )}
                   </div>

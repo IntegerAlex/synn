@@ -1,13 +1,12 @@
-'use client';
+"use client";
 
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { X, Search, GitBranch, Check, Copy, Shield, Star } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useBranches } from '@/hooks/useGitData';
-import { useGitHubBranches } from '@/hooks/useGitHubData';
-import { useAppStore } from '@/store/useAppStore';
-import { useCheckoutBranch } from '@/hooks/useGitData';
-import type { Branch } from '@/types/git';
+import { AnimatePresence, motion } from "framer-motion";
+import { Check, Copy, GitBranch, Search, Shield, Star, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useBranches, useCheckoutBranch } from "@/hooks/useGitData";
+import { useGitHubBranches } from "@/hooks/useGitHubData";
+import { useAppStore } from "@/store/useAppStore";
+import type { Branch } from "@/types/git";
 
 interface BranchesModalProps {
   isOpen: boolean;
@@ -15,14 +14,18 @@ interface BranchesModalProps {
   totalBranches: number;
 }
 
-export function BranchesModal({ isOpen, onClose, totalBranches }: BranchesModalProps) {
-  const repoInfo = useAppStore((state) => state.repoInfo);
+export function BranchesModal({
+  isOpen,
+  onClose,
+  totalBranches,
+}: BranchesModalProps) {
+  const _repoInfo = useAppStore((state) => state.repoInfo);
   const currentBranch = useAppStore((state) => state.repoInfo?.currentBranch);
   const { data: branchesData } = useBranches();
   const { data: githubBranchesData } = useGitHubBranches();
   const checkoutBranch = useCheckoutBranch();
-  const [searchInput, setSearchInput] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [copiedBranch, setCopiedBranch] = useState<string | null>(null);
 
   // Build a lookup map from GitHub branch data for protection/default info
@@ -43,7 +46,7 @@ export function BranchesModal({ isOpen, onClose, totalBranches }: BranchesModalP
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
-    
+
     debounceTimerRef.current = setTimeout(() => {
       setSearchQuery(searchInput);
     }, 150); // 150ms debounce delay
@@ -64,7 +67,7 @@ export function BranchesModal({ isOpen, onClose, totalBranches }: BranchesModalP
   const filteredBranches = useMemo(() => {
     if (!searchQuery.trim()) return branches;
     const query = searchQuery.toLowerCase();
-    
+
     // Use a more efficient filtering approach
     const results: Branch[] = [];
     for (let i = 0; i < branches.length; i++) {
@@ -85,7 +88,7 @@ export function BranchesModal({ isOpen, onClose, totalBranches }: BranchesModalP
       await checkoutBranch.mutateAsync(branchName);
       onClose();
     } catch (error) {
-      console.error('Failed to checkout branch:', error);
+      console.error("Failed to checkout branch:", error);
     }
   };
 
@@ -158,7 +161,8 @@ export function BranchesModal({ isOpen, onClose, totalBranches }: BranchesModalP
               </div>
               {searchQuery && (
                 <p className="text-xs text-gray-400 mt-2">
-                  Showing {filteredBranches.length} of {branches.length} branches
+                  Showing {filteredBranches.length} of {branches.length}{" "}
+                  branches
                 </p>
               )}
             </div>
@@ -170,7 +174,9 @@ export function BranchesModal({ isOpen, onClose, totalBranches }: BranchesModalP
                   <div className="text-center">
                     <GitBranch className="w-12 h-12 mx-auto mb-3 opacity-50" />
                     <p className="text-sm">
-                      {searchQuery ? 'No branches found' : 'No branches available'}
+                      {searchQuery
+                        ? "No branches found"
+                        : "No branches available"}
                     </p>
                   </div>
                 </div>
@@ -184,7 +190,7 @@ export function BranchesModal({ isOpen, onClose, totalBranches }: BranchesModalP
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         className={`px-4 py-3 hover:bg-[#161b22] transition-colors cursor-pointer group ${
-                          isCurrent ? 'bg-[#238636]/10' : ''
+                          isCurrent ? "bg-[#238636]/10" : ""
                         }`}
                         onClick={() => handleBranchClick(branch.name)}
                       >
@@ -205,14 +211,22 @@ export function BranchesModal({ isOpen, onClose, totalBranches }: BranchesModalP
                                     Current
                                   </span>
                                 )}
-                                {githubBranchMap.get(branch.name)?.isDefault && (
-                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded bg-blue-500/15 text-blue-400 border border-blue-500/30 shrink-0" title="Default branch">
+                                {githubBranchMap.get(branch.name)
+                                  ?.isDefault && (
+                                  <span
+                                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded bg-blue-500/15 text-blue-400 border border-blue-500/30 shrink-0"
+                                    title="Default branch"
+                                  >
                                     <Star className="w-3 h-3" />
                                     default
                                   </span>
                                 )}
-                                {githubBranchMap.get(branch.name)?.isProtected && (
-                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded bg-yellow-500/15 text-yellow-400 border border-yellow-500/30 shrink-0" title="Protected branch">
+                                {githubBranchMap.get(branch.name)
+                                  ?.isProtected && (
+                                  <span
+                                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded bg-yellow-500/15 text-yellow-400 border border-yellow-500/30 shrink-0"
+                                    title="Protected branch"
+                                  >
                                     <Shield className="w-3 h-3" />
                                   </span>
                                 )}

@@ -1,8 +1,8 @@
-import 'dotenv/config';
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { Pool } from 'pg';
-import * as schema from './schema';
-import { env } from '@/lib/env';
+import "dotenv/config";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
+import { env } from "@/lib/env";
+import * as schema from "./schema";
 
 // Create connection pool
 // Note: Make sure your DATABASE_URL includes the database name 'synn'

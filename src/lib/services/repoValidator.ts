@@ -1,6 +1,6 @@
-import { db } from '@/db';
-import { reposTable, usersTable } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { and, eq } from "drizzle-orm";
+import { db } from "@/db";
+import { reposTable, usersTable } from "@/db/schema";
 
 /**
  * Repository ownership validation service
@@ -21,7 +21,7 @@ export interface ValidationResult {
  */
 export async function validateRepoAccess(
   clerkUserId: string,
-  repoFullName: string
+  repoFullName: string,
 ): Promise<ValidationResult> {
   try {
     // First, get the user from database
@@ -34,7 +34,7 @@ export async function validateRepoAccess(
     if (users.length === 0) {
       return {
         valid: false,
-        error: 'User not found in database',
+        error: "User not found in database",
       };
     }
 
@@ -47,8 +47,8 @@ export async function validateRepoAccess(
       .where(
         and(
           eq(reposTable.userId, user.id),
-          eq(reposTable.fullName, repoFullName)
-        )
+          eq(reposTable.fullName, repoFullName),
+        ),
       )
       .limit(1);
 
@@ -58,11 +58,13 @@ export async function validateRepoAccess(
       // 1. User hasn't synced repos yet
       // 2. User doesn't have access to this repo
       // 3. Repo was recently added but not synced
-      
+
       // For better UX, we allow the request but log it
       // The GitHub API will ultimately enforce permissions
-      console.warn(`Repository ${repoFullName} not found in user ${clerkUserId}'s synced repos`);
-      
+      console.warn(
+        `Repository ${repoFullName} not found in user ${clerkUserId}'s synced repos`,
+      );
+
       return {
         valid: true, // Allow but log - GitHub API will enforce
         userId: user.id,
@@ -76,10 +78,10 @@ export async function validateRepoAccess(
       repoId: repos[0].id,
     };
   } catch (error) {
-    console.error('Repository validation error:', error);
+    console.error("Repository validation error:", error);
     return {
       valid: false,
-      error: 'Failed to validate repository access',
+      error: "Failed to validate repository access",
     };
   }
 }
@@ -90,7 +92,7 @@ export async function validateRepoAccess(
  */
 export async function validateRepoOwnershipStrict(
   clerkUserId: string,
-  repoFullName: string
+  repoFullName: string,
 ): Promise<ValidationResult> {
   try {
     const users = await db
@@ -102,7 +104,7 @@ export async function validateRepoOwnershipStrict(
     if (users.length === 0) {
       return {
         valid: false,
-        error: 'User not found',
+        error: "User not found",
       };
     }
 
@@ -114,8 +116,8 @@ export async function validateRepoOwnershipStrict(
       .where(
         and(
           eq(reposTable.userId, user.id),
-          eq(reposTable.fullName, repoFullName)
-        )
+          eq(reposTable.fullName, repoFullName),
+        ),
       )
       .limit(1);
 
@@ -133,10 +135,10 @@ export async function validateRepoOwnershipStrict(
       repoId: repos[0].id,
     };
   } catch (error) {
-    console.error('Strict repository validation error:', error);
+    console.error("Strict repository validation error:", error);
     return {
       valid: false,
-      error: 'Failed to validate repository ownership',
+      error: "Failed to validate repository ownership",
     };
   }
 }
@@ -144,7 +146,9 @@ export async function validateRepoOwnershipStrict(
 /**
  * Get user ID from Clerk user ID
  */
-export async function getUserIdFromClerk(clerkUserId: string): Promise<number | null> {
+export async function getUserIdFromClerk(
+  clerkUserId: string,
+): Promise<number | null> {
   const users = await db
     .select({ id: usersTable.id })
     .from(usersTable)
@@ -166,4 +170,3 @@ export async function userExists(clerkUserId: string): Promise<boolean> {
 
   return users.length > 0;
 }
-

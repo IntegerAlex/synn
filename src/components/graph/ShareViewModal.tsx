@@ -1,17 +1,23 @@
-'use client';
+"use client";
 
-import { useState, useCallback } from 'react';
-import { X, Copy, Check, ExternalLink } from 'lucide-react';
-import { useAppStore } from '@/store/useAppStore';
-import { generateShareUrl, getCurrentViewState } from '@/lib/utils/shareView';
-import { useToast } from '@/hooks/useToast';
+import { Check, Copy, ExternalLink, X } from "lucide-react";
+import { useCallback, useState } from "react";
+import { useToast } from "@/hooks/useToast";
+import { generateShareUrl, getCurrentViewState } from "@/lib/utils/shareView";
+import { useAppStore } from "@/store/useAppStore";
 
-export function ShareViewModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+export function ShareViewModal({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) {
   const repoInfo = useAppStore((state) => state.repoInfo);
   const selectedBranch = useAppStore((state) => state.selectedBranch);
   const selectedCommit = useAppStore((state) => state.selectedCommitHash);
   const graphFilters = useAppStore((state) => state.graphFilters);
-  const graphLimit = useAppStore((state) => {
+  const graphLimit = useAppStore((_state) => {
     // We need to get graphLimit from CytoscapeGraph, but for now use default
     return 500;
   });
@@ -24,10 +30,10 @@ export function ShareViewModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
     selectedBranch,
     selectedCommit,
     graphFilters,
-    graphLimit
+    graphLimit,
   );
 
-  const shareUrl = viewState ? generateShareUrl(viewState) : '';
+  const shareUrl = viewState ? generateShareUrl(viewState) : "";
 
   const handleCopy = useCallback(async () => {
     if (!shareUrl) return;
@@ -35,24 +41,24 @@ export function ShareViewModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
-      toast.showSuccess('Link copied to clipboard');
+      toast.showSuccess("Link copied to clipboard");
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Fallback
-      const textarea = document.createElement('textarea');
+      const textarea = document.createElement("textarea");
       textarea.value = shareUrl;
-      textarea.style.position = 'fixed';
-      textarea.style.left = '-9999px';
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
       document.body.appendChild(textarea);
       textarea.focus();
       textarea.select();
       try {
-        document.execCommand('copy');
+        document.execCommand("copy");
         setCopied(true);
-        toast.showSuccess('Link copied to clipboard');
+        toast.showSuccess("Link copied to clipboard");
         setTimeout(() => setCopied(false), 2000);
       } catch {
-        toast.showError('Failed to copy link');
+        toast.showError("Failed to copy link");
       }
       document.body.removeChild(textarea);
     }
@@ -60,7 +66,7 @@ export function ShareViewModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
 
   const handleOpen = useCallback(() => {
     if (shareUrl) {
-      window.open(shareUrl, '_blank');
+      window.open(shareUrl, "_blank");
     }
   }, [shareUrl]);
 
@@ -85,7 +91,9 @@ export function ShareViewModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
               <X className="w-5 h-5" />
             </button>
           </div>
-          <p className="text-gray-400 text-sm">Please select a repository first.</p>
+          <p className="text-gray-400 text-sm">
+            Please select a repository first.
+          </p>
         </div>
       </div>
     );
@@ -117,12 +125,15 @@ export function ShareViewModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
         {/* Content */}
         <div className="p-6">
           <p className="text-gray-400 text-sm mb-4">
-            Share this graph view with your team. Anyone with the link can view the graph (read-only).
+            Share this graph view with your team. Anyone with the link can view
+            the graph (read-only).
           </p>
 
           {/* Share URL */}
           <div className="mb-4">
-            <label className="block text-xs text-gray-500 mb-2">Shareable Link</label>
+            <label className="block text-xs text-gray-500 mb-2">
+              Shareable Link
+            </label>
             <div className="flex items-center gap-2">
               <input
                 type="text"
@@ -163,19 +174,25 @@ export function ShareViewModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
             <div className="text-sm text-gray-300 space-y-1">
               <div>• Repository: {repoInfo.name}</div>
               {selectedBranch && <div>• Branch: {selectedBranch}</div>}
-              {selectedCommit && <div>• Selected commit: {selectedCommit.substring(0, 7)}</div>}
+              {selectedCommit && (
+                <div>• Selected commit: {selectedCommit.substring(0, 7)}</div>
+              )}
               {graphFilters.highlightedBranches.size > 0 && (
                 <div>
-                  • Highlighted branches: {Array.from(graphFilters.highlightedBranches).join(', ')}
+                  • Highlighted branches:{" "}
+                  {Array.from(graphFilters.highlightedBranches).join(", ")}
                 </div>
               )}
-              {!graphFilters.showMergeCommits && <div>• Merge commits hidden</div>}
+              {!graphFilters.showMergeCommits && (
+                <div>• Merge commits hidden</div>
+              )}
               {!graphFilters.showTags && <div>• Tags hidden</div>}
             </div>
           </div>
 
           <div className="mt-4 text-xs text-gray-500">
-            Note: Shared views are read-only. Recipients can view but not modify the graph.
+            Note: Shared views are read-only. Recipients can view but not modify
+            the graph.
           </div>
         </div>
       </div>

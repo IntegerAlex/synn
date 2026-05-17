@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Share2, Copy, X } from 'lucide-react';
-import { useShareView } from '@/hooks/useShareView';
-import { useAppStore } from '@/store/useAppStore';
-import { useToast } from '@/hooks/useToast';
+import { Copy, Share2, X } from "lucide-react";
+import { useState } from "react";
+import { useShareView } from "@/hooks/useShareView";
+import { useToast } from "@/hooks/useToast";
+import { useAppStore } from "@/store/useAppStore";
 
 interface ShareButtonProps {
   graphLimit?: number;
@@ -38,8 +38,8 @@ export function ShareButton({ graphLimit = 500 }: ShareButtonProps) {
 
       setShareUrl(result.url);
       setIsOpen(true);
-    } catch (error) {
-      toast.showError('Failed to create share link');
+    } catch (_error) {
+      toast.showError("Failed to create share link");
     }
   };
 
@@ -47,9 +47,9 @@ export function ShareButton({ graphLimit = 500 }: ShareButtonProps) {
     if (!shareUrl) return;
     try {
       await navigator.clipboard.writeText(shareUrl);
-      toast.showSuccess('Link copied to clipboard!');
+      toast.showSuccess("Link copied to clipboard!");
     } catch {
-      toast.showError('Failed to copy');
+      toast.showError("Failed to copy");
     }
   };
 
@@ -65,14 +65,25 @@ export function ShareButton({ graphLimit = 500 }: ShareButtonProps) {
         title="Share this view"
       >
         <Share2 className="w-3.5 h-3.5" />
-        {shareMutation.isPending ? 'Sharing...' : 'Share'}
+        {shareMutation.isPending ? "Sharing..." : "Share"}
       </button>
 
       {isOpen && shareUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="share-view-title" aria-describedby="share-view-desc">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="share-view-title"
+          aria-describedby="share-view-desc"
+        >
           <div className="w-full max-w-md rounded-xl border border-[#30363d] bg-[#0d1117] shadow-2xl overflow-hidden">
             <div className="px-4 py-3 border-b border-[#30363d] flex items-center justify-between">
-              <div className="text-sm font-semibold text-gray-200" id="share-view-title">Share View</div>
+              <div
+                className="text-sm font-semibold text-gray-200"
+                id="share-view-title"
+              >
+                Share View
+              </div>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
@@ -121,7 +132,6 @@ export function ShareButton({ graphLimit = 500 }: ShareButtonProps) {
           </div>
         </div>
       )}
-
     </>
   );
 }

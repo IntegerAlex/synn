@@ -1,5 +1,9 @@
-import { describe, it, expect } from "vitest";
-import { sanitizeHtml, escapeHtml, sanitizeDiffHtml } from "@/lib/utils/sanitize";
+import { describe, expect, it } from "vitest";
+import {
+  escapeHtml,
+  sanitizeDiffHtml,
+  sanitizeHtml,
+} from "@/lib/utils/sanitize";
 
 describe("escapeHtml", () => {
   it("escapes HTML special characters", () => {
@@ -45,7 +49,9 @@ describe("sanitizeHtml", () => {
   });
 
   it("allows safe attributes", () => {
-    const result = sanitizeHtml('<a href="https://example.com" title="link">text</a>');
+    const result = sanitizeHtml(
+      '<a href="https://example.com" title="link">text</a>',
+    );
     expect(result).toContain('href="https://example.com"');
     expect(result).toContain("text</a>");
   });

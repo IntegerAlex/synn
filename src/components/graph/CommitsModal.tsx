@@ -1,12 +1,20 @@
-'use client';
+"use client";
 
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { X, Search, GitCommit, Calendar, User, Copy, Check } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useGraph, useCommitDetails } from '@/hooks/useGitData';
-import { useAppStore } from '@/store/useAppStore';
-import { BetterDiffModal } from '@/components/diff/BetterDiffModal';
-import type { GraphNode } from '@/types/git';
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Calendar,
+  Check,
+  Copy,
+  GitCommit,
+  Search,
+  User,
+  X,
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { BetterDiffModal } from "@/components/diff/BetterDiffModal";
+import { useCommitDetails, useGraph } from "@/hooks/useGitData";
+import { useAppStore } from "@/store/useAppStore";
+import type { GraphNode } from "@/types/git";
 
 interface CommitsModalProps {
   isOpen: boolean;
@@ -14,16 +22,22 @@ interface CommitsModalProps {
   totalCommits: number;
 }
 
-export function CommitsModal({ isOpen, onClose, totalCommits }: CommitsModalProps) {
-  const repoInfo = useAppStore((state) => state.repoInfo);
+export function CommitsModal({
+  isOpen,
+  onClose,
+  totalCommits,
+}: CommitsModalProps) {
+  const _repoInfo = useAppStore((state) => state.repoInfo);
   const { data: graphData } = useGraph(10000, 0); // Get all commits
-  const [searchInput, setSearchInput] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [copiedHash, setCopiedHash] = useState<string | null>(null);
-  const [selectedCommitHash, setSelectedCommitHash] = useState<string | null>(null);
+  const [selectedCommitHash, setSelectedCommitHash] = useState<string | null>(
+    null,
+  );
   const [isBetterDiffOpen, setIsBetterDiffOpen] = useState(false);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   const { data: commitDetails } = useCommitDetails(selectedCommitHash);
 
   // Debounce search input
@@ -31,7 +45,7 @@ export function CommitsModal({ isOpen, onClose, totalCommits }: CommitsModalProp
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
-    
+
     debounceTimerRef.current = setTimeout(() => {
       setSearchQuery(searchInput);
     }, 150); // 150ms debounce delay
@@ -52,7 +66,7 @@ export function CommitsModal({ isOpen, onClose, totalCommits }: CommitsModalProp
   const filteredCommits = useMemo(() => {
     if (!searchQuery.trim()) return commits;
     const query = searchQuery.toLowerCase();
-    
+
     // Use a more efficient filtering approach
     const results: GraphNode[] = [];
     for (let i = 0; i < commits.length; i++) {
@@ -71,12 +85,12 @@ export function CommitsModal({ isOpen, onClose, totalCommits }: CommitsModalProp
   const formatDate = (dateStr: string) => {
     try {
       const date = new Date(dateStr);
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
       });
     } catch {
       return dateStr;
@@ -174,7 +188,9 @@ export function CommitsModal({ isOpen, onClose, totalCommits }: CommitsModalProp
                   <div className="text-center">
                     <GitCommit className="w-12 h-12 mx-auto mb-3 opacity-50" />
                     <p className="text-sm">
-                      {searchQuery ? 'No commits found' : 'No commits available'}
+                      {searchQuery
+                        ? "No commits found"
+                        : "No commits available"}
                     </p>
                   </div>
                 </div>
@@ -214,7 +230,9 @@ export function CommitsModal({ isOpen, onClose, totalCommits }: CommitsModalProp
                               )}
                             </button>
                           </div>
-                          <p className="text-sm text-white mb-2 line-clamp-2">{commit.message}</p>
+                          <p className="text-sm text-white mb-2 line-clamp-2">
+                            {commit.message}
+                          </p>
                           <div className="flex items-center gap-4 text-xs text-gray-400">
                             <div className="flex items-center gap-1.5">
                               <User className="w-3 h-3" />
@@ -241,7 +259,7 @@ export function CommitsModal({ isOpen, onClose, totalCommits }: CommitsModalProp
         <BetterDiffModal
           isOpen={isBetterDiffOpen}
           onClose={handleCloseBetterDiff}
-          diff={commitDetails.diff || ''}
+          diff={commitDetails.diff || ""}
           commitMessage={commitDetails.message}
           commitHash={selectedCommitHash || undefined}
           files={commitDetails.files}

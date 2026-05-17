@@ -1,4 +1,9 @@
-import { encryptData, decryptData, isEncryptionAvailable, hashData } from './encryption';
+import {
+  decryptData,
+  encryptData,
+  hashData,
+  isEncryptionAvailable,
+} from "./encryption";
 
 /**
  * Token encryption service for GitHub OAuth tokens
@@ -6,7 +11,7 @@ import { encryptData, decryptData, isEncryptionAvailable, hashData } from './enc
  */
 
 // Prefix to identify encrypted tokens
-const ENCRYPTED_PREFIX = 'enc:v1:';
+const ENCRYPTED_PREFIX = "enc:v1:";
 
 /**
  * Encrypt a GitHub access token for database storage
@@ -24,7 +29,7 @@ export function encryptToken(token: string): string {
   // If encryption is not available, return token as-is
   // (Not recommended for production)
   if (!isEncryptionAvailable()) {
-    console.warn('Encryption not available - storing token unencrypted');
+    console.warn("Encryption not available - storing token unencrypted");
     return token;
   }
 
@@ -32,7 +37,7 @@ export function encryptToken(token: string): string {
     const encrypted = encryptData(token);
     return ENCRYPTED_PREFIX + encrypted;
   } catch (error) {
-    console.error('Failed to encrypt token:', error);
+    console.error("Failed to encrypt token:", error);
     // Return original token if encryption fails
     // This is a fallback - should be monitored
     return token;
@@ -44,7 +49,10 @@ export function encryptToken(token: string): string {
  * @param encryptedToken - The encrypted token from database
  * @param privateKey - PEM formatted private key
  */
-export function decryptToken(encryptedToken: string, privateKey: string): string {
+export function decryptToken(
+  encryptedToken: string,
+  privateKey: string,
+): string {
   if (!encryptedToken) {
     return encryptedToken;
   }
@@ -59,8 +67,8 @@ export function decryptToken(encryptedToken: string, privateKey: string): string
     const encrypted = encryptedToken.slice(ENCRYPTED_PREFIX.length);
     return decryptData(encrypted, privateKey);
   } catch (error) {
-    console.error('Failed to decrypt token:', error);
-    throw new Error('Token decryption failed');
+    console.error("Failed to decrypt token:", error);
+    throw new Error("Token decryption failed");
   }
 }
 
@@ -97,10 +105,12 @@ export function encryptRefreshToken(token: string | null): string | null {
 /**
  * Decrypt refresh token
  */
-export function decryptRefreshToken(encryptedToken: string | null, privateKey: string): string | null {
+export function decryptRefreshToken(
+  encryptedToken: string | null,
+  privateKey: string,
+): string | null {
   if (!encryptedToken) {
     return null;
   }
   return decryptToken(encryptedToken, privateKey);
 }
-

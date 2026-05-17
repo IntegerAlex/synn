@@ -1,21 +1,21 @@
 "use client";
 
-import { useState, useMemo, useCallback, useRef, memo } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
+  AlignJustify,
   ChevronDown,
   ChevronRight,
   Columns2,
-  AlignJustify,
   FileText,
   Loader2,
 } from "lucide-react";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
+import type { PRFile } from "@/hooks/useGitHubData";
 import {
-  highlightUnifiedDiffLines,
   detectPrismLanguageFromFilePath,
+  highlightUnifiedDiffLines,
 } from "@/lib/utils/diffHighlighter";
 import { sanitizeDiffHtml } from "@/lib/utils/sanitize";
-import type { PRFile } from "@/hooks/useGitHubData";
 
 /* ── Types ─────────────────────────────────────────────── */
 
@@ -149,11 +149,8 @@ const HighlightedLine = memo(function HighlightedLine({
   content: string;
   filename: string;
 }) {
-  const languageId = detectPrismLanguageFromFilePath(filename);
-  const lines = highlightUnifiedDiffLines(
-    ` ${content}`,
-    filename,
-  );
+  const _languageId = detectPrismLanguageFromFilePath(filename);
+  const lines = highlightUnifiedDiffLines(` ${content}`, filename);
   const line = lines[0];
   if (!line) return <span>{content}</span>;
 
@@ -385,9 +382,7 @@ const FileDiffCardEnhanced = memo(function FileDiffCardEnhanced({
     <div
       id={`file-${file.filename}`}
       className={`border rounded-md overflow-hidden ${
-        isSelected
-          ? "border-blue-500/50"
-          : "border-[#30363d]"
+        isSelected ? "border-blue-500/50" : "border-[#30363d]"
       }`}
     >
       {/* File header */}
@@ -423,15 +418,9 @@ const FileDiffCardEnhanced = memo(function FileDiffCardEnhanced({
       {expanded && file.patch && (
         <div className="overflow-x-auto border-t border-[#30363d]">
           {viewMode === "unified" ? (
-            <UnifiedDiffView
-              hunks={truncatedHunks}
-              filename={file.filename}
-            />
+            <UnifiedDiffView hunks={truncatedHunks} filename={file.filename} />
           ) : (
-            <SplitDiffView
-              hunks={truncatedHunks}
-              filename={file.filename}
-            />
+            <SplitDiffView hunks={truncatedHunks} filename={file.filename} />
           )}
           {isLargeDiff && !showFullDiff && (
             <div className="flex justify-center py-3 bg-[#161b22] border-t border-[#30363d]">
@@ -512,8 +501,7 @@ const FileTreeSidebar = memo(function FileTreeSidebar({
               </div>
             )}
             {dirFiles.map((file) => {
-              const name =
-                file.filename.split("/").pop() ?? file.filename;
+              const name = file.filename.split("/").pop() ?? file.filename;
               const isActive = selectedFile === file.filename;
               return (
                 <button
@@ -521,9 +509,7 @@ const FileTreeSidebar = memo(function FileTreeSidebar({
                   type="button"
                   onClick={() => onSelectFile(file.filename)}
                   className={`w-full text-left px-3 py-1 text-xs font-mono flex items-center gap-2 hover:bg-[#21262d] transition-colors truncate ${
-                    isActive
-                      ? "bg-[#21262d] text-white"
-                      : "text-gray-300"
+                    isActive ? "bg-[#21262d] text-white" : "text-gray-300"
                   }`}
                   title={file.filename}
                 >
@@ -535,14 +521,10 @@ const FileTreeSidebar = memo(function FileTreeSidebar({
                   <span className="truncate">{name}</span>
                   <span className="ml-auto flex items-center gap-1 flex-shrink-0">
                     {file.additions > 0 && (
-                      <span className="text-green-400">
-                        +{file.additions}
-                      </span>
+                      <span className="text-green-400">+{file.additions}</span>
                     )}
                     {file.deletions > 0 && (
-                      <span className="text-red-400">
-                        -{file.deletions}
-                      </span>
+                      <span className="text-red-400">-{file.deletions}</span>
                     )}
                   </span>
                 </button>

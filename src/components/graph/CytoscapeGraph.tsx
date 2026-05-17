@@ -1,32 +1,32 @@
-'use client';
+"use client";
 
-import { useMemo, useCallback, useEffect, useRef, useState } from 'react';
-import CytoscapeComponent from 'react-cytoscapejs';
-import type cytoscape from 'cytoscape';
+import type cytoscape from "cytoscape";
 import {
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  RotateCcw,
   ChevronDown,
   ChevronUp,
-} from 'lucide-react';
-import { useGraph } from '@/hooks/useGitData';
-import { useAppStore } from '@/store/useAppStore';
-import { CommitTooltip } from './CommitTooltip';
-import { CommitActivityChart } from './CommitActivityChart';
-import { GraphFilters } from './GraphFilters';
-import { ShareButton } from './ShareButton';
-import { CommitsModal } from './CommitsModal';
-import { BranchesModal } from './BranchesModal';
-import type { GraphNode, GraphData } from '@/types/git';
+  Maximize2,
+  RotateCcw,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import CytoscapeComponent from "react-cytoscapejs";
+import { useGraph } from "@/hooks/useGitData";
+import { useAppStore } from "@/store/useAppStore";
+import type { GraphData, GraphNode } from "@/types/git";
+import { BranchesModal } from "./BranchesModal";
+import { CommitActivityChart } from "./CommitActivityChart";
+import { CommitsModal } from "./CommitsModal";
+import { CommitTooltip } from "./CommitTooltip";
+import { GraphFilters } from "./GraphFilters";
+import { ShareButton } from "./ShareButton";
 
 function normalizeBranchLabel(branch: string): string {
   return branch
-    .replace('HEAD -> ', '')
-    .replace('origin/', '')
-    .replace('remote/', '')
-    .replace('tag: ', '')
+    .replace("HEAD -> ", "")
+    .replace("origin/", "")
+    .replace("remote/", "")
+    .replace("tag: ", "")
     .trim();
 }
 
@@ -36,7 +36,7 @@ function normalizeBranchLabel(branch: string): string {
  */
 function buildHighlightedCommitsSet(
   graphData: GraphData,
-  highlightedBranches: Set<string>
+  highlightedBranches: Set<string>,
 ): Set<string> {
   const highlightedCommits = new Set<string>();
   if (highlightedBranches.size === 0) {
@@ -51,25 +51,30 @@ function buildHighlightedCommitsSet(
 
   // Create a reverse map: normalized branch name -> branch head hash
   const branchNameToHead = new Map<string, string>();
-  
+
   // First, try to use branchHeads if available
   if (graphData.branchHeads) {
-    for (const [branchName, headHash] of Object.entries(graphData.branchHeads)) {
+    for (const [branchName, headHash] of Object.entries(
+      graphData.branchHeads,
+    )) {
       const normalizedBranch = normalizeBranchLabel(branchName);
       branchNameToHead.set(normalizedBranch, headHash);
       // Also store the original name in case it matches directly
       branchNameToHead.set(branchName, headHash);
     }
   }
-  
+
   // Fallback: find branch heads from node refs if branchHeads is not available or incomplete
   for (const node of graphData.nodes) {
     if (node.refs && node.refs.length > 0) {
       for (const ref of node.refs) {
-    if (ref.includes('tag:')) continue;
+        if (ref.includes("tag:")) continue;
         const normalizedBranch = normalizeBranchLabel(ref);
         // Store both normalized and original ref
-        if (highlightedBranches.has(normalizedBranch) && !branchNameToHead.has(normalizedBranch)) {
+        if (
+          highlightedBranches.has(normalizedBranch) &&
+          !branchNameToHead.has(normalizedBranch)
+        ) {
           branchNameToHead.set(normalizedBranch, node.hash);
         }
         if (highlightedBranches.has(ref) && !branchNameToHead.has(ref)) {
@@ -99,12 +104,12 @@ function buildHighlightedCommitsSet(
 
       // Get the node and traverse to its parents
       const node = hashToNode.get(currentHash);
-      if (node && node.parentHashes) {
+      if (node?.parentHashes) {
         for (const parentHash of node.parentHashes) {
           // Only traverse to parents that exist in the graph
           if (!visited.has(parentHash) && hashToNode.has(parentHash)) {
             queue.push(parentHash);
-  }
+          }
         }
       }
     }
@@ -115,23 +120,23 @@ function buildHighlightedCommitsSet(
 
 function nodeMatchesHighlightedBranches(
   node: GraphNode,
-  highlightedCommits: Set<string>
+  highlightedCommits: Set<string>,
 ): boolean {
   return highlightedCommits.has(node.hash);
 }
 
 // GitLens-style color palette
 const BRANCH_COLORS = [
-  '#4FC3F7', // main - light cyan
-  '#7986CB', // indigo
-  '#9575CD', // purple
-  '#4DB6AC', // teal
-  '#81C784', // green
-  '#FFB74D', // orange
-  '#F06292', // pink
-  '#64B5F6', // blue
-  '#A1887F', // brown
-  '#90A4AE', // grey-blue
+  "#4FC3F7", // main - light cyan
+  "#7986CB", // indigo
+  "#9575CD", // purple
+  "#4DB6AC", // teal
+  "#81C784", // green
+  "#FFB74D", // orange
+  "#F06292", // pink
+  "#64B5F6", // blue
+  "#A1887F", // brown
+  "#90A4AE", // grey-blue
 ];
 
 interface CytoscapeGraphProps {
@@ -141,7 +146,12 @@ interface CytoscapeGraphProps {
   shareId?: string; // For shared views
 }
 
-export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange, shareId }: CytoscapeGraphProps = {}) {
+export function CytoscapeGraph({
+  initialGraphLimit,
+  readOnly,
+  onGraphLimitChange,
+  shareId,
+}: CytoscapeGraphProps = {}) {
   const [isCommitsModalOpen, setIsCommitsModalOpen] = useState(false);
   const [isBranchesModalOpen, setIsBranchesModalOpen] = useState(false);
   const cyRef = useRef<cytoscape.Core | null>(null);
@@ -157,23 +167,35 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
   };
 
   const selectedCommitHash = useAppStore((state) => state.selectedCommitHash);
-  const setSelectedCommitHash = useAppStore((state) => state.setSelectedCommitHash);
+  const setSelectedCommitHash = useAppStore(
+    (state) => state.setSelectedCommitHash,
+  );
   const theme = useAppStore((state) => state.theme);
-  const showMergeCommits = useAppStore((state) => state.graphFilters.showMergeCommits);
+  const showMergeCommits = useAppStore(
+    (state) => state.graphFilters.showMergeCommits,
+  );
   const showTags = useAppStore((state) => state.graphFilters.showTags);
-  const highlightedBranches = useAppStore((state) => state.graphFilters.highlightedBranches);
-  const { data: graphData, isLoading, error, refetch, isFetching } = useGraph(graphLimit, 0, shareId);
+  const highlightedBranches = useAppStore(
+    (state) => state.graphFilters.highlightedBranches,
+  );
+  const {
+    data: graphData,
+    isLoading,
+    error,
+    refetch,
+    isFetching,
+  } = useGraph(graphLimit, 0, shareId);
 
   const isDark = useMemo(
-    () => !['light', 'solarized-light'].includes(theme),
-    [theme]
+    () => !["light", "solarized-light"].includes(theme),
+    [theme],
   );
 
   const filteredGraphData = useMemo((): GraphData | null => {
     if (!graphData) return null;
 
     const isMergeNode = (n: GraphNode) => (n.parentHashes?.length ?? 0) > 1;
-    const isTagRef = (ref: string) => ref.includes('tag:');
+    const isTagRef = (ref: string) => ref.includes("tag:");
 
     const nodes = graphData.nodes
       .filter((n) => (showMergeCommits ? true : !isMergeNode(n)))
@@ -185,7 +207,7 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
     const allowed = new Set(nodes.map((n) => n.hash));
     const edges = graphData.edges.filter((e) => {
       if (!allowed.has(e.source) || !allowed.has(e.target)) return false;
-      if (!showMergeCommits && e.type === 'merge') return false;
+      if (!showMergeCommits && e.type === "merge") return false;
       return true;
     });
 
@@ -199,8 +221,11 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
     }
     const result = buildHighlightedCommitsSet(graphData, highlightedBranches);
     // Debug logging (remove in production)
-    if (process.env.NODE_ENV === 'development' && highlightedBranches.size > 0) {
-      console.log('Highlight debug:', {
+    if (
+      process.env.NODE_ENV === "development" &&
+      highlightedBranches.size > 0
+    ) {
+      console.log("Highlight debug:", {
         highlightedBranches: Array.from(highlightedBranches),
         branchHeads: graphData.branchHeads,
         highlightedCommitsCount: result.size,
@@ -223,46 +248,57 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
     const nodeIsHighlighted = new Map<string, boolean>();
 
     const nodes = filteredGraphData.nodes.map((node) => {
-      const isHighlighted = dimMode ? nodeMatchesHighlightedBranches(node, highlightedCommits) : false;
+      const isHighlighted = dimMode
+        ? nodeMatchesHighlightedBranches(node, highlightedCommits)
+        : false;
       nodeIsHighlighted.set(node.hash, isHighlighted);
       return {
-      data: {
-        id: node.hash,
-        label: node.shortHash,
-        hash: node.hash,
-        shortHash: node.shortHash,
-        message: node.message,
-        author: node.author,
-        date: node.date,
-        column: node.column,
-        row: node.row,
-        refs: node.refs,
-        color: node.color,
-        __dim: dimMode ? '1' : '0',
-        __highlight: isHighlighted ? '1' : '0',
-      },
-      position: {
-        x: paddingX + node.column * laneWidth,
-        y: paddingY + node.row * rowHeight,
-      },
+        data: {
+          id: node.hash,
+          label: node.shortHash,
+          hash: node.hash,
+          shortHash: node.shortHash,
+          message: node.message,
+          author: node.author,
+          date: node.date,
+          column: node.column,
+          row: node.row,
+          refs: node.refs,
+          color: node.color,
+          __dim: dimMode ? "1" : "0",
+          __highlight: isHighlighted ? "1" : "0",
+        },
+        position: {
+          x: paddingX + node.column * laneWidth,
+          y: paddingY + node.row * rowHeight,
+        },
       };
     });
 
     const edges = filteredGraphData.edges.map((edge) => {
-      const sourceNode = filteredGraphData.nodes.find((n) => n.hash === edge.source);
-      const targetNode = filteredGraphData.nodes.find((n) => n.hash === edge.target);
-      
+      const sourceNode = filteredGraphData.nodes.find(
+        (n) => n.hash === edge.source,
+      );
+      const targetNode = filteredGraphData.nodes.find(
+        (n) => n.hash === edge.target,
+      );
+
       // Improved bezier curve control for merges
       let controlPointDistance = 0;
       let controlPointWeight = 0.5;
-      
-      if (sourceNode && targetNode && edge.sourceColumn !== undefined && edge.targetColumn !== undefined) {
+
+      if (
+        sourceNode &&
+        targetNode &&
+        edge.sourceColumn !== undefined &&
+        edge.targetColumn !== undefined
+      ) {
         const sourceCol = edge.sourceColumn;
         const targetCol = edge.targetColumn;
         const colDiff = Math.abs(sourceCol - targetCol);
-        const rowDiff = Math.abs(sourceNode.row - targetNode.row);
-        
-        if (edge.type === 'merge') {
+        const _rowDiff = Math.abs(sourceNode.row - targetNode.row);
+
+        if (edge.type === "merge") {
           // For merge edges, create a horizontal curve first, then vertical
           // Control point should be at the source column, mid-way vertically
           controlPointDistance = colDiff * laneWidth * 0.8;
@@ -285,11 +321,13 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
           targetColumn: edge.targetColumn,
           controlPointDistance,
           controlPointWeight,
-          __dim: dimMode ? '1' : '0',
+          __dim: dimMode ? "1" : "0",
           __highlight:
-            dimMode && (nodeIsHighlighted.get(edge.source) || nodeIsHighlighted.get(edge.target))
-              ? '1'
-              : '0',
+            dimMode &&
+            (nodeIsHighlighted.get(edge.source) ||
+              nodeIsHighlighted.get(edge.target))
+              ? "1"
+              : "0",
         },
       };
     });
@@ -298,149 +336,168 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
   }, [filteredGraphData, highlightedBranches, highlightedCommits]);
 
   // Cytoscape stylesheet
-  const stylesheet = useMemo(() => [
-    {
-      selector: 'node',
-      style: {
-        'background-color': (ele: any) => ele.data('color') || BRANCH_COLORS[0],
-        'width': 8,
-        'height': 8,
-        'shape': 'ellipse',
-        'border-width': 2,
-        'border-color': isDark ? '#0d1117' : '#ffffff',
-        'label': (ele: any) => '',
-        'text-valign': 'center',
-        'text-halign': 'center',
-        'font-size': '10px',
-        'color': isDark ? '#cccccc' : '#333333',
-        'text-outline-width': 1,
-        'text-outline-color': isDark ? '#0d1117' : '#ffffff',
-      },
-    },
-    {
-      selector: 'node[branchLabel]',
-      style: {
-        'label': 'data(branchLabel)',
-        'text-margin-x': 12,
-        'text-margin-y': 0,
-        'text-valign': 'center',
-        'text-halign': 'left',
-        'font-size': '10px',
-        'font-weight': (ele: any) => ele.data('branchLabelIsCurrent') ? '600' : '400',
-        'color': (ele: any) =>
-          ele.data('branchLabelIsCurrent')
-            ? '#4FC3F7'
-            : (isDark ? '#cccccc' : '#333333'),
-        'text-background-color': (ele: any) =>
-          ele.data('branchLabelIsCurrent')
-            ? (isDark ? '#1a3a4a' : '#d0eaff')
-            : (isDark ? '#2d2d2d' : '#e0e0e0'),
-        'text-background-opacity': 0.9,
-        'text-background-shape': 'roundrectangle',
-        'text-background-padding': '3px',
-        'text-border-width': 1,
-        'text-border-color': isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-        'text-wrap': 'wrap',
-        'text-max-width': '140px',
-        'text-outline-width': 0,
-      },
-    },
-    {
-      selector: 'node:selected',
-      style: {
-        'border-width': 3,
-        'border-color': '#ef4444',
-        'width': 12,
-        'height': 12,
-      },
-    },
-    {
-      selector: 'node[__dim = "1"][__highlight = "0"]',
-      style: {
-        'opacity': 0.18,
-      },
-    },
-    {
-      selector: 'node[__highlight = "1"]',
-      style: {
-        'opacity': 1,
-        'border-width': 3,
-        'border-color': '#8ab4ff',
-      },
-    },
-    {
-      selector: 'edge',
-      style: {
-        'width': 2,
-        'line-color': (ele: any) => ele.data('color') || BRANCH_COLORS[0],
-        'target-arrow-shape': 'none', // No arrows for git graphs
-        'curve-style': 'bezier',
-        'control-point-distances': (ele: any) => {
-          const dist = ele.data('controlPointDistance') || 0;
-          return `${dist}px`;
+  const stylesheet = useMemo(
+    () => [
+      {
+        selector: "node",
+        style: {
+          "background-color": (ele: any) =>
+            ele.data("color") || BRANCH_COLORS[0],
+          width: 8,
+          height: 8,
+          shape: "ellipse",
+          "border-width": 2,
+          "border-color": isDark ? "#0d1117" : "#ffffff",
+          label: (_ele: any) => "",
+          "text-valign": "center",
+          "text-halign": "center",
+          "font-size": "10px",
+          color: isDark ? "#cccccc" : "#333333",
+          "text-outline-width": 1,
+          "text-outline-color": isDark ? "#0d1117" : "#ffffff",
         },
-        'control-point-weights': (ele: any) => {
-          return ele.data('controlPointWeight') || 0.5;
+      },
+      {
+        selector: "node[branchLabel]",
+        style: {
+          label: "data(branchLabel)",
+          "text-margin-x": 12,
+          "text-margin-y": 0,
+          "text-valign": "center",
+          "text-halign": "left",
+          "font-size": "10px",
+          "font-weight": (ele: any) =>
+            ele.data("branchLabelIsCurrent") ? "600" : "400",
+          color: (ele: any) =>
+            ele.data("branchLabelIsCurrent")
+              ? "#4FC3F7"
+              : isDark
+                ? "#cccccc"
+                : "#333333",
+          "text-background-color": (ele: any) =>
+            ele.data("branchLabelIsCurrent")
+              ? isDark
+                ? "#1a3a4a"
+                : "#d0eaff"
+              : isDark
+                ? "#2d2d2d"
+                : "#e0e0e0",
+          "text-background-opacity": 0.9,
+          "text-background-shape": "roundrectangle",
+          "text-background-padding": "3px",
+          "text-border-width": 1,
+          "text-border-color": isDark
+            ? "rgba(255,255,255,0.1)"
+            : "rgba(0,0,0,0.1)",
+          "text-wrap": "wrap",
+          "text-max-width": "140px",
+          "text-outline-width": 0,
         },
-        'opacity': 0.6,
       },
-    },
-    {
-      selector: 'edge[__dim = "1"][__highlight = "0"]',
-      style: {
-        'opacity': 0.08,
+      {
+        selector: "node:selected",
+        style: {
+          "border-width": 3,
+          "border-color": "#ef4444",
+          width: 12,
+          height: 12,
+        },
       },
-    },
-    {
-      selector: 'edge[__highlight = "1"]',
-      style: {
-        'opacity': 0.8,
-        'width': 2.5,
+      {
+        selector: 'node[__dim = "1"][__highlight = "0"]',
+        style: {
+          opacity: 0.18,
+        },
       },
-    },
-    {
-      selector: 'edge[type = "merge"]',
-      style: {
-        'opacity': 0.8,
-        'width': 2.5,
-        'line-style': 'solid',
+      {
+        selector: 'node[__highlight = "1"]',
+        style: {
+          opacity: 1,
+          "border-width": 3,
+          "border-color": "#8ab4ff",
+        },
       },
-    },
-  ], [isDark]);
+      {
+        selector: "edge",
+        style: {
+          width: 2,
+          "line-color": (ele: any) => ele.data("color") || BRANCH_COLORS[0],
+          "target-arrow-shape": "none", // No arrows for git graphs
+          "curve-style": "bezier",
+          "control-point-distances": (ele: any) => {
+            const dist = ele.data("controlPointDistance") || 0;
+            return `${dist}px`;
+          },
+          "control-point-weights": (ele: any) => {
+            return ele.data("controlPointWeight") || 0.5;
+          },
+          opacity: 0.6,
+        },
+      },
+      {
+        selector: 'edge[__dim = "1"][__highlight = "0"]',
+        style: {
+          opacity: 0.08,
+        },
+      },
+      {
+        selector: 'edge[__highlight = "1"]',
+        style: {
+          opacity: 0.8,
+          width: 2.5,
+        },
+      },
+      {
+        selector: 'edge[type = "merge"]',
+        style: {
+          opacity: 0.8,
+          width: 2.5,
+          "line-style": "solid",
+        },
+      },
+    ],
+    [isDark],
+  );
 
   // Handle node click
-  const handleNodeClick = useCallback((evt: any) => {
-    const node = evt.target;
-    if (node.isNode()) {
-      const hash = node.data('hash');
-      setSelectedCommitHash(hash);
-    }
-  }, [setSelectedCommitHash]);
+  const handleNodeClick = useCallback(
+    (evt: any) => {
+      const node = evt.target;
+      if (node.isNode()) {
+        const hash = node.data("hash");
+        setSelectedCommitHash(hash);
+      }
+    },
+    [setSelectedCommitHash],
+  );
 
   // Handle node hover
-  const handleNodeMouseOver = useCallback((evt: any) => {
-    const node = evt.target;
-    if (node.isNode() && graphData && cyRef.current) {
-      const hash = node.data('hash');
-      const source = filteredGraphData ?? graphData;
-      const graphNode = source.nodes.find((n) => n.hash === hash);
-      if (graphNode) {
-        setHoveredNode(graphNode);
-        setIsHoveringNode(true);
-        
-        // Get rendered position relative to viewport
-        const renderedPos = node.renderedPosition();
-        const container = cyRef.current.container();
-        if (container) {
-          const rect = container.getBoundingClientRect();
-          setTooltipPosition({ 
-            x: rect.left + renderedPos.x, 
-            y: rect.top + renderedPos.y 
-          });
+  const handleNodeMouseOver = useCallback(
+    (evt: any) => {
+      const node = evt.target;
+      if (node.isNode() && graphData && cyRef.current) {
+        const hash = node.data("hash");
+        const source = filteredGraphData ?? graphData;
+        const graphNode = source.nodes.find((n) => n.hash === hash);
+        if (graphNode) {
+          setHoveredNode(graphNode);
+          setIsHoveringNode(true);
+
+          // Get rendered position relative to viewport
+          const renderedPos = node.renderedPosition();
+          const container = cyRef.current.container();
+          if (container) {
+            const rect = container.getBoundingClientRect();
+            setTooltipPosition({
+              x: rect.left + renderedPos.x,
+              y: rect.top + renderedPos.y,
+            });
+          }
         }
       }
-    }
-  }, [graphData, filteredGraphData]);
+    },
+    [graphData, filteredGraphData],
+  );
 
   const handleNodeMouseOut = useCallback(() => {
     setIsHoveringNode(false);
@@ -453,7 +510,7 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
 
     const cy = cyRef.current;
     cy.nodes().forEach((node: any) => {
-      if (node.data('hash') === selectedCommitHash) {
+      if (node.data("hash") === selectedCommitHash) {
         node.select();
       } else {
         node.unselect();
@@ -466,11 +523,11 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
     if (!cyRef.current || !graphData || elements.length === 0) return;
 
     const cy = cyRef.current;
-    
+
     // Use preset layout with manual positioning
     // Cytoscape will use the positions we set in elements
     cy.layout({
-      name: 'preset',
+      name: "preset",
       fit: false,
       padding: 0,
     }).run();
@@ -494,13 +551,13 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
     if (!cyRef.current || !graphData) return;
 
     const cy = cyRef.current;
-    
+
     // Clear existing label data on nodes
     cy.nodes().forEach((n) => {
-      n.removeData('branchLabel');
-      n.removeData('branchLabelIsCurrent');
+      n.removeData("branchLabel");
+      n.removeData("branchLabelIsCurrent");
     });
-    
+
     // Build branch heads map: prefer branchHeads from API, fallback to refs on nodes
     const branchEntries: Array<{ branch: string; hash: string }> = [];
 
@@ -521,8 +578,8 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
 
     // Prepare sorted nodes by row (row 0 = newest)
     const sortedNodes = cy.nodes().sort((a, b) => {
-      const ra = a.data('row') ?? 0;
-      const rb = b.data('row') ?? 0;
+      const ra = a.data("row") ?? 0;
+      const rb = b.data("row") ?? 0;
       return ra - rb;
     });
 
@@ -540,14 +597,16 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
 
       const isCurrentBranch = branch === graphData.currentBranch;
       // If multiple labels land on the same node, concatenate
-      const existing = cyNode.data('branchLabel') as string | undefined;
-      const existingCurrent = cyNode.data('branchLabelIsCurrent') as boolean | undefined;
+      const existing = cyNode.data("branchLabel") as string | undefined;
+      const existingCurrent = cyNode.data("branchLabelIsCurrent") as
+        | boolean
+        | undefined;
 
       const newLabel = existing ? `${existing}, ${branch}` : branch;
       const currentFlag = existingCurrent || isCurrentBranch;
 
-      cyNode.data('branchLabel', newLabel);
-      cyNode.data('branchLabelIsCurrent', currentFlag);
+      cyNode.data("branchLabel", newLabel);
+      cyNode.data("branchLabelIsCurrent", currentFlag);
     });
   }, [graphData, filteredGraphData]);
 
@@ -572,7 +631,11 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
 
   if (isLoading && !graphData) {
     return (
-      <div className="flex items-center justify-center h-full bg-[#0d1117]" role="status" aria-live="polite">
+      <div
+        className="flex items-center justify-center h-full bg-[#0d1117]"
+        role="status"
+        aria-live="polite"
+      >
         <div className="flex items-center gap-3 text-gray-400">
           <div className="w-5 h-5 border-2 border-t-transparent border-[#ef4444] rounded-full animate-spin" />
           <span>Loading commit graph...</span>
@@ -583,7 +646,11 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
 
   if (!graphData || graphData.nodes.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full bg-[#0d1117] text-gray-400" role="status" aria-live="polite">
+      <div
+        className="flex items-center justify-center h-full bg-[#0d1117] text-gray-400"
+        role="status"
+        aria-live="polite"
+      >
         <span>No commits found</span>
       </div>
     );
@@ -598,7 +665,10 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
     >
       {/* Header */}
       <div className="flex-none z-10 flex items-center justify-between px-4 py-2 bg-[#161b22] border-b border-[#30363d]">
-        <div className="flex items-center gap-2 text-sm text-gray-300" id="graph-stats">
+        <div
+          className="flex items-center gap-2 text-sm text-gray-300"
+          id="graph-stats"
+        >
           <span className="px-2 py-0.5 bg-[#238636]/20 text-[#3fb950] rounded text-xs font-medium">
             {graphData.currentBranch}
           </span>
@@ -625,18 +695,23 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
               {graphData.hasMore ? (
                 <button
                   type="button"
-                  onClick={() => handleGraphLimitChange(Math.min(10000, graphLimit + 500))}
+                  onClick={() =>
+                    handleGraphLimitChange(Math.min(10000, graphLimit + 500))
+                  }
                   className="px-2 py-1 rounded-md text-xs border border-[#30363d] hover:bg-[#21262d] text-gray-200 transition-colors"
                   disabled={isFetching}
                   title="Load more commits"
                   aria-label="Load more commits"
                 >
-                  {isFetching ? 'Loading…' : 'Load more'}
+                  {isFetching ? "Loading…" : "Load more"}
                 </button>
               ) : (
                 <span className="text-xs text-gray-500">All loaded</span>
               )}
-              <GraphFilters branches={graphData.branches} currentBranch={graphData.currentBranch} />
+              <GraphFilters
+                branches={graphData.branches}
+                currentBranch={graphData.currentBranch}
+              />
               <ShareButton graphLimit={graphLimit} />
             </>
           )}
@@ -647,24 +722,24 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
       <div className="flex-1 relative overflow-hidden">
         <CytoscapeComponent
           elements={elements}
-          style={{ width: '100%', height: '100%' }}
+          style={{ width: "100%", height: "100%" }}
           stylesheet={stylesheet}
           cy={(cy) => {
             cyRef.current = cy;
-            
+
             // Configure Cytoscape
             cy.boxSelectionEnabled(false);
             cy.userPanningEnabled(true);
             cy.userZoomingEnabled(true);
             cy.minZoom(0.1);
             cy.maxZoom(3);
-            
+
             // Event handlers
-            cy.on('tap', 'node', handleNodeClick);
-            cy.on('mouseover', 'node', handleNodeMouseOver);
-            cy.on('mouseout', 'node', handleNodeMouseOut);
-            
-            cy.on('ready', () => {
+            cy.on("tap", "node", handleNodeClick);
+            cy.on("mouseover", "node", handleNodeMouseOver);
+            cy.on("mouseout", "node", handleNodeMouseOut);
+
+            cy.on("ready", () => {
               if (cy.destroyed()) return;
               try {
                 cy.fit(cy.elements(), 50);
@@ -738,11 +813,13 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
       {/* Activity Chart */}
       <div
         className={`flex-none border-t border-[#30363d] bg-[#161b22] transition-all duration-200 overflow-hidden ${
-          activityCollapsed ? 'h-10' : 'h-32'
+          activityCollapsed ? "h-10" : "h-32"
         }`}
       >
         <div className="px-4 py-2 border-b border-[#30363d] flex items-center justify-between">
-          <span className="text-xs font-medium text-gray-400">Commit Activity</span>
+          <span className="text-xs font-medium text-gray-400">
+            Commit Activity
+          </span>
           <button
             aria-label="Toggle commit activity"
             className="p-1.5 rounded hover:bg-[#21262d] transition-colors"
@@ -757,8 +834,10 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
         </div>
         {!activityCollapsed && (
           <div className="h-[calc(100%-28px)] p-2 overflow-hidden min-h-0">
-            <CommitActivityChart nodes={(filteredGraphData ?? graphData).nodes} />
-        </div>
+            <CommitActivityChart
+              nodes={(filteredGraphData ?? graphData).nodes}
+            />
+          </div>
         )}
       </div>
 
@@ -776,4 +855,3 @@ export function CytoscapeGraph({ initialGraphLimit, readOnly, onGraphLimitChange
     </div>
   );
 }
-

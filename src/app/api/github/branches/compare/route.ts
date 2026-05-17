@@ -40,16 +40,16 @@ export async function GET(request: NextRequest) {
         ahead_by: data.ahead_by as number,
         behind_by: data.behind_by as number,
         total_commits: data.total_commits as number,
-        files: (
-          (data.files as Array<Record<string, unknown>>) ?? []
-        ).map((f) => ({
-          filename: f.filename as string,
-          status: f.status as string,
-          additions: f.additions as number,
-          deletions: f.deletions as number,
-          changes: f.changes as number,
-          patch: f.patch as string | undefined,
-        })),
+        files: ((data.files as Array<Record<string, unknown>>) ?? []).map(
+          (f) => ({
+            filename: f.filename as string,
+            status: f.status as string,
+            additions: f.additions as number,
+            deletions: f.deletions as number,
+            changes: f.changes as number,
+            patch: f.patch as string | undefined,
+          }),
+        ),
       },
     });
   } catch (error) {

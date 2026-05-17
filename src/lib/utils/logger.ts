@@ -4,10 +4,10 @@
  */
 
 export enum LogLevel {
-  DEBUG = 'debug',
-  INFO = 'info',
-  WARN = 'warn',
-  ERROR = 'error',
+  DEBUG = "debug",
+  INFO = "info",
+  WARN = "warn",
+  ERROR = "error",
 }
 
 interface LogContext {
@@ -22,11 +22,20 @@ class Logger {
   }
 
   private shouldLog(level: LogLevel): boolean {
-    const levels = [LogLevel.DEBUG, LogLevel.INFO, LogLevel.WARN, LogLevel.ERROR];
+    const levels = [
+      LogLevel.DEBUG,
+      LogLevel.INFO,
+      LogLevel.WARN,
+      LogLevel.ERROR,
+    ];
     return levels.indexOf(level) >= levels.indexOf(this.minLevel);
   }
 
-  private formatMessage(level: LogLevel, message: string, context?: LogContext): string {
+  private formatMessage(
+    level: LogLevel,
+    message: string,
+    context?: LogContext,
+  ): string {
     const timestamp = new Date().toISOString();
     const logEntry = {
       timestamp,
@@ -77,5 +86,6 @@ class Logger {
 }
 
 // Export singleton instance
-const logLevel = (process.env.LOG_LEVEL?.toLowerCase() as LogLevel) || LogLevel.INFO;
+const logLevel =
+  (process.env.LOG_LEVEL?.toLowerCase() as LogLevel) || LogLevel.INFO;
 export const logger = new Logger(logLevel);

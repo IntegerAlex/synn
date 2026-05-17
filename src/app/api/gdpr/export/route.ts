@@ -1,13 +1,19 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { db } from '@/db';
-import { usersTable, reposTable, fingerprintsTable, activityLogsTable, apiRequestsTable } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { auth } from "@clerk/nextjs/server";
+import { eq } from "drizzle-orm";
+import { NextResponse } from "next/server";
+import { db } from "@/db";
+import {
+  activityLogsTable,
+  apiRequestsTable,
+  fingerprintsTable,
+  reposTable,
+  usersTable,
+} from "@/db/schema";
 
 /**
  * GDPR Data Portability - Export all user data
  * GET /api/gdpr/export
- * 
+ *
  * Returns all user data in a JSON format that can be downloaded
  */
 export async function GET() {
@@ -16,8 +22,8 @@ export async function GET() {
 
     if (!clerkUserId) {
       return NextResponse.json(
-        { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-        { status: 401 }
+        { error: { code: "UNAUTHORIZED", message: "Authentication required" } },
+        { status: 401 },
       );
     }
 
@@ -30,8 +36,13 @@ export async function GET() {
 
     if (users.length === 0) {
       return NextResponse.json(
-        { error: { code: 'USER_NOT_FOUND', message: 'User not found in database' } },
-        { status: 404 }
+        {
+          error: {
+            code: "USER_NOT_FOUND",
+            message: "User not found in database",
+          },
+        },
+        { status: 404 },
       );
     }
 
@@ -41,7 +52,7 @@ export async function GET() {
     // Collect all user data
     const exportData: Record<string, any> = {
       exportDate: new Date().toISOString(),
-      exportVersion: '1.0',
+      exportVersion: "1.0",
       user: {
         id: user.id,
         clerkUserId: user.clerkUserId,
@@ -85,7 +96,7 @@ export async function GET() {
         .where(eq(reposTable.userId, userId));
       exportData.repositories = repos;
     } catch (error) {
-      console.warn('Could not export repositories:', error);
+      console.warn("Could not export repositories:", error);
     }
 
     // Get fingerprints
@@ -108,7 +119,10 @@ export async function GET() {
         .where(eq(fingerprintsTable.userId, userId));
       exportData.fingerprints = fingerprints;
     } catch (error) {
-      console.warn('Could not export fingerprints (table may not exist):', error);
+      console.warn(
+        "Could not export fingerprints (table may not exist):",
+        error,
+      );
     }
 
     // Get activity logs
@@ -135,7 +149,10 @@ export async function GET() {
         .where(eq(activityLogsTable.userId, userId));
       exportData.activityLogs = activityLogs;
     } catch (error) {
-      console.warn('Could not export activity logs (table may not exist):', error);
+      console.warn(
+        "Could not export activity logs (table may not exist):",
+        error,
+      );
     }
 
     // Get API requests
@@ -159,7 +176,10 @@ export async function GET() {
         .where(eq(apiRequestsTable.userId, userId));
       exportData.apiRequests = apiRequests;
     } catch (error) {
-      console.warn('Could not export API requests (table may not exist):', error);
+      console.warn(
+        "Could not export API requests (table may not exist):",
+        error,
+      );
     }
 
     // Add summary
@@ -171,25 +191,29 @@ export async function GET() {
     };
 
     exportData.notes = {
-      encryptedFields: 'Some fields (ipAddress, userAgent, metadata) may be encrypted. Use the /api/admin/decrypt endpoint with your private key to decrypt.',
-      excludedData: 'GitHub access tokens and refresh tokens are excluded for security reasons.',
-      dataRetention: 'See our privacy policy for information about data retention periods.',
+      encryptedFields:
+        "Some fields (ipAddress, userAgent, metadata) may be encrypted. Use the /api/admin/decrypt endpoint with your private key to decrypt.",
+      excludedData:
+        "GitHub access tokens and refresh tokens are excluded for security reasons.",
+      dataRetention:
+        "See our privacy policy for information about data retention periods.",
     };
 
     // Return as downloadable JSON
     return new NextResponse(JSON.stringify(exportData, null, 2), {
       status: 200,
       headers: {
-        'Content-Type': 'application/json',
-        'Content-Disposition': `attachment; filename="synn-data-export-${new Date().toISOString().split('T')[0]}.json"`,
+        "Content-Type": "application/json",
+        "Content-Disposition": `attachment; filename="synn-data-export-${new Date().toISOString().split("T")[0]}.json"`,
       },
     });
   } catch (error) {
-    console.error('GDPR export error:', error);
+    console.error("GDPR export error:", error);
     return NextResponse.json(
-      { error: { code: 'EXPORT_ERROR', message: 'Failed to export user data' } },
-      { status: 500 }
+      {
+        error: { code: "EXPORT_ERROR", message: "Failed to export user data" },
+      },
+      { status: 500 },
     );
   }
 }
-

@@ -17,8 +17,13 @@ export interface ActivityLog {
 }
 
 export interface SuspiciousActivity {
-  type: 'rapid_requests' | 'multiple_errors' | 'unusual_ip' | 'unauthorized_access' | 'data_exfiltration';
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  type:
+    | "rapid_requests"
+    | "multiple_errors"
+    | "unusual_ip"
+    | "unauthorized_access"
+    | "data_exfiltration";
+  severity: "low" | "medium" | "high" | "critical";
   description: string;
   logIds: number[];
   count: number;
@@ -28,7 +33,9 @@ export interface SuspiciousActivity {
 /**
  * Detect suspicious activities in logs
  */
-export function detectSuspiciousActivity(logs: ActivityLog[]): SuspiciousActivity[] {
+export function detectSuspiciousActivity(
+  logs: ActivityLog[],
+): SuspiciousActivity[] {
   const suspicious: SuspiciousActivity[] = [];
 
   // Group logs by user and IP
@@ -43,7 +50,7 @@ export function detectSuspiciousActivity(logs: ActivityLog[]): SuspiciousActivit
       if (!userActivity.has(log.userId)) {
         userActivity.set(log.userId, []);
       }
-      userActivity.get(log.userId)!.push(log);
+      userActivity.get(log.userId)?.push(log);
     }
 
     // Group by IP
@@ -51,7 +58,7 @@ export function detectSuspiciousActivity(logs: ActivityLog[]): SuspiciousActivit
       if (!ipActivity.has(log.ipAddress)) {
         ipActivity.set(log.ipAddress, []);
       }
-      ipActivity.get(log.ipAddress)!.push(log);
+      ipActivity.get(log.ipAddress)?.push(log);
     }
 
     // Collect errors
@@ -69,7 +76,7 @@ export function detectSuspiciousActivity(logs: ActivityLog[]): SuspiciousActivit
   for (const [ip, ipLogs] of ipActivity) {
     if (ipLogs.length > 100) {
       // Check time window (last hour)
-      const recentLogs = ipLogs.filter(log => {
+      const recentLogs = ipLogs.filter((log) => {
         const logTime = new Date(log.createdAt).getTime();
         const oneHourAgo = Date.now() - 60 * 60 * 1000;
         return logTime > oneHourAgo;
@@ -77,12 +84,17 @@ export function detectSuspiciousActivity(logs: ActivityLog[]): SuspiciousActivit
 
       if (recentLogs.length > 50) {
         suspicious.push({
-          type: 'rapid_requests',
-          severity: recentLogs.length > 200 ? 'critical' : recentLogs.length > 100 ? 'high' : 'medium',
+          type: "rapid_requests",
+          severity:
+            recentLogs.length > 200
+              ? "critical"
+              : recentLogs.length > 100
+                ? "high"
+                : "medium",
           description: `Rapid requests detected from IP ${ip}: ${recentLogs.length} requests in the last hour`,
-          logIds: recentLogs.map(l => l.id),
+          logIds: recentLogs.map((l) => l.id),
           count: recentLogs.length,
-          details: { ip, timeWindow: '1 hour' },
+          details: { ip, timeWindow: "1 hour" },
         });
       }
     }
@@ -97,23 +109,23 @@ export function detectSuspiciousActivity(logs: ActivityLog[]): SuspiciousActivit
       if (!errorByUser.has(log.userId)) {
         errorByUser.set(log.userId, []);
       }
-      errorByUser.get(log.userId)!.push(log);
+      errorByUser.get(log.userId)?.push(log);
     }
     if (log.ipAddress) {
       if (!errorByIP.has(log.ipAddress)) {
         errorByIP.set(log.ipAddress, []);
       }
-      errorByIP.get(log.ipAddress)!.push(log);
+      errorByIP.get(log.ipAddress)?.push(log);
     }
   }
 
   for (const [userId, userErrors] of errorByUser) {
     if (userErrors.length > 10) {
       suspicious.push({
-        type: 'multiple_errors',
-        severity: userErrors.length > 50 ? 'high' : 'medium',
+        type: "multiple_errors",
+        severity: userErrors.length > 50 ? "high" : "medium",
         description: `User ${userId} has ${userErrors.length} errors`,
-        logIds: userErrors.map(l => l.id),
+        logIds: userErrors.map((l) => l.id),
         count: userErrors.length,
         details: { userId },
       });
@@ -128,17 +140,17 @@ export function detectSuspiciousActivity(logs: ActivityLog[]): SuspiciousActivit
         if (!unauthorizedByIP.has(log.ipAddress)) {
           unauthorizedByIP.set(log.ipAddress, []);
         }
-        unauthorizedByIP.get(log.ipAddress)!.push(log);
+        unauthorizedByIP.get(log.ipAddress)?.push(log);
       }
     }
 
     for (const [ip, ipUnauthorized] of unauthorizedByIP) {
       if (ipUnauthorized.length > 3) {
         suspicious.push({
-          type: 'unauthorized_access',
-          severity: ipUnauthorized.length > 10 ? 'high' : 'medium',
+          type: "unauthorized_access",
+          severity: ipUnauthorized.length > 10 ? "high" : "medium",
           description: `Multiple unauthorized access attempts from IP ${ip}: ${ipUnauthorized.length} attempts`,
-          logIds: ipUnauthorized.map(l => l.id),
+          logIds: ipUnauthorized.map((l) => l.id),
           count: ipUnauthorized.length,
           details: { ip },
         });
@@ -153,17 +165,17 @@ export function detectSuspiciousActivity(logs: ActivityLog[]): SuspiciousActivit
       if (!ipToUsers.has(log.ipAddress)) {
         ipToUsers.set(log.ipAddress, new Set());
       }
-      ipToUsers.get(log.ipAddress)!.add(log.userId);
+      ipToUsers.get(log.ipAddress)?.add(log.userId);
     }
   }
 
   for (const [ip, users] of ipToUsers) {
     if (users.size > 5) {
       suspicious.push({
-        type: 'unusual_ip',
-        severity: users.size > 20 ? 'high' : 'medium',
+        type: "unusual_ip",
+        severity: users.size > 20 ? "high" : "medium",
         description: `Unusual IP pattern: ${users.size} different users from IP ${ip}`,
-        logIds: logs.filter(l => l.ipAddress === ip).map(l => l.id),
+        logIds: logs.filter((l) => l.ipAddress === ip).map((l) => l.id),
         count: users.size,
         details: { ip, uniqueUsers: users.size },
       });
@@ -171,10 +183,11 @@ export function detectSuspiciousActivity(logs: ActivityLog[]): SuspiciousActivit
   }
 
   // 5. Data exfiltration patterns (rapid API calls to export endpoints)
-  const exportLogs = logs.filter(log => 
-    log.requestPath?.includes('/export') || 
-    log.requestPath?.includes('/gdpr/export') ||
-    log.activityType?.includes('export')
+  const exportLogs = logs.filter(
+    (log) =>
+      log.requestPath?.includes("/export") ||
+      log.requestPath?.includes("/gdpr/export") ||
+      log.activityType?.includes("export"),
   );
 
   if (exportLogs.length > 0) {
@@ -184,17 +197,17 @@ export function detectSuspiciousActivity(logs: ActivityLog[]): SuspiciousActivit
         if (!exportByUser.has(log.userId)) {
           exportByUser.set(log.userId, []);
         }
-        exportByUser.get(log.userId)!.push(log);
+        exportByUser.get(log.userId)?.push(log);
       }
     }
 
     for (const [userId, userExports] of exportByUser) {
       if (userExports.length > 3) {
         suspicious.push({
-          type: 'data_exfiltration',
-          severity: 'high',
+          type: "data_exfiltration",
+          severity: "high",
           description: `User ${userId} has ${userExports.length} data export requests`,
-          logIds: userExports.map(l => l.id),
+          logIds: userExports.map((l) => l.id),
           count: userExports.length,
           details: { userId },
         });
@@ -204,4 +217,3 @@ export function detectSuspiciousActivity(logs: ActivityLog[]): SuspiciousActivit
 
   return suspicious;
 }
-

@@ -1,8 +1,8 @@
-import { db } from '@/db';
-import { reposTable, usersTable } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
-import { encryptToken } from './tokenEncryption';
-import { logger } from '@/lib/utils/logger';
+import { and, eq } from "drizzle-orm";
+import { db } from "@/db";
+import { reposTable, usersTable } from "@/db/schema";
+import { logger } from "@/lib/utils/logger";
+import { encryptToken } from "./tokenEncryption";
 
 interface GitHubRepo {
   id: number;
@@ -42,7 +42,10 @@ interface GitHubRepo {
 /**
  * Fetches all repositories for a user from GitHub and stores them in the database
  */
-export async function syncUserRepos(userId: number, accessToken: string): Promise<void> {
+export async function syncUserRepos(
+  userId: number,
+  accessToken: string,
+): Promise<void> {
   const allRepos: GitHubRepo[] = [];
   let page = 1;
   let hasMore = true;
@@ -54,16 +57,18 @@ export async function syncUserRepos(userId: number, accessToken: string): Promis
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          Accept: 'application/vnd.github.v3+json',
+          Accept: "application/vnd.github.v3+json",
         },
-      }
+      },
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch repos from GitHub: ${response.statusText}`);
+      throw new Error(
+        `Failed to fetch repos from GitHub: ${response.statusText}`,
+      );
     }
 
-    const repos = await response.json() as GitHubRepo[];
+    const repos = (await response.json()) as GitHubRepo[];
 
     if (repos.length === 0) {
       hasMore = false;
@@ -98,8 +103,8 @@ export async function syncUserRepos(userId: number, accessToken: string): Promis
       .where(
         and(
           eq(reposTable.githubRepoId, repo.id),
-          eq(reposTable.userId, userId)
-        )
+          eq(reposTable.userId, userId),
+        ),
       )
       .limit(1);
 
@@ -134,8 +139,8 @@ export async function syncUserRepos(userId: number, accessToken: string): Promis
         .where(
           and(
             eq(reposTable.githubRepoId, repo.id),
-            eq(reposTable.userId, userId)
-          )
+            eq(reposTable.userId, userId),
+          ),
         );
     } else {
       // Insert new repo
@@ -157,7 +162,7 @@ export async function syncUserRepos(userId: number, accessToken: string): Promis
  */
 export async function ensureUserExists(
   clerkUserId: string,
-  accessToken: string
+  accessToken: string,
 ): Promise<number> {
   // Check if user exists by clerkUserId
   const existingUserByClerkId = await db
@@ -171,15 +176,17 @@ export async function ensureUserExists(
   }
 
   // Fetch user data from GitHub
-  const githubUserResponse = await fetch('https://api.github.com/user', {
+  const githubUserResponse = await fetch("https://api.github.com/user", {
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      Accept: 'application/vnd.github.v3+json',
+      Accept: "application/vnd.github.v3+json",
     },
   });
 
   if (!githubUserResponse.ok) {
-    throw new Error(`Failed to fetch GitHub user data: ${githubUserResponse.statusText}`);
+    throw new Error(
+      `Failed to fetch GitHub user data: ${githubUserResponse.statusText}`,
+    );
   }
 
   const githubUser = await githubUserResponse.json();
@@ -196,8 +203,11 @@ export async function ensureUserExists(
 
   if (existingUserByGithubId.length > 0) {
     // User exists with same GitHub ID but different Clerk ID - update the record
-    logger.info('Updating existing user to use new clerkUserId', { githubId: githubUser.id, clerkUserId });
-    
+    logger.info("Updating existing user to use new clerkUserId", {
+      githubId: githubUser.id,
+      clerkUserId,
+    });
+
     try {
       await db
         .update(usersTable)
@@ -208,7 +218,7 @@ export async function ensureUserExists(
           githubUsername: githubUser.login,
           githubAccessToken: encryptedAccessToken,
           oauthMetadata: {
-            provider: 'github',
+            provider: "github",
             providerAccountId: githubUser.id.toString(),
           },
           updatedAt: new Date(),
@@ -219,14 +229,17 @@ export async function ensureUserExists(
       return existingUserByGithubId[0].id;
     } catch (updateError: any) {
       // Handle case where clerkUserId might be taken (race condition)
-      if (updateError?.code === '23505' && updateError?.constraint === 'users_clerkUserId_unique') {
+      if (
+        updateError?.code === "23505" &&
+        updateError?.constraint === "users_clerkUserId_unique"
+      ) {
         // Another user already has this clerkUserId - fetch that user instead
         const userWithClerkId = await db
           .select()
           .from(usersTable)
           .where(eq(usersTable.clerkUserId, clerkUserId))
           .limit(1);
-        
+
         if (userWithClerkId.length > 0) {
           return userWithClerkId[0].id;
         }
@@ -246,7 +259,7 @@ export async function ensureUserExists(
       githubUsername: githubUser.login,
       githubAccessToken: encryptedAccessToken,
       oauthMetadata: {
-        provider: 'github',
+        provider: "github",
         providerAccountId: githubUser.id.toString(),
       },
       createdAt: new Date(),
@@ -263,7 +276,7 @@ export async function ensureUserExists(
  */
 export async function syncReposByClerkUserId(
   clerkUserId: string,
-  accessToken: string
+  accessToken: string,
 ): Promise<void> {
   const userId = await ensureUserExists(clerkUserId, accessToken);
   await syncUserRepos(userId, accessToken);

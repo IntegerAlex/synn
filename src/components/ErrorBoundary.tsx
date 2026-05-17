@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw } from "lucide-react";
+import React from "react";
+import { Button } from "@/components/ui/button";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -16,7 +16,10 @@ interface ErrorBoundaryProps {
   onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
 }
 
-export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends React.Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
@@ -30,7 +33,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
 
     this.setState({
       error,
@@ -71,7 +74,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
             <p className="text-gray-300 mb-6 leading-relaxed">
               {this.state.error?.message ||
-               'An unexpected error occurred while rendering this page.'}
+                "An unexpected error occurred while rendering this page."}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -92,7 +95,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               </Button>
             </div>
 
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {process.env.NODE_ENV === "development" && this.state.error && (
               <details className="mt-6 text-left">
                 <summary className="cursor-pointer text-sm text-gray-400 hover:text-gray-300">
                   Error Details (Development Only)
@@ -115,7 +118,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 export function useErrorBoundary() {
   return {
     captureError: (error: Error) => {
-      console.error('Error captured:', error);
+      console.error("Error captured:", error);
       // In a real implementation, this would trigger the nearest error boundary
     },
   };

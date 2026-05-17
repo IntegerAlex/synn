@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useMemo, useState } from 'react';
-import { Check, Filter, X } from 'lucide-react';
-import { useAppStore } from '@/store/useAppStore';
+import { Check, Filter, X } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useAppStore } from "@/store/useAppStore";
 
 function normalizeBranchLabel(branch: string): string {
   return branch
-    .replace('HEAD -> ', '')
-    .replace('origin/', '')
-    .replace('remote/', '')
+    .replace("HEAD -> ", "")
+    .replace("origin/", "")
+    .replace("remote/", "")
     .trim();
 }
 
@@ -21,7 +21,9 @@ export function GraphFilters({
 }) {
   const showMergeCommits = useAppStore((s) => s.graphFilters.showMergeCommits);
   const showTags = useAppStore((s) => s.graphFilters.showTags);
-  const highlightedBranches = useAppStore((s) => s.graphFilters.highlightedBranches);
+  const highlightedBranches = useAppStore(
+    (s) => s.graphFilters.highlightedBranches,
+  );
   const toggleShowMergeCommits = useAppStore((s) => s.toggleShowMergeCommits);
   const toggleShowTags = useAppStore((s) => s.toggleShowTags);
   const toggleBranchHighlight = useAppStore((s) => s.toggleBranchHighlight);
@@ -33,7 +35,9 @@ export function GraphFilters({
     const uniq = new Set<string>();
     for (const b of branches) uniq.add(normalizeBranchLabel(b));
     uniq.add(normalizeBranchLabel(currentBranch));
-    return Array.from(uniq).filter(Boolean).sort((a, b) => a.localeCompare(b));
+    return Array.from(uniq)
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b));
   }, [branches, currentBranch]);
 
   const highlightedCount = highlightedBranches.size;
@@ -45,8 +49,8 @@ export function GraphFilters({
         onClick={toggleShowMergeCommits}
         className={`px-2 py-1 rounded-md text-xs border transition-colors ${
           showMergeCommits
-            ? 'border-[#30363d] bg-[#21262d] text-gray-200'
-            : 'border-[#30363d] bg-transparent text-gray-400 hover:bg-[#21262d]'
+            ? "border-[#30363d] bg-[#21262d] text-gray-200"
+            : "border-[#30363d] bg-transparent text-gray-400 hover:bg-[#21262d]"
         }`}
         title="Toggle merge commits"
         aria-pressed={showMergeCommits}
@@ -59,8 +63,8 @@ export function GraphFilters({
         onClick={toggleShowTags}
         className={`px-2 py-1 rounded-md text-xs border transition-colors ${
           showTags
-            ? 'border-[#30363d] bg-[#21262d] text-gray-200'
-            : 'border-[#30363d] bg-transparent text-gray-400 hover:bg-[#21262d]'
+            ? "border-[#30363d] bg-[#21262d] text-gray-200"
+            : "border-[#30363d] bg-transparent text-gray-400 hover:bg-[#21262d]"
         }`}
         title="Show/hide tags"
         aria-pressed={showTags}
@@ -73,15 +77,15 @@ export function GraphFilters({
         onClick={() => setOpen((v) => !v)}
         className={`px-2 py-1 rounded-md text-xs border transition-colors flex items-center gap-1 ${
           highlightedCount > 0
-            ? 'border-[#1f6feb]/60 bg-[#1f6feb]/10 text-[#8ab4ff]'
-            : 'border-[#30363d] bg-transparent text-gray-400 hover:bg-[#21262d]'
+            ? "border-[#1f6feb]/60 bg-[#1f6feb]/10 text-[#8ab4ff]"
+            : "border-[#30363d] bg-transparent text-gray-400 hover:bg-[#21262d]"
         }`}
         title="Highlight branches"
         aria-expanded={open}
         aria-haspopup="menu"
       >
         <Filter className="w-3.5 h-3.5" />
-        Highlight{highlightedCount > 0 ? ` (${highlightedCount})` : ''}
+        Highlight{highlightedCount > 0 ? ` (${highlightedCount})` : ""}
       </button>
 
       {open && (
@@ -119,16 +123,20 @@ export function GraphFilters({
                     <span
                       className={`inline-flex items-center justify-center w-4 h-4 rounded border ${
                         checked
-                          ? 'border-[#1f6feb] bg-[#1f6feb]/20'
-                          : 'border-[#30363d] bg-transparent'
+                          ? "border-[#1f6feb] bg-[#1f6feb]/20"
+                          : "border-[#30363d] bg-transparent"
                       }`}
                     >
-                      {checked && <Check className="w-3.5 h-3.5 text-[#8ab4ff]" />}
+                      {checked && (
+                        <Check className="w-3.5 h-3.5 text-[#8ab4ff]" />
+                      )}
                     </span>
                     <span className="truncate text-gray-200">
                       {b}
                       {isCurrent ? (
-                        <span className="ml-2 text-[10px] text-[#3fb950]">current</span>
+                        <span className="ml-2 text-[10px] text-[#3fb950]">
+                          current
+                        </span>
                       ) : null}
                     </span>
                   </div>
@@ -159,4 +167,3 @@ export function GraphFilters({
     </div>
   );
 }
-

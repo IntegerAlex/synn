@@ -1,17 +1,17 @@
-import { NextResponse } from 'next/server';
-import { and, eq, ilike, inArray, sql } from 'drizzle-orm';
-import { db } from '@/db';
-import { reposTable, usersTable } from '@/db/schema';
-import { requireAdmin } from '@/lib/utils/adminAuth';
+import { and, ilike, inArray, sql } from "drizzle-orm";
+import { NextResponse } from "next/server";
+import { db } from "@/db";
+import { reposTable, usersTable } from "@/db/schema";
+import { requireAdmin } from "@/lib/utils/adminAuth";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     await requireAdmin();
 
-    const search = searchParams.get('search') || '';
-    const limit = parseInt(searchParams.get('limit') || '50', 10);
-    const offset = parseInt(searchParams.get('offset') || '0', 10);
+    const search = searchParams.get("search") || "";
+    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const offset = parseInt(searchParams.get("offset") || "0", 10);
 
     const userConditions = [];
     if (search) {
@@ -35,7 +35,9 @@ export async function GET(request: Request) {
       })
       .from(usersTable)
       .where(userConditions.length > 0 ? and(...userConditions) : undefined)
-      .orderBy(sql`coalesce(${usersTable.updatedAt}, ${usersTable.createdAt}) desc`)
+      .orderBy(
+        sql`coalesce(${usersTable.updatedAt}, ${usersTable.createdAt}) desc`,
+      )
       .limit(limit)
       .offset(offset);
 
@@ -83,16 +85,15 @@ export async function GET(request: Request) {
       { status: 200 },
     );
   } catch (error: any) {
-    console.error('DASHBOARD_USERS_ERROR', error);
+    console.error("DASHBOARD_USERS_ERROR", error);
     return NextResponse.json(
       {
         error: {
-          code: 'DASHBOARD_USERS_ERROR',
-          message: error?.message || 'Failed to fetch users',
+          code: "DASHBOARD_USERS_ERROR",
+          message: error?.message || "Failed to fetch users",
         },
       },
       { status: 500 },
     );
   }
 }
-

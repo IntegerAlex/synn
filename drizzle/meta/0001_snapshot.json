@@ -231,12 +231,8 @@
           "name": "repos_userId_users_id_fk",
           "tableFrom": "repos",
           "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -375,16 +371,12 @@
         "users_clerkUserId_unique": {
           "name": "users_clerkUserId_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "clerkUserId"
-          ]
+          "columns": ["clerkUserId"]
         },
         "users_githubId_unique": {
           "name": "users_githubId_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "githubId"
-          ]
+          "columns": ["githubId"]
         }
       },
       "policies": {},

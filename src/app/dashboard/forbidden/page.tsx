@@ -1,24 +1,24 @@
-'use client';
+"use client";
 
-import { useRef, useState } from 'react';
-import { ShieldCheck, KeyRound, Upload, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { KeyRound, Loader2, ShieldCheck, Upload } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
 
 async function fetchChallenge() {
-  const res = await fetch('/api/auth/pk/challenge', { cache: 'no-store' });
-  if (!res.ok) throw new Error('Failed to get challenge');
+  const res = await fetch("/api/auth/pk/challenge", { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to get challenge");
   return res.json() as Promise<{ challengeId: string; challenge: string }>;
 }
 
 async function postSignature(body: { challengeId: string; signature: string }) {
-  const res = await fetch('/api/auth/pk/verify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const res = await fetch("/api/auth/pk/verify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data?.error?.message || 'Verification failed');
+    throw new Error(data?.error?.message || "Verification failed");
   }
   return res.json();
 }
@@ -27,19 +27,25 @@ async function signChallengeWithPrivateKey(challenge: string, pem: string) {
   // Import PEM private key into WebCrypto
   const pkcs8 = pemToArrayBuffer(pem);
   const key = await crypto.subtle.importKey(
-    'pkcs8',
+    "pkcs8",
     pkcs8,
-    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
     false,
-    ['sign'],
+    ["sign"],
   );
   const enc = new TextEncoder();
-  const signature = await crypto.subtle.sign({ name: 'RSASSA-PKCS1-v1_5' }, key, enc.encode(challenge));
+  const signature = await crypto.subtle.sign(
+    { name: "RSASSA-PKCS1-v1_5" },
+    key,
+    enc.encode(challenge),
+  );
   return bufferToBase64(signature);
 }
 
 function pemToArrayBuffer(pem: string) {
-  const clean = pem.replace(/-----(BEGIN|END) PRIVATE KEY-----/g, '').replace(/\s+/g, '');
+  const clean = pem
+    .replace(/-----(BEGIN|END) PRIVATE KEY-----/g, "")
+    .replace(/\s+/g, "");
   const binary = atob(clean);
   const buffer = new ArrayBuffer(binary.length);
   const view = new Uint8Array(buffer);
@@ -49,7 +55,7 @@ function pemToArrayBuffer(pem: string) {
 
 function bufferToBase64(buf: ArrayBuffer) {
   const bytes = new Uint8Array(buf);
-  let binary = '';
+  let binary = "";
   bytes.forEach((b) => (binary += String.fromCharCode(b)));
   return btoa(binary);
 }
@@ -64,21 +70,21 @@ export default function DashboardForbiddenPage() {
   const handlePk = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!uploadKey) {
-      setStatus('Please upload a private key.');
+      setStatus("Please upload a private key.");
       return;
     }
     try {
       setLoading(true);
-      setStatus('Requesting challenge…');
+      setStatus("Requesting challenge…");
       const { challengeId, challenge } = await fetchChallenge();
-      setStatus('Signing challenge…');
+      setStatus("Signing challenge…");
       const signature = await signChallengeWithPrivateKey(challenge, uploadKey);
-      setStatus('Verifying…');
+      setStatus("Verifying…");
       await postSignature({ challengeId, signature });
-      setStatus('Verified. Redirecting…');
-      router.push('/dashboard');
+      setStatus("Verified. Redirecting…");
+      router.push("/dashboard");
     } catch (error: any) {
-      setStatus(error?.message || 'Failed to verify key');
+      setStatus(error?.message || "Failed to verify key");
     } finally {
       setLoading(false);
     }
@@ -101,7 +107,10 @@ export default function DashboardForbiddenPage() {
               Authenticate using your private key.
             </p>
           </div>
-          <form onSubmit={handlePk} className="bg-[#161b22] border border-[#30363d] rounded-lg p-4 space-y-4">
+          <form
+            onSubmit={handlePk}
+            className="bg-[#161b22] border border-[#30363d] rounded-lg p-4 space-y-4"
+          >
             <label className="text-sm text-gray-300 block">
               Private Key (PEM)
               <input
@@ -115,7 +124,9 @@ export default function DashboardForbiddenPage() {
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex flex-col">
                     <span className="text-xs text-gray-400">Key file</span>
-                    <span className="text-sm text-gray-200">{uploadKey ? 'Loaded' : 'No file chosen'}</span>
+                    <span className="text-sm text-gray-200">
+                      {uploadKey ? "Loaded" : "No file chosen"}
+                    </span>
                   </div>
                   <button
                     type="button"
@@ -134,7 +145,11 @@ export default function DashboardForbiddenPage() {
               disabled={loading}
               className="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-md text-sm font-medium transition-colors inline-flex items-center justify-center gap-2 disabled:opacity-60"
             >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <KeyRound className="w-4 h-4" />
+              )}
               Sign & Continue
             </button>
           </form>
@@ -146,11 +161,11 @@ export default function DashboardForbiddenPage() {
             <span className="text-sm font-semibold">Secure key login</span>
           </div>
           <p className="text-sm text-gray-400">
-            Sign the challenge with your private key to receive a 1-hour session token.
+            Sign the challenge with your private key to receive a 1-hour session
+            token.
           </p>
         </div>
       </div>
     </div>
   );
 }
-

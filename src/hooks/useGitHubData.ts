@@ -1,8 +1,8 @@
 import {
-  useQuery,
-  useMutation,
-  useQueryClient,
   keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
 } from "@tanstack/react-query";
 import { useAppStore } from "@/store/useAppStore";
 
@@ -204,7 +204,7 @@ export function useIssueComments(issueNumber: number | null) {
     queryFn: async () => {
       const params = new URLSearchParams({
         repo: repoFullName!,
-        issue_number: issueNumber!.toString(),
+        issue_number: String(issueNumber),
       });
       const res = await fetch(`/api/github/issues/comments?${params}`);
       if (!res.ok) throw new Error("Failed to fetch comments");

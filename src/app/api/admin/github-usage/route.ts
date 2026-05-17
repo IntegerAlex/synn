@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
-import { and, gte, lte, eq, sql } from 'drizzle-orm';
-import { db } from '@/db';
-import { githubApiUsageTable } from '@/db/schema';
-import { requireAdmin } from '@/lib/utils/adminAuth';
-import { adminRateLimiter } from '@/lib/rateLimit';
-import { getClientIp } from '@/lib/services/activityLogger';
+import { and, eq, gte, lte, sql } from "drizzle-orm";
+import { NextResponse } from "next/server";
+import { db } from "@/db";
+import { githubApiUsageTable } from "@/db/schema";
+import { adminRateLimiter } from "@/lib/rateLimit";
+import { getClientIp } from "@/lib/services/activityLogger";
+import { requireAdmin } from "@/lib/utils/adminAuth";
 
 function getDateRange(start?: string | null, end?: string | null) {
   const now = new Date();
@@ -15,19 +15,19 @@ function getDateRange(start?: string | null, end?: string | null) {
 }
 
 export async function GET(request: Request) {
-  const clientIp = getClientIp(request) || 'unknown';
+  const clientIp = getClientIp(request) || "unknown";
   const rateResult = adminRateLimiter.check(`admin:github-usage:${clientIp}`);
   if (!rateResult.success) {
     return NextResponse.json(
-      { error: { code: 'RATE_LIMIT', message: 'Rate limit exceeded' } },
+      { error: { code: "RATE_LIMIT", message: "Rate limit exceeded" } },
       {
         status: 429,
         headers: {
-          'X-RateLimit-Limit': rateResult.limit.toString(),
-          'X-RateLimit-Remaining': rateResult.remaining.toString(),
-          'X-RateLimit-Reset': new Date(rateResult.reset).toISOString(),
+          "X-RateLimit-Limit": rateResult.limit.toString(),
+          "X-RateLimit-Remaining": rateResult.remaining.toString(),
+          "X-RateLimit-Reset": new Date(rateResult.reset).toISOString(),
         },
-      }
+      },
     );
   }
 
@@ -35,10 +35,10 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     await requireAdmin();
 
-    const userIdParam = searchParams.get('userId');
-    const clerkUserId = searchParams.get('clerkUserId');
-    const start = searchParams.get('start');
-    const end = searchParams.get('end');
+    const userIdParam = searchParams.get("userId");
+    const clerkUserId = searchParams.get("clerkUserId");
+    const start = searchParams.get("start");
+    const end = searchParams.get("end");
 
     const { startDate, endDate } = getDateRange(start, end);
 
@@ -79,10 +79,17 @@ export async function GET(request: Request) {
       })
       .from(githubApiUsageTable)
       .where(whereClause)
-      .groupBy(githubApiUsageTable.clerkUserId, githubApiUsageTable.userId, githubApiUsageTable.endpoint)
+      .groupBy(
+        githubApiUsageTable.clerkUserId,
+        githubApiUsageTable.userId,
+        githubApiUsageTable.endpoint,
+      )
       .orderBy(sql`sum(${githubApiUsageTable.count}) DESC`);
 
-    const totalCalls = endpointUsage.reduce((acc, row) => acc + (row.total || 0), 0);
+    const totalCalls = endpointUsage.reduce(
+      (acc, row) => acc + (row.total || 0),
+      0,
+    );
 
     return NextResponse.json({
       filters: {
@@ -102,14 +109,11 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: {
-          code: 'ADMIN_GITHUB_USAGE_ERROR',
-          message: error.message || 'Failed to fetch GitHub usage',
+          code: "ADMIN_GITHUB_USAGE_ERROR",
+          message: error.message || "Failed to fetch GitHub usage",
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-
-
-

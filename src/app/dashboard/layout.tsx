@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { QueryProvider } from '@/components/providers/QueryProvider';
+import { QueryProvider } from "@/components/providers/QueryProvider";
 
 export default function DashboardLayout({
   children,
@@ -9,4 +9,3 @@ export default function DashboardLayout({
 }) {
   return <QueryProvider>{children}</QueryProvider>;
 }
-

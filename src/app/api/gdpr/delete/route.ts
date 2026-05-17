@@ -1,20 +1,26 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { db } from '@/db';
-import { usersTable, reposTable, fingerprintsTable, activityLogsTable, apiRequestsTable } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { auth } from "@clerk/nextjs/server";
+import { eq } from "drizzle-orm";
+import { NextResponse } from "next/server";
+import { db } from "@/db";
+import {
+  activityLogsTable,
+  apiRequestsTable,
+  fingerprintsTable,
+  reposTable,
+  usersTable,
+} from "@/db/schema";
 
 /**
  * GDPR Right to be Forgotten - Delete all user data
  * DELETE /api/gdpr/delete
- * 
+ *
  * This endpoint deletes ALL user data from the system:
  * - User profile
  * - All repositories
  * - All fingerprints associated with user
  * - All activity logs
  * - All API request logs
- * 
+ *
  * Note: This does NOT delete data from external services (GitHub, Clerk)
  */
 export async function DELETE() {
@@ -23,8 +29,8 @@ export async function DELETE() {
 
     if (!clerkUserId) {
       return NextResponse.json(
-        { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-        { status: 401 }
+        { error: { code: "UNAUTHORIZED", message: "Authentication required" } },
+        { status: 401 },
       );
     }
 
@@ -37,8 +43,13 @@ export async function DELETE() {
 
     if (users.length === 0) {
       return NextResponse.json(
-        { error: { code: 'USER_NOT_FOUND', message: 'User not found in database' } },
-        { status: 404 }
+        {
+          error: {
+            code: "USER_NOT_FOUND",
+            message: "User not found in database",
+          },
+        },
+        { status: 404 },
       );
     }
 
@@ -62,7 +73,10 @@ export async function DELETE() {
         .returning();
       deletionStats.activityLogs = activityResult.length;
     } catch (error) {
-      console.warn('Could not delete activity logs (table may not exist):', error);
+      console.warn(
+        "Could not delete activity logs (table may not exist):",
+        error,
+      );
     }
 
     // Delete API request logs
@@ -73,7 +87,10 @@ export async function DELETE() {
         .returning();
       deletionStats.apiRequests = apiResult.length;
     } catch (error) {
-      console.warn('Could not delete API requests (table may not exist):', error);
+      console.warn(
+        "Could not delete API requests (table may not exist):",
+        error,
+      );
     }
 
     // Delete fingerprints
@@ -84,7 +101,10 @@ export async function DELETE() {
         .returning();
       deletionStats.fingerprints = fingerprintResult.length;
     } catch (error) {
-      console.warn('Could not delete fingerprints (table may not exist):', error);
+      console.warn(
+        "Could not delete fingerprints (table may not exist):",
+        error,
+      );
     }
 
     // Delete repositories (cascade from foreign key should work, but explicit is better)
@@ -95,34 +115,42 @@ export async function DELETE() {
         .returning();
       deletionStats.repositories = repoResult.length;
     } catch (error) {
-      console.warn('Could not delete repositories:', error);
+      console.warn("Could not delete repositories:", error);
     }
 
     // Delete user
     try {
-      await db
-        .delete(usersTable)
-        .where(eq(usersTable.id, userId));
+      await db.delete(usersTable).where(eq(usersTable.id, userId));
       deletionStats.user = true;
     } catch (error) {
-      console.error('Failed to delete user:', error);
+      console.error("Failed to delete user:", error);
       return NextResponse.json(
-        { error: { code: 'DELETION_FAILED', message: 'Failed to delete user account' } },
-        { status: 500 }
+        {
+          error: {
+            code: "DELETION_FAILED",
+            message: "Failed to delete user account",
+          },
+        },
+        { status: 500 },
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'All your data has been deleted from our system',
+      message: "All your data has been deleted from our system",
       deletionStats,
-      note: 'This does not delete your Clerk or GitHub accounts. Please delete those separately if desired.',
+      note: "This does not delete your Clerk or GitHub accounts. Please delete those separately if desired.",
     });
   } catch (error) {
-    console.error('GDPR deletion error:', error);
+    console.error("GDPR deletion error:", error);
     return NextResponse.json(
-      { error: { code: 'DELETION_ERROR', message: 'An error occurred during data deletion' } },
-      { status: 500 }
+      {
+        error: {
+          code: "DELETION_ERROR",
+          message: "An error occurred during data deletion",
+        },
+      },
+      { status: 500 },
     );
   }
 }
@@ -136,8 +164,8 @@ export async function GET() {
 
     if (!clerkUserId) {
       return NextResponse.json(
-        { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-        { status: 401 }
+        { error: { code: "UNAUTHORIZED", message: "Authentication required" } },
+        { status: 401 },
       );
     }
 
@@ -151,7 +179,7 @@ export async function GET() {
     if (users.length === 0) {
       return NextResponse.json({
         dataExists: false,
-        message: 'No data found for your account',
+        message: "No data found for your account",
       });
     }
 
@@ -171,7 +199,7 @@ export async function GET() {
         .from(activityLogsTable)
         .where(eq(activityLogsTable.userId, userId));
       counts.activityLogs = activityLogs.length;
-    } catch (error) {
+    } catch (_error) {
       // Table might not exist
     }
 
@@ -181,7 +209,7 @@ export async function GET() {
         .from(apiRequestsTable)
         .where(eq(apiRequestsTable.userId, userId));
       counts.apiRequests = apiRequests.length;
-    } catch (error) {
+    } catch (_error) {
       // Table might not exist
     }
 
@@ -191,7 +219,7 @@ export async function GET() {
         .from(fingerprintsTable)
         .where(eq(fingerprintsTable.userId, userId));
       counts.fingerprints = fingerprints.length;
-    } catch (error) {
+    } catch (_error) {
       // Table might not exist
     }
 
@@ -201,7 +229,7 @@ export async function GET() {
         .from(reposTable)
         .where(eq(reposTable.userId, userId));
       counts.repositories = repos.length;
-    } catch (error) {
+    } catch (_error) {
       // Table might not exist
     }
 
@@ -211,15 +239,20 @@ export async function GET() {
         userProfile: 1,
         ...counts,
       },
-      warning: 'Deleting your data is irreversible. This will remove all your activity logs, repositories, and account information from Synn.',
-      externalData: 'This does not affect your Clerk or GitHub accounts.',
+      warning:
+        "Deleting your data is irreversible. This will remove all your activity logs, repositories, and account information from Synn.",
+      externalData: "This does not affect your Clerk or GitHub accounts.",
     });
   } catch (error) {
-    console.error('GDPR info error:', error);
+    console.error("GDPR info error:", error);
     return NextResponse.json(
-      { error: { code: 'ERROR', message: 'Failed to retrieve data information' } },
-      { status: 500 }
+      {
+        error: {
+          code: "ERROR",
+          message: "Failed to retrieve data information",
+        },
+      },
+      { status: 500 },
     );
   }
 }
-

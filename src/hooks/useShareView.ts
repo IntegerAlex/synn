@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from "@tanstack/react-query";
 
 export interface ShareViewState {
   repoFullName: string;
@@ -24,9 +24,9 @@ export interface ShareViewResponse {
 export function useShareView() {
   return useMutation<ShareViewResponse, Error, ShareViewState>({
     mutationFn: async (viewState) => {
-      const response = await fetch('/api/share', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           repoFullName: viewState.repoFullName,
           viewState: {
@@ -40,7 +40,7 @@ export function useShareView() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || 'Failed to create share');
+        throw new Error(error.error?.message || "Failed to create share");
       }
 
       const data = await response.json();

@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { useMemo, useState, useEffect } from 'react';
-import { TrendingUp, RefreshCw, HelpCircle, Share2, Activity } from 'lucide-react';
-import { SharePopover } from './SharePopover';
+import { useQuery } from "@tanstack/react-query";
+import { Activity, RefreshCw, Share2, TrendingUp } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { SharePopover } from "./SharePopover";
 
 interface ContributionDay {
   date: string;
@@ -12,7 +12,10 @@ interface ContributionDay {
 }
 
 // GitHub-style contribution levels
-const getContributionLevel = (count: number, maxCount: number): 0 | 1 | 2 | 3 | 4 => {
+const getContributionLevel = (
+  count: number,
+  maxCount: number,
+): 0 | 1 | 2 | 3 | 4 => {
   if (count === 0) return 0;
   if (maxCount === 0) return 0;
   const ratio = count / maxCount;
@@ -24,18 +27,18 @@ const getContributionLevel = (count: number, maxCount: number): 0 | 1 | 2 | 3 | 
 
 // Professional Blue theme color scale
 const getContributionColor = (level: 0 | 1 | 2 | 3 | 4): string => {
-  const colors = {
-    0: '#161b22', // Empty
-    1: '#0e4429', // Level 1 (GitHub dark green style, let's use blue)
+  const _colors = {
+    0: "#161b22", // Empty
+    1: "#0e4429", // Level 1 (GitHub dark green style, let's use blue)
   };
-  
+
   // Actually let's use a nice blue scale
   const blueScale = {
-    0: '#161b22',
-    1: '#1e3a8a', // blue-900
-    2: '#1d4ed8', // blue-700
-    3: '#3b82f6', // blue-500
-    4: '#60a5fa', // blue-400
+    0: "#161b22",
+    1: "#1e3a8a", // blue-900
+    2: "#1d4ed8", // blue-700
+    3: "#3b82f6", // blue-500
+    4: "#60a5fa", // blue-400
   };
   return blueScale[level];
 };
@@ -45,13 +48,13 @@ const generateDateRange = (): Date[] => {
   const dates: Date[] = [];
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   for (let i = 370; i >= 0; i--) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
     dates.push(date);
   }
-  
+
   return dates;
 };
 
@@ -80,19 +83,26 @@ interface GitHubContributionGraphProps {
   profileContentRef?: React.RefObject<HTMLDivElement | null>;
 }
 
-export function GitHubContributionGraph({ onShareClick, profileContentRef }: GitHubContributionGraphProps) {
+export function GitHubContributionGraph({
+  onShareClick,
+  profileContentRef,
+}: GitHubContributionGraphProps) {
   const [hoveredDay, setHoveredDay] = useState<ContributionDay | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [isSyncing, setIsSyncing] = useState(false);
   const [showSharePopover, setShowSharePopover] = useState(false);
 
   // Fetch contributions from database
-  const { data: contributionsData, isLoading, refetch } = useQuery<ContributionsResponse>({
-    queryKey: ['contributions'],
+  const {
+    data: contributionsData,
+    isLoading,
+    refetch,
+  } = useQuery<ContributionsResponse>({
+    queryKey: ["contributions"],
     queryFn: async () => {
-      const response = await fetch('/api/contributions?days=371');
+      const response = await fetch("/api/contributions?days=371");
       if (!response.ok) {
-        throw new Error('Failed to fetch contributions');
+        throw new Error("Failed to fetch contributions");
       }
       return response.json();
     },
@@ -103,14 +113,14 @@ export function GitHubContributionGraph({ onShareClick, profileContentRef }: Git
   useEffect(() => {
     if (contributionsData?.shouldSync && !isSyncing) {
       setIsSyncing(true);
-      fetch('/api/contributions/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      fetch("/api/contributions/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
       })
         .then(async (response) => {
           const data = await response.json();
-          
-          if (data.status === 'started' || data.status === 'in_progress') {
+
+          if (data.status === "started" || data.status === "in_progress") {
             let pollCount = 0;
             const pollInterval = setInterval(async () => {
               pollCount++;
@@ -129,7 +139,7 @@ export function GitHubContributionGraph({ onShareClick, profileContentRef }: Git
           }
         })
         .catch((error) => {
-          console.error('Error syncing contributions:', error);
+          console.error("Error syncing contributions:", error);
           setIsSyncing(false);
         });
     }
@@ -138,13 +148,13 @@ export function GitHubContributionGraph({ onShareClick, profileContentRef }: Git
   const handleSync = async () => {
     setIsSyncing(true);
     try {
-      const response = await fetch('/api/contributions/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/contributions/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
       });
       const data = await response.json();
-      
-      if (data.status === 'started' || data.status === 'in_progress') {
+
+      if (data.status === "started" || data.status === "in_progress") {
         let pollCount = 0;
         const maxPolls = 24;
         const pollInterval = setInterval(async () => {
@@ -161,13 +171,13 @@ export function GitHubContributionGraph({ onShareClick, profileContentRef }: Git
         setIsSyncing(false);
       }
     } catch (error) {
-      console.error('Error syncing contributions:', error);
+      console.error("Error syncing contributions:", error);
       setIsSyncing(false);
     }
   };
 
   const contributionData = useMemo(() => {
-    if (!contributionsData || !contributionsData.contributions) {
+    if (!contributionsData?.contributions) {
       return null;
     }
 
@@ -179,7 +189,7 @@ export function GitHubContributionGraph({ onShareClick, profileContentRef }: Git
     });
 
     const contributionDays: ContributionDay[] = dateRange.map((date) => {
-      const dateKey = date.toISOString().split('T')[0];
+      const dateKey = date.toISOString().split("T")[0];
       const count = contributionsMap.get(dateKey) || 0;
       return {
         date: dateKey,
@@ -188,7 +198,9 @@ export function GitHubContributionGraph({ onShareClick, profileContentRef }: Git
       };
     });
 
-    const maxCount = contributionsData.maxCount || Math.max(...contributionDays.map((d) => d.count), 1);
+    const maxCount =
+      contributionsData.maxCount ||
+      Math.max(...contributionDays.map((d) => d.count), 1);
 
     contributionDays.forEach((day) => {
       day.level = getContributionLevel(day.count, maxCount);
@@ -212,7 +224,10 @@ export function GitHubContributionGraph({ onShareClick, profileContentRef }: Git
       const date = new Date(day.date);
       const weekStart = getWeekStart(date);
 
-      if (!currentWeekStart || weekStart.getTime() !== currentWeekStart.getTime()) {
+      if (
+        !currentWeekStart ||
+        weekStart.getTime() !== currentWeekStart.getTime()
+      ) {
         if (currentWeek.length > 0) {
           weeks.push(currentWeek);
         }
@@ -230,7 +245,10 @@ export function GitHubContributionGraph({ onShareClick, profileContentRef }: Git
     return weeks;
   }, [contributionData]);
 
-  const handleDayHover = (day: ContributionDay, event: React.MouseEvent<HTMLDivElement>) => {
+  const handleDayHover = (
+    day: ContributionDay,
+    event: React.MouseEvent<HTMLDivElement>,
+  ) => {
     setHoveredDay(day);
     const rect = event.currentTarget.getBoundingClientRect();
     setTooltipPosition({
@@ -264,11 +282,11 @@ export function GitHubContributionGraph({ onShareClick, profileContentRef }: Git
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      month: 'long', 
-      day: 'numeric', 
-      year: 'numeric' 
+    return date.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
@@ -278,21 +296,29 @@ export function GitHubContributionGraph({ onShareClick, profileContentRef }: Git
       <div className="flex items-center justify-between mb-6 pb-6 border-b border-[#30363d]/50">
         <div className="flex items-center gap-8">
           <div className="flex flex-col">
-            <span className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1">Total Commits</span>
+            <span className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1">
+              Total Commits
+            </span>
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-blue-500" />
-              <span className="text-xl font-black text-white">{contributionData.total.toLocaleString()}</span>
+              <span className="text-xl font-black text-white">
+                {contributionData.total.toLocaleString()}
+              </span>
             </div>
           </div>
           <div className="flex flex-col">
-            <span className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1">Highest Daily</span>
+            <span className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1">
+              Highest Daily
+            </span>
             <div className="flex items-center gap-2">
               <Activity className="w-4 h-4 text-indigo-400" />
-              <span className="text-xl font-black text-white">{contributionData.maxCount}</span>
+              <span className="text-xl font-black text-white">
+                {contributionData.maxCount}
+              </span>
             </div>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <div className="relative">
             <button
@@ -314,8 +340,10 @@ export function GitHubContributionGraph({ onShareClick, profileContentRef }: Git
             disabled={isSyncing}
             className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-blue-400 hover:text-white hover:bg-blue-600/10 rounded-xl transition-all border border-blue-500/30 disabled:opacity-30"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-            {isSyncing ? 'Syncing...' : 'Sync Now'}
+            <RefreshCw
+              className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`}
+            />
+            {isSyncing ? "Syncing..." : "Sync Now"}
           </button>
         </div>
       </div>
@@ -350,7 +378,11 @@ export function GitHubContributionGraph({ onShareClick, profileContentRef }: Git
               <div
                 key={level}
                 className="w-2.5 h-2.5 rounded-[2px]"
-                style={{ backgroundColor: getContributionColor(level as 0 | 1 | 2 | 3 | 4) }}
+                style={{
+                  backgroundColor: getContributionColor(
+                    level as 0 | 1 | 2 | 3 | 4,
+                  ),
+                }}
               />
             ))}
           </div>
@@ -368,12 +400,12 @@ export function GitHubContributionGraph({ onShareClick, profileContentRef }: Git
           style={{
             left: `${tooltipPosition.x}px`,
             top: `${tooltipPosition.y}px`,
-            transform: 'translate(-50%, -100%)',
-            marginTop: '-12px',
+            transform: "translate(-50%, -100%)",
+            marginTop: "-12px",
           }}
         >
           <div className="text-sm font-black text-white mb-0.5">
-            {hoveredDay.count} {hoveredDay.count === 1 ? 'commit' : 'commits'}
+            {hoveredDay.count} {hoveredDay.count === 1 ? "commit" : "commits"}
           </div>
           <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
             {formatDate(hoveredDay.date)}

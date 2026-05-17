@@ -60,8 +60,8 @@ export async function GET(request: NextRequest) {
         defaultBranch,
       },
       pagination: {
-        page: Number.parseInt(page),
-        per_page: Number.parseInt(perPage),
+        page: Number.parseInt(page, 10),
+        per_page: Number.parseInt(perPage, 10),
         has_next: linkHeader?.includes('rel="next"') ?? false,
       },
     });

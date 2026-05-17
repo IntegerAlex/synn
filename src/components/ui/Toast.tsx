@@ -1,35 +1,40 @@
-'use client';
+"use client";
 
-import { CheckCircle, Info, AlertTriangle, XCircle, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Info, X, XCircle } from "lucide-react";
 
-export type ToastType = 'success' | 'error' | 'info' | 'warning';
+export type ToastType = "success" | "error" | "info" | "warning";
 
-const typeStyles: Record<ToastType, { bg: string; text: string; icon: JSX.Element }> = {
+const typeStyles: Record<
+  ToastType,
+  { bg: string; text: string; icon: JSX.Element }
+> = {
   success: {
-    bg: 'bg-[#0f172a]/95 border-[#1d4ed8]/50',
-    text: 'text-[#bfdbfe]',
+    bg: "bg-[#0f172a]/95 border-[#1d4ed8]/50",
+    text: "text-[#bfdbfe]",
     icon: <CheckCircle className="w-4 h-4 text-[#60a5fa]" aria-hidden="true" />,
   },
   error: {
-    bg: 'bg-[#1f0a0a]/95 border-[#7f1d1d]/60',
-    text: 'text-[#fecaca]',
+    bg: "bg-[#1f0a0a]/95 border-[#7f1d1d]/60",
+    text: "text-[#fecaca]",
     icon: <XCircle className="w-4 h-4 text-[#f87171]" aria-hidden="true" />,
   },
   info: {
-    bg: 'bg-[#0d1117]/95 border-[#30363d]',
-    text: 'text-gray-200',
+    bg: "bg-[#0d1117]/95 border-[#30363d]",
+    text: "text-gray-200",
     icon: <Info className="w-4 h-4 text-[#8ab4ff]" aria-hidden="true" />,
   },
   warning: {
-    bg: 'bg-[#1f1300]/95 border-[#92400e]/60',
-    text: 'text-[#fcd34d]',
-    icon: <AlertTriangle className="w-4 h-4 text-[#fbbf24]" aria-hidden="true" />,
+    bg: "bg-[#1f1300]/95 border-[#92400e]/60",
+    text: "text-[#fcd34d]",
+    icon: (
+      <AlertTriangle className="w-4 h-4 text-[#fbbf24]" aria-hidden="true" />
+    ),
   },
 };
 
 export function Toast({
   message,
-  type = 'info',
+  type = "info",
   onClose,
 }: {
   message: string | null;
@@ -61,4 +66,3 @@ export function Toast({
     </div>
   );
 }
-

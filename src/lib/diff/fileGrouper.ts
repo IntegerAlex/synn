@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import type { ParsedFileDiff } from './diffParser';
+import type { ParsedFileDiff } from "./diffParser";
 
 export interface FileGroup {
   name: string;
   files: ParsedFileDiff[];
-  impact: 'low' | 'medium' | 'high';
+  impact: "low" | "medium" | "high";
   totalAdditions: number;
   totalDeletions: number;
 }
@@ -18,13 +18,14 @@ export function groupFiles(files: ParsedFileDiff[]): FileGroup[] {
 
   // Group by directory
   for (const file of files) {
-    const pathParts = file.newPath.split('/');
+    const pathParts = file.newPath.split("/");
     const fileName = pathParts.pop() || file.newPath;
-    const directory = pathParts.length > 0 ? pathParts.join('/') : 'root';
+    const _directory = pathParts.length > 0 ? pathParts.join("/") : "root";
 
     // Extract directory name for grouping
-    const dirName = pathParts.length > 0 ? pathParts[pathParts.length - 1] : 'root';
-    
+    const dirName =
+      pathParts.length > 0 ? pathParts[pathParts.length - 1] : "root";
+
     // Check for common prefixes (e.g., telemetry-*, config-*)
     const prefixMatch = fileName.match(/^(\w+)-/);
     const groupKey = prefixMatch ? prefixMatch[1] : dirName;
@@ -32,7 +33,7 @@ export function groupFiles(files: ParsedFileDiff[]): FileGroup[] {
     if (!groups.has(groupKey)) {
       groups.set(groupKey, []);
     }
-    groups.get(groupKey)!.push(file);
+    groups.get(groupKey)?.push(file);
   }
 
   // Convert to FileGroup array
@@ -44,11 +45,11 @@ export function groupFiles(files: ParsedFileDiff[]): FileGroup[] {
     const totalChanges = totalAdditions + totalDeletions;
 
     // Determine impact level
-    let impact: 'low' | 'medium' | 'high' = 'low';
+    let impact: "low" | "medium" | "high" = "low";
     if (totalChanges >= 50) {
-      impact = 'high';
+      impact = "high";
     } else if (totalChanges >= 10) {
-      impact = 'medium';
+      impact = "medium";
     }
 
     // Capitalize group name
@@ -79,31 +80,31 @@ export function groupFiles(files: ParsedFileDiff[]): FileGroup[] {
  * Get file type icon name based on file extension
  */
 export function getFileTypeIcon(filePath: string): string {
-  const ext = filePath.split('.').pop()?.toLowerCase() || '';
-  
+  const ext = filePath.split(".").pop()?.toLowerCase() || "";
+
   const iconMap: Record<string, string> = {
-    ts: 'FileCode',
-    tsx: 'FileCode',
-    js: 'FileCode',
-    jsx: 'FileCode',
-    json: 'FileJson',
-    yaml: 'FileText',
-    yml: 'FileText',
-    md: 'FileText',
-    txt: 'FileText',
-    css: 'FileCode',
-    scss: 'FileCode',
-    html: 'FileCode',
-    xml: 'FileCode',
-    py: 'FileCode',
-    go: 'FileCode',
-    rs: 'FileCode',
-    java: 'FileCode',
-    cpp: 'FileCode',
-    c: 'FileCode',
-    rb: 'FileCode',
-    php: 'FileCode',
+    ts: "FileCode",
+    tsx: "FileCode",
+    js: "FileCode",
+    jsx: "FileCode",
+    json: "FileJson",
+    yaml: "FileText",
+    yml: "FileText",
+    md: "FileText",
+    txt: "FileText",
+    css: "FileCode",
+    scss: "FileCode",
+    html: "FileCode",
+    xml: "FileCode",
+    py: "FileCode",
+    go: "FileCode",
+    rs: "FileCode",
+    java: "FileCode",
+    cpp: "FileCode",
+    c: "FileCode",
+    rb: "FileCode",
+    php: "FileCode",
   };
 
-  return iconMap[ext] || 'File';
+  return iconMap[ext] || "File";
 }

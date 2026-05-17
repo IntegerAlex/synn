@@ -247,12 +247,8 @@
           "name": "activity_logs_userId_users_id_fk",
           "tableFrom": "activity_logs",
           "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -260,12 +256,8 @@
           "name": "activity_logs_repoId_repos_id_fk",
           "tableFrom": "activity_logs",
           "tableTo": "repos",
-          "columnsFrom": [
-            "repoId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["repoId"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -497,12 +489,8 @@
           "name": "fingerprints_userId_users_id_fk",
           "tableFrom": "fingerprints",
           "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -512,9 +500,7 @@
         "fingerprints_fingerprintId_unique": {
           "name": "fingerprints_fingerprintId_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "fingerprintId"
-          ]
+          "columns": ["fingerprintId"]
         }
       },
       "policies": {},
@@ -662,12 +648,8 @@
           "name": "repo_interactions_userId_users_id_fk",
           "tableFrom": "repo_interactions",
           "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -675,12 +657,8 @@
           "name": "repo_interactions_repoId_repos_id_fk",
           "tableFrom": "repo_interactions",
           "tableTo": "repos",
-          "columnsFrom": [
-            "repoId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["repoId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -918,12 +896,8 @@
           "name": "repos_userId_users_id_fk",
           "tableFrom": "repos",
           "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1085,12 +1059,8 @@
           "name": "sessions_userId_users_id_fk",
           "tableFrom": "sessions",
           "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1100,9 +1070,7 @@
         "sessions_sessionId_unique": {
           "name": "sessions_sessionId_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "sessionId"
-          ]
+          "columns": ["sessionId"]
         }
       },
       "policies": {},
@@ -1237,16 +1205,12 @@
         "users_clerkUserId_unique": {
           "name": "users_clerkUserId_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "clerkUserId"
-          ]
+          "columns": ["clerkUserId"]
         },
         "users_githubId_unique": {
           "name": "users_githubId_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "githubId"
-          ]
+          "columns": ["githubId"]
         }
       },
       "policies": {},

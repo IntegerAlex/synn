@@ -3,8 +3,8 @@
  * This file demonstrates how to use Drizzle ORM with the users table
  */
 
-import { db, schema } from './index';
-import { eq } from 'drizzle-orm';
+import { eq } from "drizzle-orm";
+import { db, schema } from "./index";
 
 // Example: Create a new user (requires clerkUserId)
 export async function createUser(
@@ -12,16 +12,19 @@ export async function createUser(
   name?: string,
   email?: string,
   githubId?: number,
-  githubUsername?: string
+  githubUsername?: string,
 ) {
-  const newUser = await db.insert(schema.usersTable).values({
-    clerkUserId,
-    name,
-    email,
-    githubId,
-    githubUsername,
-  }).returning();
-  
+  const newUser = await db
+    .insert(schema.usersTable)
+    .values({
+      clerkUserId,
+      name,
+      email,
+      githubId,
+      githubUsername,
+    })
+    .returning();
+
   return newUser[0];
 }
 
@@ -36,7 +39,7 @@ export async function getUserByClerkId(clerkUserId: string) {
     .select()
     .from(schema.usersTable)
     .where(eq(schema.usersTable.clerkUserId, clerkUserId));
-  
+
   return users[0] || null;
 }
 
@@ -46,7 +49,7 @@ export async function getUserByEmail(email: string) {
     .select()
     .from(schema.usersTable)
     .where(eq(schema.usersTable.email, email));
-  
+
   return users[0] || null;
 }
 
@@ -56,7 +59,7 @@ export async function getUserByGitHubId(githubId: number) {
     .select()
     .from(schema.usersTable)
     .where(eq(schema.usersTable.githubId, githubId));
-  
+
   return users[0] || null;
 }
 
@@ -68,7 +71,7 @@ export async function updateUser(
     email?: string;
     githubUsername?: string;
     githubAccessToken?: string;
-  }
+  },
 ) {
   const updated = await db
     .update(schema.usersTable)
@@ -78,7 +81,7 @@ export async function updateUser(
     })
     .where(eq(schema.usersTable.clerkUserId, clerkUserId))
     .returning();
-  
+
   return updated[0] || null;
 }
 
@@ -88,4 +91,3 @@ export async function deleteUser(clerkUserId: string) {
     .delete(schema.usersTable)
     .where(eq(schema.usersTable.clerkUserId, clerkUserId));
 }
-

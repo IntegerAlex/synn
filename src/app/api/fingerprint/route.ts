@@ -1,12 +1,16 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { db } from '@/db';
-import { usersTable } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { storeFingerprint, getClientIp, getUserAgent } from '@/lib/services/activityLogger';
-import { z } from 'zod';
+import { auth } from "@clerk/nextjs/server";
+import { eq } from "drizzle-orm";
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { db } from "@/db";
+import { usersTable } from "@/db/schema";
+import {
+  getClientIp,
+  getUserAgent,
+  storeFingerprint,
+} from "@/lib/services/activityLogger";
 
-const FingerprintSchema = z.object({
+const _FingerprintSchema = z.object({
   visitorId: z.string().min(1),
   fingerprintData: z.any(), // Accept any structure from fingerprint-oss
 });
@@ -14,22 +18,27 @@ const FingerprintSchema = z.object({
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    
+
     // Validate basic structure
-    if (!body || typeof body !== 'object') {
+    if (!body || typeof body !== "object") {
       return NextResponse.json(
-        { error: { code: 'INVALID_BODY', message: 'Invalid request body' } },
-        { status: 400 }
+        { error: { code: "INVALID_BODY", message: "Invalid request body" } },
+        { status: 400 },
       );
     }
-    
-    if (!body.visitorId || typeof body.visitorId !== 'string') {
+
+    if (!body.visitorId || typeof body.visitorId !== "string") {
       return NextResponse.json(
-        { error: { code: 'INVALID_VISITOR_ID', message: 'visitorId is required and must be a string' } },
-        { status: 400 }
+        {
+          error: {
+            code: "INVALID_VISITOR_ID",
+            message: "visitorId is required and must be a string",
+          },
+        },
+        { status: 400 },
       );
     }
-    
+
     const { visitorId, fingerprintData } = body;
 
     // Get user ID if authenticated
@@ -62,27 +71,33 @@ export async function POST(request: Request) {
       });
     } catch (storageError: any) {
       // If table doesn't exist, return success but log warning
-      if (storageError.message?.includes('does not exist') || storageError.message?.includes('Database table')) {
-        console.warn('⚠️ Fingerprints table not found. Run: pnpm db:push');
+      if (
+        storageError.message?.includes("does not exist") ||
+        storageError.message?.includes("Database table")
+      ) {
+        console.warn("⚠️ Fingerprints table not found. Run: pnpm db:push");
         return NextResponse.json({
           success: true,
-          warning: 'Fingerprint table not found. Please run database migration.',
+          warning:
+            "Fingerprint table not found. Please run database migration.",
           fingerprintId: null,
         });
       }
       throw storageError;
     }
   } catch (error) {
-    console.error('Error storing fingerprint:', error);
+    console.error("Error storing fingerprint:", error);
     return NextResponse.json(
       {
         error: {
-          code: 'FINGERPRINT_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to store fingerprint',
+          code: "FINGERPRINT_ERROR",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to store fingerprint",
         },
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 }
-

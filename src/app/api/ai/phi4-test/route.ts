@@ -47,7 +47,9 @@ export async function GET() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        messages: [{ role: "user", content: "Reply with: phi-4 smoke test ok" }],
+        messages: [
+          { role: "user", content: "Reply with: phi-4 smoke test ok" },
+        ],
         max_tokens: 50,
         temperature: 0,
         model: deployment,

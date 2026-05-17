@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface UseDiffNavigationProps {
   totalChanges: number;
   totalFiles: number;
   onClose?: () => void;
-  onFileChange?: (direction: 'next' | 'prev') => void;
+  onFileChange?: (direction: "next" | "prev") => void;
   onToggleSearch?: () => void;
   enabled?: boolean;
 }
@@ -38,12 +38,12 @@ export function useDiffNavigation({
   enabled = true,
 }: UseDiffNavigationProps): UseDiffNavigationReturn {
   const [currentChangeIndex, setCurrentChangeIndex] = useState(0);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
-  
+
   // Track double-key sequences (like 'gg')
-  const lastKeyRef = useRef<string>('');
+  const lastKeyRef = useRef<string>("");
   const lastKeyTimeRef = useRef<number>(0);
 
   const goToNextChange = useCallback(() => {
@@ -63,11 +63,11 @@ export function useDiffNavigation({
   }, [totalChanges]);
 
   const goToNextFile = useCallback(() => {
-    onFileChange?.('next');
+    onFileChange?.("next");
   }, [onFileChange]);
 
   const goToPrevFile = useCallback(() => {
-    onFileChange?.('prev');
+    onFileChange?.("prev");
   }, [onFileChange]);
 
   const openSearch = useCallback(() => {
@@ -77,7 +77,7 @@ export function useDiffNavigation({
 
   const closeSearch = useCallback(() => {
     setIsSearchOpen(false);
-    setSearchQuery('');
+    setSearchQuery("");
   }, []);
 
   // Keyboard navigation handler
@@ -88,12 +88,12 @@ export function useDiffNavigation({
       // Don't handle if typing in an input
       const target = event.target as HTMLElement;
       if (
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
         target.isContentEditable
       ) {
         // Allow Escape to close search
-        if (event.key === 'Escape' && isSearchOpen) {
+        if (event.key === "Escape" && isSearchOpen) {
           closeSearch();
           event.preventDefault();
         }
@@ -104,10 +104,14 @@ export function useDiffNavigation({
       const key = event.key;
 
       // Handle double-key sequences
-      if (key === 'g' && lastKeyRef.current === 'g' && now - lastKeyTimeRef.current < 500) {
+      if (
+        key === "g" &&
+        lastKeyRef.current === "g" &&
+        now - lastKeyTimeRef.current < 500
+      ) {
         // 'gg' - go to first change
         goToFirstChange();
-        lastKeyRef.current = '';
+        lastKeyRef.current = "";
         event.preventDefault();
         return;
       }
@@ -117,35 +121,35 @@ export function useDiffNavigation({
 
       // Single key shortcuts
       switch (key) {
-        case 'j':
-        case 'ArrowDown':
+        case "j":
+        case "ArrowDown":
           if (!event.metaKey && !event.ctrlKey) {
             goToNextChange();
             event.preventDefault();
           }
           break;
 
-        case 'k':
-        case 'ArrowUp':
+        case "k":
+        case "ArrowUp":
           if (!event.metaKey && !event.ctrlKey) {
             goToPrevChange();
             event.preventDefault();
           }
           break;
 
-        case 'J':
-        case 'PageDown':
+        case "J":
+        case "PageDown":
           goToNextFile();
           event.preventDefault();
           break;
 
-        case 'K':
-        case 'PageUp':
+        case "K":
+        case "PageUp":
           goToPrevFile();
           event.preventDefault();
           break;
 
-        case 'G':
+        case "G":
           // Shift+G - go to last change
           if (event.shiftKey) {
             goToLastChange();
@@ -153,12 +157,12 @@ export function useDiffNavigation({
           }
           break;
 
-        case '/':
+        case "/":
           openSearch();
           event.preventDefault();
           break;
 
-        case 'Escape':
+        case "Escape":
           if (isSearchOpen) {
             closeSearch();
           } else if (showShortcuts) {
@@ -169,16 +173,16 @@ export function useDiffNavigation({
           event.preventDefault();
           break;
 
-        case '?':
+        case "?":
           setShowShortcuts((prev) => !prev);
           event.preventDefault();
           break;
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [
     enabled,
@@ -218,13 +222,13 @@ export function useDiffNavigation({
  * Keyboard shortcuts help content
  */
 export const DIFF_SHORTCUTS = [
-  { key: 'j / ↓', description: 'Next change' },
-  { key: 'k / ↑', description: 'Previous change' },
-  { key: 'J / PageDown', description: 'Next file' },
-  { key: 'K / PageUp', description: 'Previous file' },
-  { key: 'g g', description: 'First change' },
-  { key: 'G', description: 'Last change' },
-  { key: '/', description: 'Search' },
-  { key: 'Esc', description: 'Close' },
-  { key: '?', description: 'Toggle shortcuts' },
+  { key: "j / ↓", description: "Next change" },
+  { key: "k / ↑", description: "Previous change" },
+  { key: "J / PageDown", description: "Next file" },
+  { key: "K / PageUp", description: "Previous file" },
+  { key: "g g", description: "First change" },
+  { key: "G", description: "Last change" },
+  { key: "/", description: "Search" },
+  { key: "Esc", description: "Close" },
+  { key: "?", description: "Toggle shortcuts" },
 ];

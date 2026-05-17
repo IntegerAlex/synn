@@ -1,9 +1,6 @@
-'use client';
-
-import { CytoscapeGraph } from './CytoscapeGraph';
-import { useGraph } from '@/hooks/useGitData';
-import { useAppStore } from '@/store/useAppStore';
-import { useEffect } from 'react';
+"use client";
+import { useAppStore } from "@/store/useAppStore";
+import { CytoscapeGraph } from "./CytoscapeGraph";
 
 interface SharedGraphViewProps {
   shareId: string;
@@ -11,12 +8,21 @@ interface SharedGraphViewProps {
 }
 
 // Wrapper component that passes shareId to graph queries
-export function SharedGraphView({ shareId, initialGraphLimit }: SharedGraphViewProps) {
-  const repoInfo = useAppStore((state) => state.repoInfo);
-  
+export function SharedGraphView({
+  shareId,
+  initialGraphLimit,
+}: SharedGraphViewProps) {
+  const _repoInfo = useAppStore((state) => state.repoInfo);
+
   // Override useGraph to include shareId in requests
   // We'll need to modify the hook or create a custom one for shared views
   // For now, we'll use a workaround by storing shareId in the store temporarily
-  
-  return <CytoscapeGraph initialGraphLimit={initialGraphLimit} readOnly={true} shareId={shareId} />;
+
+  return (
+    <CytoscapeGraph
+      initialGraphLimit={initialGraphLimit}
+      readOnly={true}
+      shareId={shareId}
+    />
+  );
 }

@@ -1,11 +1,11 @@
-import crypto from 'crypto';
-import { cookies, headers } from 'next/headers';
-import { NextResponse } from 'next/server';
+import crypto from "node:crypto";
+import { cookies, headers } from "next/headers";
+import { NextResponse } from "next/server";
 
 const CHALLENGE_TTL_MS = 5 * 60 * 1000;
 const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-const TOKEN_COOKIE = 'admin_pk_token';
-const PK_SECRET = process.env.PK_AUTH_SECRET || 'fallback-dev-secret-change-me';
+const TOKEN_COOKIE = "admin_pk_token";
+const PK_SECRET = process.env.PK_AUTH_SECRET || "fallback-dev-secret-change-me";
 
 type Challenge = { challenge: string; expiresAt: number };
 const challengeStore = new Map<string, Challenge>();
@@ -27,28 +27,37 @@ UwUuBVTrqO/g0kMqgRO5kBECAwEAAQ==
 -----END PUBLIC KEY-----`;
 
 function signToken(payload: Record<string, any>): string {
-  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
-  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const header = Buffer.from(
+    JSON.stringify({ alg: "HS256", typ: "JWT" }),
+  ).toString("base64url");
+  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
   const data = `${header}.${body}`;
-  const sig = crypto.createHmac('sha256', PK_SECRET).update(data).digest('base64url');
+  const sig = crypto
+    .createHmac("sha256", PK_SECRET)
+    .update(data)
+    .digest("base64url");
   return `${data}.${sig}`;
 }
 
 function verifyToken(token: string): { valid: boolean; payload?: any } {
-  const parts = token.split('.');
+  const parts = token.split(".");
   if (parts.length !== 3) return { valid: false };
   const [header, body, sig] = parts;
   const data = `${header}.${body}`;
-  const expected = crypto.createHmac('sha256', PK_SECRET).update(data).digest('base64url');
-  if (!crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig))) return { valid: false };
-  const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
+  const expected = crypto
+    .createHmac("sha256", PK_SECRET)
+    .update(data)
+    .digest("base64url");
+  if (!crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig)))
+    return { valid: false };
+  const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
   if (payload.exp && Date.now() > payload.exp) return { valid: false };
   return { valid: true, payload };
 }
 
 export function createChallenge() {
   const id = crypto.randomUUID();
-  const challenge = crypto.randomBytes(32).toString('base64url');
+  const challenge = crypto.randomBytes(32).toString("base64url");
   const expiresAt = Date.now() + CHALLENGE_TTL_MS;
   challengeStore.set(id, { challenge, expiresAt });
   return { id, challenge, expiresAt };
@@ -56,56 +65,66 @@ export function createChallenge() {
 
 function normalizeB64(input: string): string {
   // Accept both base64 and base64url by normalizing padding and chars
-  let out = input.replace(/-/g, '+').replace(/_/g, '/');
+  let out = input.replace(/-/g, "+").replace(/_/g, "/");
   const pad = out.length % 4;
-  if (pad === 2) out += '==';
-  if (pad === 3) out += '=';
-  if (pad === 1) out += '===';
+  if (pad === 2) out += "==";
+  if (pad === 3) out += "=";
+  if (pad === 1) out += "===";
   return out;
 }
 
-export function verifyPkSignature(challengeId: string, signatureB64: string): { ok: boolean; reason?: string } {
+export function verifyPkSignature(
+  challengeId: string,
+  signatureB64: string,
+): { ok: boolean; reason?: string } {
   const entry = challengeStore.get(challengeId);
-  if (!entry) return { ok: false, reason: 'challenge_missing' };
+  if (!entry) return { ok: false, reason: "challenge_missing" };
   if (entry.expiresAt < Date.now()) {
     challengeStore.delete(challengeId);
-    return { ok: false, reason: 'challenge_expired' };
+    return { ok: false, reason: "challenge_expired" };
   }
-  const verifier = crypto.createVerify('sha256');
+  const verifier = crypto.createVerify("sha256");
   verifier.update(entry.challenge);
   verifier.end();
   try {
-    const sig = Buffer.from(normalizeB64(signatureB64), 'base64');
+    const sig = Buffer.from(normalizeB64(signatureB64), "base64");
     const ok = verifier.verify(EMBEDDED_PUBLIC_KEY, sig);
     if (ok) {
       challengeStore.delete(challengeId);
       return { ok: true };
     }
-    return { ok: false, reason: 'invalid_signature' };
+    return { ok: false, reason: "invalid_signature" };
   } catch (error) {
-    console.error('PK_VERIFY_DECODE_ERROR', error);
-    return { ok: false, reason: 'decode_error' };
+    console.error("PK_VERIFY_DECODE_ERROR", error);
+    return { ok: false, reason: "decode_error" };
   }
 }
 
 export function issuePkToken(clerkUserId?: string | null) {
   const exp = Date.now() + TOKEN_TTL_MS;
-  const token = signToken({ sub: 'admin-pk', exp, clerkUserId: clerkUserId ?? null });
+  const token = signToken({
+    sub: "admin-pk",
+    exp,
+    clerkUserId: clerkUserId ?? null,
+  });
   const response = NextResponse.json({ success: true, exp });
   response.cookies.set(TOKEN_COOKIE, token, {
     httpOnly: true,
     secure: true,
-    sameSite: 'lax',
-    path: '/',
+    sameSite: "lax",
+    path: "/",
     maxAge: TOKEN_TTL_MS / 1000,
   });
   return response;
 }
 
-export async function verifyPkToken(): Promise<{ valid: boolean; clerkUserId?: string | null } | null> {
+export async function verifyPkToken(): Promise<{
+  valid: boolean;
+  clerkUserId?: string | null;
+} | null> {
   const headerStore = await headers();
   const cookieStore = await cookies();
-  const bearer = headerStore.get('authorization')?.replace(/Bearer\s+/i, '');
+  const bearer = headerStore.get("authorization")?.replace(/Bearer\s+/i, "");
   const token = bearer || cookieStore.get(TOKEN_COOKIE)?.value;
   if (!token) return null;
   const result = verifyToken(token);
@@ -114,12 +133,11 @@ export async function verifyPkToken(): Promise<{ valid: boolean; clerkUserId?: s
 }
 
 export function clearPkToken(res: NextResponse) {
-  res.cookies.set(TOKEN_COOKIE, '', {
+  res.cookies.set(TOKEN_COOKIE, "", {
     httpOnly: true,
     secure: true,
-    sameSite: 'lax',
-    path: '/',
+    sameSite: "lax",
+    path: "/",
     maxAge: 0,
   });
 }
-

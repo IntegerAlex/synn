@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import userInfo from 'fingerprint-oss';
+import userInfo from "fingerprint-oss";
+import { useEffect } from "react";
 
 /**
  * Hook to collect and store device fingerprint data
@@ -13,24 +13,24 @@ export function useFingerprint() {
       try {
         // Get fingerprint data from fingerprint-oss
         const data = await userInfo();
-        
+
         // Extract visitor ID from hash (fingerprint-oss returns hash as unique identifier)
         const visitorId = data.hash;
-        
+
         if (!visitorId) {
-          console.warn('No visitor ID found in fingerprint data');
+          console.warn("No visitor ID found in fingerprint data");
           return;
         }
 
         // Store visitor ID in localStorage for API requests
-        localStorage.setItem('visitorId', visitorId);
+        localStorage.setItem("visitorId", visitorId);
 
         // Send fingerprint data to backend
         try {
-          const response = await fetch('/api/fingerprint', {
-            method: 'POST',
+          const response = await fetch("/api/fingerprint", {
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
             body: JSON.stringify({
               visitorId,
@@ -42,16 +42,19 @@ export function useFingerprint() {
             const errorData = await response.json().catch(() => ({}));
             // Don't log errors if table doesn't exist - it's expected during development
             if (!errorData.warning) {
-              console.warn('Failed to store fingerprint:', errorData.error?.message || 'Unknown error');
+              console.warn(
+                "Failed to store fingerprint:",
+                errorData.error?.message || "Unknown error",
+              );
             }
           }
         } catch (fetchError) {
           // Silently fail - fingerprint tracking is optional
-          console.warn('Failed to send fingerprint data:', fetchError);
+          console.warn("Failed to send fingerprint data:", fetchError);
         }
       } catch (error) {
         // Silently fail - fingerprint tracking is optional
-        console.warn('Failed to collect fingerprint:', error);
+        console.warn("Failed to collect fingerprint:", error);
       }
     };
 

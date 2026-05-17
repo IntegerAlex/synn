@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useRef, useEffect, memo } from 'react';
-import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
-import type { ChangeGroup } from '@/lib/diff/changeGrouper';
+import { ChevronDown, ChevronsUpDown, ChevronUp } from "lucide-react";
+import { memo, useEffect, useRef, useState } from "react";
+import type { ChangeGroup } from "@/lib/diff/changeGrouper";
 
 interface ChangeNavigatorProps {
   currentIndex: number;
@@ -27,28 +27,32 @@ export const ChangeNavigator = memo(function ChangeNavigator({
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsDropdownOpen(false);
       }
     };
 
     if (isDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [isDropdownOpen]);
 
   // Close dropdown on escape
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && isDropdownOpen) {
+      if (event.key === "Escape" && isDropdownOpen) {
         setIsDropdownOpen(false);
       }
     };
 
     if (isDropdownOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
+      document.addEventListener("keydown", handleKeyDown);
+      return () => document.removeEventListener("keydown", handleKeyDown);
     }
   }, [isDropdownOpen]);
 
@@ -57,7 +61,8 @@ export const ChangeNavigator = memo(function ChangeNavigator({
     setIsDropdownOpen(false);
   };
 
-  const progressPercent = totalChanges > 0 ? ((currentIndex + 1) / totalChanges) * 100 : 0;
+  const progressPercent =
+    totalChanges > 0 ? ((currentIndex + 1) / totalChanges) * 100 : 0;
 
   return (
     <div className="flex items-center justify-center gap-2 px-4 py-2 bg-[#161b22] border-b border-[#30363d]">
@@ -82,7 +87,7 @@ export const ChangeNavigator = memo(function ChangeNavigator({
           aria-label="Jump to change"
         >
           <span className="text-sm text-gray-200">
-            Change <span className="font-mono">{currentIndex + 1}</span> of{' '}
+            Change <span className="font-mono">{currentIndex + 1}</span> of{" "}
             <span className="font-mono">{totalChanges}</span>
           </span>
           <ChevronsUpDown className="w-3.5 h-3.5 text-gray-400" />
@@ -100,7 +105,9 @@ export const ChangeNavigator = memo(function ChangeNavigator({
                 key={group.id}
                 onClick={() => handleJumpTo(index)}
                 className={`w-full flex items-center justify-between px-3 py-2 text-left text-sm hover:bg-[#161b22] transition-colors ${
-                  index === currentIndex ? 'bg-[#1f6feb]/10 border-l-2 border-[#1f6feb]' : ''
+                  index === currentIndex
+                    ? "bg-[#1f6feb]/10 border-l-2 border-[#1f6feb]"
+                    : ""
                 }`}
                 role="option"
                 aria-selected={index === currentIndex}

@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import type { RepoInfo, Theme } from '@/types/git';
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import type { RepoInfo, Theme } from "@/types/git";
 
-export type AppTab = 'code' | 'issues' | 'pulls' | 'insights' | 'settings';
+export type AppTab = "code" | "issues" | "pulls" | "insights" | "settings";
 
 export interface AppStoreState {
   repoInfo: RepoInfo | null;
@@ -45,8 +45,8 @@ const initialState: AppStoreState = {
   repoInfo: null,
   selectedCommitHash: null,
   selectedBranch: null,
-  activeTab: 'code',
-  theme: 'github-dark',
+  activeTab: "code",
+  theme: "github-dark",
   sidebarCollapsed: false,
   sidebarWidth: 250,
   detailsPanelWidth: 400,
@@ -75,7 +75,7 @@ export const useAppStore = create<AppStore>()(
           repoInfo: null,
           selectedCommitHash: null,
           selectedBranch: null,
-          activeTab: 'code',
+          activeTab: "code",
         }),
       setSelectedCommitHash: (hash) => set({ selectedCommitHash: hash }),
       setSelectedBranch: (branch) => set({ selectedBranch: branch }),
@@ -109,24 +109,32 @@ export const useAppStore = create<AppStore>()(
         })),
       toggleShowTags: () =>
         set((state) => ({
-          graphFilters: { ...state.graphFilters, showTags: !state.graphFilters.showTags },
+          graphFilters: {
+            ...state.graphFilters,
+            showTags: !state.graphFilters.showTags,
+          },
         })),
       toggleBranchHighlight: (branch) =>
         set((state) => {
           const next = new Set(state.graphFilters.highlightedBranches);
           if (next.has(branch)) next.delete(branch);
           else next.add(branch);
-          return { graphFilters: { ...state.graphFilters, highlightedBranches: next } };
+          return {
+            graphFilters: { ...state.graphFilters, highlightedBranches: next },
+          };
         }),
       clearBranchHighlights: () =>
         set((state) => ({
-          graphFilters: { ...state.graphFilters, highlightedBranches: new Set<string>() },
+          graphFilters: {
+            ...state.graphFilters,
+            highlightedBranches: new Set<string>(),
+          },
         })),
     }),
     {
-      name: 'app-store',
+      name: "app-store",
       storage: createJSONStorage(() => {
-        if (typeof window !== 'undefined') return localStorage;
+        if (typeof window !== "undefined") return localStorage;
         // Fallback noop storage for SSR safety
         return {
           getItem: () => null,
@@ -145,7 +153,9 @@ export const useAppStore = create<AppStore>()(
         graphFilters: {
           showMergeCommits: state.graphFilters.showMergeCommits,
           showTags: state.graphFilters.showTags,
-          highlightedBranches: Array.from(state.graphFilters.highlightedBranches),
+          highlightedBranches: Array.from(
+            state.graphFilters.highlightedBranches,
+          ),
         },
       }),
       merge: (persistedState, currentState) => {
@@ -156,13 +166,12 @@ export const useAppStore = create<AppStore>()(
             ...currentState.graphFilters,
             ...persisted.graphFilters,
             highlightedBranches: new Set<string>(
-              persisted.graphFilters.highlightedBranches || []
+              persisted.graphFilters.highlightedBranches || [],
             ),
           };
         }
         return merged;
       },
-    }
-  )
+    },
+  ),
 );
-

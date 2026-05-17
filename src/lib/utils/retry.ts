@@ -10,7 +10,7 @@ export interface RetryOptions {
   retryableErrors?: (error: unknown) => boolean;
 }
 
-const DEFAULT_OPTIONS: Required<Omit<RetryOptions, 'retryableErrors'>> = {
+const DEFAULT_OPTIONS: Required<Omit<RetryOptions, "retryableErrors">> = {
   maxRetries: 3,
   initialDelayMs: 1000,
   maxDelayMs: 30000,
@@ -21,29 +21,33 @@ const DEFAULT_OPTIONS: Required<Omit<RetryOptions, 'retryableErrors'>> = {
  * Check if an error is retryable (transient failure)
  */
 function isRetryableError(error: unknown): boolean {
-  if (typeof error !== 'object' || error === null) {
+  if (typeof error !== "object" || error === null) {
     return false;
   }
 
   const err = error as { code?: string; message?: string; cause?: unknown };
 
   // Database timeout errors
-  if (err.code === 'ETIMEDOUT' || err.message?.includes('ETIMEDOUT')) {
+  if (err.code === "ETIMEDOUT" || err.message?.includes("ETIMEDOUT")) {
     return true;
   }
 
   // Network errors
-  if (err.code === 'ECONNRESET' || err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
+  if (
+    err.code === "ECONNRESET" ||
+    err.code === "ECONNREFUSED" ||
+    err.code === "ETIMEDOUT"
+  ) {
     return true;
   }
 
   // Rate limiting (429) - retryable
-  if (err.message?.includes('rate limit') || err.message?.includes('429')) {
+  if (err.message?.includes("rate limit") || err.message?.includes("429")) {
     return true;
   }
 
   // Database connection errors
-  if (err.message?.includes('connection') || err.message?.includes('timeout')) {
+  if (err.message?.includes("connection") || err.message?.includes("timeout")) {
     return true;
   }
 
@@ -67,7 +71,7 @@ function sleep(ms: number): Promise<void> {
  */
 export async function retry<T>(
   fn: () => Promise<T>,
-  options: RetryOptions = {}
+  options: RetryOptions = {},
 ): Promise<T> {
   const {
     maxRetries,

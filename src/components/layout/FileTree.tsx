@@ -1,39 +1,54 @@
-'use client';
+"use client";
 
-import { useMemo, useRef, useState } from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
-import { ChevronDown, ChevronRight, File as FileIcon, Folder, RefreshCw } from 'lucide-react';
-import { useRepoFiles } from '@/hooks/useGitData';
-import { FileViewerModal } from '@/components/FileViewerModal';
+import { useVirtualizer } from "@tanstack/react-virtual";
+import {
+  ChevronDown,
+  ChevronRight,
+  File as FileIcon,
+  Folder,
+  RefreshCw,
+} from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { FileViewerModal } from "@/components/FileViewerModal";
+import { useRepoFiles } from "@/hooks/useGitData";
 
 type TreeNode =
-  | { type: 'folder'; name: string; path: string; children: TreeNode[] }
-  | { type: 'file'; name: string; path: string };
+  | { type: "folder"; name: string; path: string; children: TreeNode[] }
+  | { type: "file"; name: string; path: string };
 
 function buildTree(paths: string[]): TreeNode[] {
   const root: { children: TreeNode[] } = { children: [] };
 
-  const getOrCreateFolder = (children: TreeNode[], name: string, path: string) => {
-    const existing = children.find((n) => n.type === 'folder' && n.name === name) as
-      | Extract<TreeNode, { type: 'folder' }>
-      | undefined;
+  const getOrCreateFolder = (
+    children: TreeNode[],
+    name: string,
+    path: string,
+  ) => {
+    const existing = children.find(
+      (n) => n.type === "folder" && n.name === name,
+    ) as Extract<TreeNode, { type: "folder" }> | undefined;
     if (existing) return existing;
-    const folder: Extract<TreeNode, { type: 'folder' }> = { type: 'folder', name, path, children: [] };
+    const folder: Extract<TreeNode, { type: "folder" }> = {
+      type: "folder",
+      name,
+      path,
+      children: [],
+    };
     children.push(folder);
     return folder;
   };
 
   for (const fullPath of paths) {
-    const parts = fullPath.split('/').filter(Boolean);
+    const parts = fullPath.split("/").filter(Boolean);
     let currentChildren = root.children;
-    let currentPath = '';
+    let currentPath = "";
 
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i]!;
       currentPath = currentPath ? `${currentPath}/${part}` : part;
       const isLeaf = i === parts.length - 1;
       if (isLeaf) {
-        currentChildren.push({ type: 'file', name: part, path: fullPath });
+        currentChildren.push({ type: "file", name: part, path: fullPath });
       } else {
         const folder = getOrCreateFolder(currentChildren, part, currentPath);
         currentChildren = folder.children;
@@ -43,11 +58,11 @@ function buildTree(paths: string[]): TreeNode[] {
 
   const sortTree = (nodes: TreeNode[]) => {
     nodes.sort((a, b) => {
-      if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+      if (a.type !== b.type) return a.type === "folder" ? -1 : 1;
       return a.name.localeCompare(b.name);
     });
     for (const n of nodes) {
-      if (n.type === 'folder') sortTree(n.children);
+      if (n.type === "folder") sortTree(n.children);
     }
   };
   sortTree(root.children);
@@ -56,8 +71,14 @@ function buildTree(paths: string[]): TreeNode[] {
 }
 
 export function FileTree({ ref }: { ref?: string }) {
-  const { data: files, isLoading, error, refetch, isFetching } = useRepoFiles(ref);
-  const [query, setQuery] = useState('');
+  const {
+    data: files,
+    isLoading,
+    error,
+    refetch,
+    isFetching,
+  } = useRepoFiles(ref);
+  const [query, setQuery] = useState("");
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
 
   const filteredPaths = useMemo(() => {
@@ -68,7 +89,9 @@ export function FileTree({ ref }: { ref?: string }) {
   }, [files, query]);
 
   const tree = useMemo(() => buildTree(filteredPaths), [filteredPaths]);
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set<string>());
+  const [expanded, setExpanded] = useState<Set<string>>(
+    () => new Set<string>(),
+  );
 
   const toggle = (path: string) => {
     setExpanded((prev) => {
@@ -84,7 +107,7 @@ export function FileTree({ ref }: { ref?: string }) {
     const folders = new Set<string>();
     const walk = (nodes: TreeNode[]) => {
       for (const n of nodes) {
-        if (n.type === 'folder') {
+        if (n.type === "folder") {
           folders.add(n.path);
           walk(n.children);
         }
@@ -101,7 +124,7 @@ export function FileTree({ ref }: { ref?: string }) {
     const walk = (nodes: TreeNode[], depth: number) => {
       for (const node of nodes) {
         out.push({ node, depth });
-        if (node.type === 'folder' && effectiveExpanded.has(node.path)) {
+        if (node.type === "folder" && effectiveExpanded.has(node.path)) {
           walk(node.children, depth + 1);
         }
       }
@@ -119,7 +142,9 @@ export function FileTree({ ref }: { ref?: string }) {
   });
 
   if (isLoading) {
-    return <div className="px-4 py-2 text-sm text-gray-500">Loading files…</div>;
+    return (
+      <div className="px-4 py-2 text-sm text-gray-500">Loading files…</div>
+    );
   }
 
   if (error) {
@@ -132,7 +157,9 @@ export function FileTree({ ref }: { ref?: string }) {
           className="p-1 rounded hover:bg-[#21262d]"
           aria-label="Retry loading files"
         >
-          <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
+          <RefreshCw
+            className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`}
+          />
         </button>
       </div>
     );
@@ -168,21 +195,27 @@ export function FileTree({ ref }: { ref?: string }) {
               if (!row) return null;
               const pad = row.depth * 12;
               const node = row.node;
-              const isOpen = node.type === 'folder' ? effectiveExpanded.has(node.path) : false;
+              const isOpen =
+                node.type === "folder"
+                  ? effectiveExpanded.has(node.path)
+                  : false;
               return (
                 <div
                   key={`${node.type}:${node.path}`}
                   className="absolute top-0 left-0 w-full"
-                  style={{ transform: `translateY(${v.start}px)`, height: `${v.size}px` }}
+                  style={{
+                    transform: `translateY(${v.start}px)`,
+                    height: `${v.size}px`,
+                  }}
                 >
-                  {node.type === 'folder' ? (
+                  {node.type === "folder" ? (
                     <button
                       type="button"
                       onClick={() => toggle(node.path)}
                       className="w-full flex items-center gap-2 text-xs py-1 rounded hover:bg-[#21262d] transition-colors text-left"
                       style={{ paddingLeft: 8 + pad }}
                       aria-expanded={isOpen}
-                      aria-label={`${isOpen ? 'Collapse' : 'Expand'} folder ${node.name}`}
+                      aria-label={`${isOpen ? "Collapse" : "Expand"} folder ${node.name}`}
                       role="treeitem"
                       aria-level={row.depth + 1}
                     >
@@ -192,7 +225,9 @@ export function FileTree({ ref }: { ref?: string }) {
                         <ChevronRight className="w-4 h-4 text-gray-500" />
                       )}
                       <Folder className="w-4 h-4 text-gray-500" />
-                      <span className="truncate text-gray-200">{node.name}</span>
+                      <span className="truncate text-gray-200">
+                        {node.name}
+                      </span>
                     </button>
                   ) : (
                     <button
@@ -219,10 +254,9 @@ export function FileTree({ ref }: { ref?: string }) {
       <FileViewerModal
         isOpen={!!selectedFilePath}
         onClose={() => setSelectedFilePath(null)}
-        filePath={selectedFilePath || ''}
+        filePath={selectedFilePath || ""}
         branchRef={ref}
       />
     </div>
   );
 }
-

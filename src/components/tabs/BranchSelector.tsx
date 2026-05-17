@@ -1,24 +1,17 @@
 "use client";
 
-import { useState, useMemo, useCallback, memo } from "react";
 import {
+  ArrowLeft,
   GitBranch,
+  GitCompareArrows,
+  Loader2,
+  Search,
   Shield,
   Star,
-  Search,
-  ChevronDown,
-  Loader2,
-  GitCompareArrows,
-  ArrowLeft,
 } from "lucide-react";
-import {
-  useGitHubBranches,
-  useBranchComparison,
-} from "@/hooks/useGitHubData";
-import type {
-  GitHubBranchInfo,
-  BranchComparisonResult,
-} from "@/hooks/useGitHubData";
+import { memo, useCallback, useMemo, useState } from "react";
+import type { GitHubBranchInfo } from "@/hooks/useGitHubData";
+import { useBranchComparison, useGitHubBranches } from "@/hooks/useGitHubData";
 import { DiffView } from "./DiffView";
 
 /* ── Branch Item ───────────────────────────────────────── */
@@ -119,13 +112,16 @@ function ComparisonView({
           <div className="px-4 py-2 border-b border-[#30363d] flex items-center gap-4 text-xs text-gray-400">
             <span>Status: {comparison.status}</span>
             <span className="text-green-400">
-              {comparison.ahead_by} commit{comparison.ahead_by !== 1 ? "s" : ""} ahead
+              {comparison.ahead_by} commit{comparison.ahead_by !== 1 ? "s" : ""}{" "}
+              ahead
             </span>
             <span className="text-red-400">
-              {comparison.behind_by} commit{comparison.behind_by !== 1 ? "s" : ""} behind
+              {comparison.behind_by} commit
+              {comparison.behind_by !== 1 ? "s" : ""} behind
             </span>
             <span>
-              {comparison.files.length} file{comparison.files.length !== 1 ? "s" : ""} changed
+              {comparison.files.length} file
+              {comparison.files.length !== 1 ? "s" : ""} changed
             </span>
           </div>
 
@@ -151,7 +147,7 @@ export function BranchSelector() {
   const { data: branchesData, isLoading } = useGitHubBranches();
 
   const branches = branchesData?.data?.branches ?? [];
-  const defaultBranch = branchesData?.data?.defaultBranch ?? "main";
+  const _defaultBranch = branchesData?.data?.defaultBranch ?? "main";
 
   const filteredBranches = useMemo(() => {
     if (!searchQuery.trim()) return branches;
@@ -180,9 +176,7 @@ export function BranchSelector() {
           setShowCompare(true);
         }
       } else {
-        setSelectedBranch(
-          selectedBranch === branch.name ? null : branch.name,
-        );
+        setSelectedBranch(selectedBranch === branch.name ? null : branch.name);
       }
     },
     [compareMode, selectedBranch],
@@ -265,7 +259,9 @@ export function BranchSelector() {
           <div className="flex flex-col items-center justify-center py-12 text-gray-500">
             <GitBranch className="w-8 h-8 mb-2" />
             <p className="text-sm">
-              {searchQuery ? "No branches match your search" : "No branches found"}
+              {searchQuery
+                ? "No branches match your search"
+                : "No branches found"}
             </p>
           </div>
         ) : (

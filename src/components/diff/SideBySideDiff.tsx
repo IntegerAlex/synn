@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useRef, useEffect, useCallback, memo } from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
-import type { GroupedFileDiff, ChangeGroup } from '@/lib/diff/changeGrouper';
-import { ChangeGroupComponent } from './ChangeGroup';
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { memo, useCallback, useEffect, useRef } from "react";
+import type { GroupedFileDiff } from "@/lib/diff/changeGrouper";
+import { ChangeGroupComponent } from "./ChangeGroup";
 
 interface SideBySideDiffProps {
   groupedFile: GroupedFileDiff;
@@ -28,10 +28,13 @@ export const SideBySideDiff = memo(function SideBySideDiff({
 
   // Scroll to current change when it changes
   useEffect(() => {
-    if (currentChangeIndex >= 0 && currentChangeIndex < groupedFile.groups.length) {
+    if (
+      currentChangeIndex >= 0 &&
+      currentChangeIndex < groupedFile.groups.length
+    ) {
       virtualizer.scrollToIndex(currentChangeIndex, {
-        align: 'center',
-        behavior: 'smooth',
+        align: "center",
+        behavior: "smooth",
       });
     }
   }, [currentChangeIndex, groupedFile.groups.length, virtualizer]);
@@ -88,7 +91,7 @@ export const SideBySideDiff = memo(function SideBySideDiff({
                 key={group.id}
                 data-index={virtualItem.index}
                 ref={virtualizer.measureElement}
-                className={`absolute left-2 right-2 ${isSelected ? 'ring-2 ring-[#1f6feb]/50 rounded-lg' : ''}`}
+                className={`absolute left-2 right-2 ${isSelected ? "ring-2 ring-[#1f6feb]/50 rounded-lg" : ""}`}
                 style={{
                   top: `${virtualItem.start}px`,
                 }}

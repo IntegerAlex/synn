@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { useParams } from 'next/navigation';
-import { CytoscapeGraph } from '@/components/graph/CytoscapeGraph';
-import { useAppStore } from '@/store/useAppStore';
-import { useEffect, useState } from 'react';
-import type { RepoInfo } from '@/types/git';
+import { useQuery } from "@tanstack/react-query";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { CytoscapeGraph } from "@/components/graph/CytoscapeGraph";
+import { useAppStore } from "@/store/useAppStore";
+import type { RepoInfo } from "@/types/git";
 
 interface SharedViewData {
   shareId: string;
@@ -31,7 +31,7 @@ async function fetchSharedView(shareId: string): Promise<SharedViewData> {
   const response = await fetch(`/api/share/${shareId}`);
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to load shared view');
+    throw new Error(error.error?.message || "Failed to load shared view");
   }
   const data = await response.json();
   return data.data;
@@ -42,15 +42,21 @@ export default function SharedViewPage() {
   const shareId = params.id as string;
   const setRepoInfo = useAppStore((state) => state.setRepoInfo);
   const setSelectedBranch = useAppStore((state) => state.setSelectedBranch);
-  const setSelectedCommitHash = useAppStore((state) => state.setSelectedCommitHash);
+  const setSelectedCommitHash = useAppStore(
+    (state) => state.setSelectedCommitHash,
+  );
   const setShowMergeCommits = useAppStore((state) => state.setShowMergeCommits);
   const setShowTags = useAppStore((state) => state.setShowTags);
-  const toggleBranchHighlight = useAppStore((state) => state.toggleBranchHighlight);
-  const clearBranchHighlights = useAppStore((state) => state.clearBranchHighlights);
+  const toggleBranchHighlight = useAppStore(
+    (state) => state.toggleBranchHighlight,
+  );
+  const clearBranchHighlights = useAppStore(
+    (state) => state.clearBranchHighlights,
+  );
   const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['sharedView', shareId],
+    queryKey: ["sharedView", shareId],
     queryFn: () => fetchSharedView(shareId),
     enabled: !!shareId,
   });
@@ -63,12 +69,12 @@ export default function SharedViewPage() {
     }
 
     const updateCountdown = () => {
-      const now = new Date().getTime();
+      const now = Date.now();
       const expires = new Date(data.expiresAt!).getTime();
       const diff = expires - now;
 
       if (diff <= 0) {
-        setTimeRemaining('Expired');
+        setTimeRemaining("Expired");
         return;
       }
 
@@ -101,8 +107,8 @@ export default function SharedViewPage() {
     // Set repo info
     const repoInfo: RepoInfo = {
       path: data.repoFullName,
-      name: data.repoFullName.split('/').pop() || data.repoFullName,
-      currentBranch: data.viewState.branch || 'main',
+      name: data.repoFullName.split("/").pop() || data.repoFullName,
+      currentBranch: data.viewState.branch || "main",
       isClean: true,
       ahead: 0,
       behind: 0,
@@ -155,9 +161,13 @@ export default function SharedViewPage() {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-[#0d1117]">
         <div className="text-center space-y-4">
-          <div className="text-red-400 text-lg font-semibold">Failed to load shared view</div>
+          <div className="text-red-400 text-lg font-semibold">
+            Failed to load shared view
+          </div>
           <div className="text-gray-400 text-sm">
-            {error instanceof Error ? error.message : 'Shared view not found or expired'}
+            {error instanceof Error
+              ? error.message
+              : "Shared view not found or expired"}
           </div>
         </div>
       </div>
@@ -171,7 +181,7 @@ export default function SharedViewPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="text-sm font-semibold text-gray-200">
-              {data.title || 'Shared Synn View'}
+              {data.title || "Shared Synn View"}
             </div>
             {data.description && (
               <div className="text-xs text-gray-400">{data.description}</div>
@@ -180,9 +190,7 @@ export default function SharedViewPage() {
               {data.repoFullName} • {data.viewCount} views
             </div>
             {timeRemaining && (
-              <div className="text-xs text-yellow-400">
-                {timeRemaining}
-              </div>
+              <div className="text-xs text-yellow-400">{timeRemaining}</div>
             )}
           </div>
           <div className="text-xs text-gray-500">Read-only Synn view</div>
@@ -191,7 +199,11 @@ export default function SharedViewPage() {
 
       {/* Graph */}
       <main className="flex-1 min-w-0 min-h-0">
-        <CytoscapeGraph initialGraphLimit={data.viewState.graphLimit} readOnly={true} shareId={shareId} />
+        <CytoscapeGraph
+          initialGraphLimit={data.viewState.graphLimit}
+          readOnly={true}
+          shareId={shareId}
+        />
       </main>
     </div>
   );

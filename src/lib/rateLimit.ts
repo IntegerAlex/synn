@@ -23,7 +23,7 @@ class InMemoryRateLimiter {
   constructor(
     private windowMs: number = 60 * 1000, // 1 minute default window
     private maxRequests: number = 100, // 100 requests per window
-    private cleanupMs: number = 5 * 60 * 1000 // Clean up every 5 minutes
+    private cleanupMs: number = 5 * 60 * 1000, // Clean up every 5 minutes
   ) {
     this.startCleanup();
   }
@@ -51,7 +51,9 @@ class InMemoryRateLimiter {
     }
 
     // Clean up old requests outside the current window
-    const validRequests = entry.requests.filter((time) => now - time < this.windowMs);
+    const validRequests = entry.requests.filter(
+      (time) => now - time < this.windowMs,
+    );
 
     if (validRequests.length >= this.maxRequests) {
       // Rate limit exceeded
@@ -89,7 +91,9 @@ class InMemoryRateLimiter {
 
       for (const [identifier, entry] of this.requests.entries()) {
         // Remove entries where all requests are outside the window
-        const validRequests = entry.requests.filter((time) => now - time < this.windowMs);
+        const validRequests = entry.requests.filter(
+          (time) => now - time < this.windowMs,
+        );
         if (validRequests.length === 0) {
           toDelete.push(identifier);
         } else {
@@ -156,20 +160,20 @@ export const rateLimitConfigs = {
 // Specialized rate limiters for different endpoints
 export const authRateLimiter = new InMemoryRateLimiter(
   rateLimitConfigs.auth.windowMs,
-  rateLimitConfigs.auth.maxRequests
+  rateLimitConfigs.auth.maxRequests,
 );
 
 export const webhookRateLimiter = new InMemoryRateLimiter(
   rateLimitConfigs.webhook.windowMs,
-  rateLimitConfigs.webhook.maxRequests
+  rateLimitConfigs.webhook.maxRequests,
 );
 
 export const adminRateLimiter = new InMemoryRateLimiter(
   rateLimitConfigs.admin.windowMs,
-  rateLimitConfigs.admin.maxRequests
+  rateLimitConfigs.admin.maxRequests,
 );
 
 export const githubRateLimiter = new InMemoryRateLimiter(
   rateLimitConfigs.github.windowMs,
-  rateLimitConfigs.github.maxRequests
+  rateLimitConfigs.github.maxRequests,
 );

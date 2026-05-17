@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
-import { and, desc, eq, gte, like, lte, or, sql } from 'drizzle-orm';
-import { db } from '@/db';
-import { activityLogsTable, apiRequestsTable, usersTable } from '@/db/schema';
-import { decryptData } from '@/lib/services/encryption';
-import { requireAdmin } from '@/lib/utils/adminAuth';
+import { and, desc, eq, gte, like, lte, or, sql } from "drizzle-orm";
+import { NextResponse } from "next/server";
+import { db } from "@/db";
+import { activityLogsTable, apiRequestsTable, usersTable } from "@/db/schema";
+import { decryptData } from "@/lib/services/encryption";
+import { requireAdmin } from "@/lib/utils/adminAuth";
 
 function orConditions(field: any, values: number[]) {
   if (values.length === 0) return null;
@@ -12,7 +12,7 @@ function orConditions(field: any, values: number[]) {
 }
 
 function decryptField(value: any, privateKey: string) {
-  if (typeof value !== 'string') return value;
+  if (typeof value !== "string") return value;
   // Skip short strings that are likely not encrypted packages
   if (value.length < 80) return value;
 
@@ -34,24 +34,38 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     await requireAdmin();
 
-    const userId = searchParams.get('userId') ? parseInt(searchParams.get('userId')!, 10) : null;
-    const activityType = searchParams.get('activityType');
-    const ipAddress = searchParams.get('ipAddress');
-    const method = searchParams.get('method');
-    const status = searchParams.get('status');
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
-    const limit = parseInt(searchParams.get('limit') || '50', 10);
-    const offset = parseInt(searchParams.get('offset') || '0', 10);
-    const apiOffset = parseInt(searchParams.get('apiOffset') || offset.toString(), 10);
-    const privateKey = searchParams.get('privateKey');
+    const userId = searchParams.get("userId")
+      ? parseInt(searchParams.get("userId")!, 10)
+      : null;
+    const activityType = searchParams.get("activityType");
+    const ipAddress = searchParams.get("ipAddress");
+    const method = searchParams.get("method");
+    const status = searchParams.get("status");
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
+    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const offset = parseInt(searchParams.get("offset") || "0", 10);
+    const apiOffset = parseInt(
+      searchParams.get("apiOffset") || offset.toString(),
+      10,
+    );
+    const privateKey = searchParams.get("privateKey");
 
     // Activity log conditions
     const activityConditions = [];
     if (userId) activityConditions.push(eq(activityLogsTable.userId, userId));
-    if (activityType) activityConditions.push(like(activityLogsTable.activityType, `%${activityType}%`));
-    if (startDate) activityConditions.push(gte(activityLogsTable.createdAt, new Date(startDate)));
-    if (endDate) activityConditions.push(lte(activityLogsTable.createdAt, new Date(endDate)));
+    if (activityType)
+      activityConditions.push(
+        like(activityLogsTable.activityType, `%${activityType}%`),
+      );
+    if (startDate)
+      activityConditions.push(
+        gte(activityLogsTable.createdAt, new Date(startDate)),
+      );
+    if (endDate)
+      activityConditions.push(
+        lte(activityLogsTable.createdAt, new Date(endDate)),
+      );
 
     const activityQuery = db
       .select()
@@ -77,10 +91,14 @@ export async function GET(request: Request) {
         // swallow decryption errors per-record
       }
       if (ipAddress) {
-        activityLogs = activityLogs.filter((log) => log.ipAddress && String(log.ipAddress).includes(ipAddress));
+        activityLogs = activityLogs.filter(
+          (log) => log.ipAddress && String(log.ipAddress).includes(ipAddress),
+        );
       }
     } else if (ipAddress) {
-      activityLogs = activityLogs.filter((log) => log.ipAddress && String(log.ipAddress).includes(ipAddress));
+      activityLogs = activityLogs.filter(
+        (log) => log.ipAddress && String(log.ipAddress).includes(ipAddress),
+      );
     }
 
     // API request conditions
@@ -89,10 +107,13 @@ export async function GET(request: Request) {
     if (method) apiConditions.push(eq(apiRequestsTable.method, method));
     if (status) {
       const statusNumber = parseInt(status, 10);
-      if (!Number.isNaN(statusNumber)) apiConditions.push(eq(apiRequestsTable.statusCode, statusNumber));
+      if (!Number.isNaN(statusNumber))
+        apiConditions.push(eq(apiRequestsTable.statusCode, statusNumber));
     }
-    if (startDate) apiConditions.push(gte(apiRequestsTable.createdAt, new Date(startDate)));
-    if (endDate) apiConditions.push(lte(apiRequestsTable.createdAt, new Date(endDate)));
+    if (startDate)
+      apiConditions.push(gte(apiRequestsTable.createdAt, new Date(startDate)));
+    if (endDate)
+      apiConditions.push(lte(apiRequestsTable.createdAt, new Date(endDate)));
 
     const apiQuery = db
       .select()
@@ -118,10 +139,14 @@ export async function GET(request: Request) {
         // swallow decryption errors per-record
       }
       if (ipAddress) {
-        apiRequests = apiRequests.filter((req) => req.ipAddress && String(req.ipAddress).includes(ipAddress));
+        apiRequests = apiRequests.filter(
+          (req) => req.ipAddress && String(req.ipAddress).includes(ipAddress),
+        );
       }
     } else if (ipAddress) {
-      apiRequests = apiRequests.filter((req) => req.ipAddress && String(req.ipAddress).includes(ipAddress));
+      apiRequests = apiRequests.filter(
+        (req) => req.ipAddress && String(req.ipAddress).includes(ipAddress),
+      );
     }
 
     // User enrichment
@@ -141,14 +166,22 @@ export async function GET(request: Request) {
             .where(orConditions(usersTable.id, userIds) || undefined);
 
     const userMap = new Map(users.map((u) => [u.id, u]));
-    const activityWithUsers = activityLogs.map((log) => ({ ...log, user: log.userId ? userMap.get(log.userId) : null }));
-    const apiWithUsers = apiRequests.map((req) => ({ ...req, user: req.userId ? userMap.get(req.userId) : null }));
+    const activityWithUsers = activityLogs.map((log) => ({
+      ...log,
+      user: log.userId ? userMap.get(log.userId) : null,
+    }));
+    const apiWithUsers = apiRequests.map((req) => ({
+      ...req,
+      user: req.userId ? userMap.get(req.userId) : null,
+    }));
 
     // Counts
     const activityCountResult = await db
       .select({ count: sql<number>`count(*)` })
       .from(activityLogsTable)
-      .where(activityConditions.length > 0 ? and(...activityConditions) : undefined);
+      .where(
+        activityConditions.length > 0 ? and(...activityConditions) : undefined,
+      );
     const apiCountResult = await db
       .select({ count: sql<number>`count(*)` })
       .from(apiRequestsTable)
@@ -179,9 +212,13 @@ export async function GET(request: Request) {
     );
   } catch (error: any) {
     return NextResponse.json(
-      { error: { code: 'DASHBOARD_LOGS_ERROR', message: error?.message || 'Failed to fetch logs' } },
+      {
+        error: {
+          code: "DASHBOARD_LOGS_ERROR",
+          message: error?.message || "Failed to fetch logs",
+        },
+      },
       { status: 500 },
     );
   }
 }
-

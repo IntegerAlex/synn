@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { useState } from "react";
 
 export function CollapsibleSection({
   title,
@@ -30,7 +30,11 @@ export function CollapsibleSection({
         <div className="flex items-center gap-2">
           {right}
           <span className="text-gray-400">
-            {collapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+            {collapsed ? (
+              <ChevronDown className="w-4 h-4" />
+            ) : (
+              <ChevronUp className="w-4 h-4" />
+            )}
           </span>
         </div>
       </button>
@@ -38,4 +42,3 @@ export function CollapsibleSection({
     </section>
   );
 }
-

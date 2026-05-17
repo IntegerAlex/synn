@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
-import { and, eq, gte, lte, sql } from 'drizzle-orm';
-import { db } from '@/db';
-import { apiRequestsTable, githubApiUsageTable, usersTable } from '@/db/schema';
-import { requireAdmin } from '@/lib/utils/adminAuth';
+import { and, eq, gte, lte, sql } from "drizzle-orm";
+import { NextResponse } from "next/server";
+import { db } from "@/db";
+import { apiRequestsTable, githubApiUsageTable, usersTable } from "@/db/schema";
+import { requireAdmin } from "@/lib/utils/adminAuth";
 
 export function getDateRange(start?: string | null, end?: string | null) {
   const now = new Date();
@@ -17,10 +17,10 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     await requireAdmin();
 
-    const userIdParam = searchParams.get('userId');
-    const clerkUserId = searchParams.get('clerkUserId');
-    const start = searchParams.get('start');
-    const end = searchParams.get('end');
+    const userIdParam = searchParams.get("userId");
+    const clerkUserId = searchParams.get("clerkUserId");
+    const start = searchParams.get("start");
+    const end = searchParams.get("end");
 
     const { startDate, endDate } = getDateRange(start, end);
 
@@ -44,7 +44,12 @@ export async function GET(request: Request) {
 
     // Aggregate from github_api_usage (best effort; ignore if table missing)
     let endpointUsageGithub: { endpoint: string; total: number }[] = [];
-    let userUsageGithub: { clerkUserId: string | null; userId: number | null; endpoint: string; total: number }[] = [];
+    let userUsageGithub: {
+      clerkUserId: string | null;
+      userId: number | null;
+      endpoint: string;
+      total: number;
+    }[] = [];
     try {
       endpointUsageGithub = await db
         .select({
@@ -65,23 +70,30 @@ export async function GET(request: Request) {
         })
         .from(githubApiUsageTable)
         .where(whereClause)
-        .groupBy(githubApiUsageTable.clerkUserId, githubApiUsageTable.userId, githubApiUsageTable.endpoint)
+        .groupBy(
+          githubApiUsageTable.clerkUserId,
+          githubApiUsageTable.userId,
+          githubApiUsageTable.endpoint,
+        )
         .orderBy(sql`sum(${githubApiUsageTable.count}) DESC`);
-    } catch (e) {
+    } catch (_e) {
       // Table may not exist; fallback handled below
     }
 
     // Build base where clause for raw API requests
     const requestConditions = [];
-    if (startDate) requestConditions.push(gte(apiRequestsTable.createdAt, startDate));
-    if (endDate) requestConditions.push(lte(apiRequestsTable.createdAt, endDate));
+    if (startDate)
+      requestConditions.push(gte(apiRequestsTable.createdAt, startDate));
+    if (endDate)
+      requestConditions.push(lte(apiRequestsTable.createdAt, endDate));
     if (userIdParam) {
       const parsed = parseInt(userIdParam, 10);
       if (!Number.isNaN(parsed)) {
         requestConditions.push(eq(apiRequestsTable.userId, parsed));
       }
     }
-    const requestWhere = requestConditions.length > 0 ? and(...requestConditions) : undefined;
+    const requestWhere =
+      requestConditions.length > 0 ? and(...requestConditions) : undefined;
 
     // Endpoint aggregation from raw API requests
     const endpointUsageRequests = clerkUserId
@@ -92,7 +104,11 @@ export async function GET(request: Request) {
           })
           .from(apiRequestsTable)
           .innerJoin(usersTable, eq(usersTable.id, apiRequestsTable.userId))
-          .where(requestWhere ? and(eq(usersTable.clerkUserId, clerkUserId), requestWhere) : eq(usersTable.clerkUserId, clerkUserId))
+          .where(
+            requestWhere
+              ? and(eq(usersTable.clerkUserId, clerkUserId), requestWhere)
+              : eq(usersTable.clerkUserId, clerkUserId),
+          )
           .groupBy(apiRequestsTable.path)
           .orderBy(sql`count(*) DESC`)
       : await db
@@ -116,8 +132,16 @@ export async function GET(request: Request) {
           })
           .from(apiRequestsTable)
           .innerJoin(usersTable, eq(usersTable.id, apiRequestsTable.userId))
-          .where(requestWhere ? and(eq(usersTable.clerkUserId, clerkUserId), requestWhere) : eq(usersTable.clerkUserId, clerkUserId))
-          .groupBy(usersTable.clerkUserId, apiRequestsTable.userId, apiRequestsTable.path)
+          .where(
+            requestWhere
+              ? and(eq(usersTable.clerkUserId, clerkUserId), requestWhere)
+              : eq(usersTable.clerkUserId, clerkUserId),
+          )
+          .groupBy(
+            usersTable.clerkUserId,
+            apiRequestsTable.userId,
+            apiRequestsTable.path,
+          )
           .orderBy(sql`count(*) DESC`)
       : await db
           .select({
@@ -129,13 +153,24 @@ export async function GET(request: Request) {
           .from(apiRequestsTable)
           .leftJoin(usersTable, eq(usersTable.id, apiRequestsTable.userId))
           .where(requestWhere)
-          .groupBy(usersTable.clerkUserId, apiRequestsTable.userId, apiRequestsTable.path)
+          .groupBy(
+            usersTable.clerkUserId,
+            apiRequestsTable.userId,
+            apiRequestsTable.path,
+          )
           .orderBy(sql`count(*) DESC`);
 
     // Choose data: prefer github aggregate, else requests fallback
-    const endpointUsage = endpointUsageGithub.length > 0 ? endpointUsageGithub : endpointUsageRequests;
-    const userUsage = userUsageGithub.length > 0 ? userUsageGithub : userUsageRequests;
-    const totalCalls = endpointUsage.reduce((acc, row) => acc + (row.total || 0), 0);
+    const endpointUsage =
+      endpointUsageGithub.length > 0
+        ? endpointUsageGithub
+        : endpointUsageRequests;
+    const userUsage =
+      userUsageGithub.length > 0 ? userUsageGithub : userUsageRequests;
+    const totalCalls = endpointUsage.reduce(
+      (acc, row) => acc + (row.total || 0),
+      0,
+    );
 
     return NextResponse.json(
       {
@@ -155,16 +190,15 @@ export async function GET(request: Request) {
       { status: 200 },
     );
   } catch (error: any) {
-    console.error('DASHBOARD_USAGE_ERROR', error);
+    console.error("DASHBOARD_USAGE_ERROR", error);
     return NextResponse.json(
       {
         error: {
-          code: 'DASHBOARD_USAGE_ERROR',
-          message: error?.message || 'Failed to fetch usage',
+          code: "DASHBOARD_USAGE_ERROR",
+          message: error?.message || "Failed to fetch usage",
         },
       },
       { status: 500 },
     );
   }
 }
-

@@ -1,8 +1,8 @@
-'use server';
+"use server";
 
-import { db } from '@/db';
-import { githubApiUsageTable } from '@/db/schema';
-import { sql } from 'drizzle-orm';
+import { sql } from "drizzle-orm";
+import { db } from "@/db";
+import { githubApiUsageTable } from "@/db/schema";
 
 interface UsageRecord {
   clerkUserId?: string | null;
@@ -14,7 +14,9 @@ interface UsageRecord {
 
 // Bucket date to UTC midnight for daily aggregation
 function bucketToDayUTC(date: Date): Date {
-  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const d = new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+  );
   return d;
 }
 
@@ -46,7 +48,11 @@ export async function recordGitHubUsage({
         lastSeenAt: createdAt,
       })
       .onConflictDoUpdate({
-        target: [githubApiUsageTable.clerkUserId, githubApiUsageTable.endpoint, githubApiUsageTable.bucketDate],
+        target: [
+          githubApiUsageTable.clerkUserId,
+          githubApiUsageTable.endpoint,
+          githubApiUsageTable.bucketDate,
+        ],
         set: {
           count: sql`${githubApiUsageTable.count} + 1`,
           statusCode: statusCode ?? null,
@@ -56,8 +62,14 @@ export async function recordGitHubUsage({
   } catch (error: any) {
     // If unique constraint doesn't exist yet, log warning but don't fail
     // The migration should be run to add the constraint
-    if (error?.code === '42P10' || error?.message?.includes('unique constraint') || error?.message?.includes('ON CONFLICT')) {
-      console.warn('GitHub usage tracking: Unique constraint missing. Run migration: drizzle/add_github_api_usage_unique_constraint.sql');
+    if (
+      error?.code === "42P10" ||
+      error?.message?.includes("unique constraint") ||
+      error?.message?.includes("ON CONFLICT")
+    ) {
+      console.warn(
+        "GitHub usage tracking: Unique constraint missing. Run migration: drizzle/add_github_api_usage_unique_constraint.sql",
+      );
       // Silently fail - usage tracking is non-critical
       return;
     }
@@ -65,8 +77,3 @@ export async function recordGitHubUsage({
     throw error;
   }
 }
-
-
-
-
-

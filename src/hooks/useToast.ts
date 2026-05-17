@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { create } from 'zustand';
-import type { ToastType } from '@/components/ui/Toast';
+import { create } from "zustand";
+import type { ToastType } from "@/components/ui/Toast";
 
 type ToastItem = {
   id: string;
@@ -12,7 +12,7 @@ type ToastItem = {
 
 interface ToastStore {
   toasts: ToastItem[];
-  addToast: (toast: Omit<ToastItem, 'id'> & { id?: string }) => void;
+  addToast: (toast: Omit<ToastItem, "id"> & { id?: string }) => void;
   removeToast: (id: string) => void;
   clear: () => void;
 }
@@ -25,12 +25,16 @@ export const useToastStore = create<ToastStore>((set, get) => ({
   addToast: (toast) => {
     const id =
       toast.id ??
-      (typeof crypto !== 'undefined' && 'randomUUID' in crypto && typeof crypto.randomUUID === 'function'
+      (typeof crypto !== "undefined" &&
+      "randomUUID" in crypto &&
+      typeof crypto.randomUUID === "function"
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random()}`);
     const duration = toast.duration ?? DEFAULT_DURATION;
     set((state) => {
-      const next = [...state.toasts, { ...toast, id, duration }].slice(-MAX_TOASTS);
+      const next = [...state.toasts, { ...toast, id, duration }].slice(
+        -MAX_TOASTS,
+      );
       return { toasts: next };
     });
 
@@ -56,12 +60,16 @@ export function useToast() {
   const removeToast = useToastStore((s) => s.removeToast);
 
   return {
-    show: (message: string, type: ToastType = 'info', duration?: number) =>
+    show: (message: string, type: ToastType = "info", duration?: number) =>
       addToast({ message, type, duration }),
-    showSuccess: (message: string, duration?: number) => addToast({ message, type: 'success', duration }),
-    showError: (message: string, duration?: number) => addToast({ message, type: 'error', duration }),
-    showInfo: (message: string, duration?: number) => addToast({ message, type: 'info', duration }),
-    showWarning: (message: string, duration?: number) => addToast({ message, type: 'warning', duration }),
+    showSuccess: (message: string, duration?: number) =>
+      addToast({ message, type: "success", duration }),
+    showError: (message: string, duration?: number) =>
+      addToast({ message, type: "error", duration }),
+    showInfo: (message: string, duration?: number) =>
+      addToast({ message, type: "info", duration }),
+    showWarning: (message: string, duration?: number) =>
+      addToast({ message, type: "warning", duration }),
     remove: removeToast,
   };
 }

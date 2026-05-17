@@ -16,9 +16,9 @@ export function groupUsageByUser(rows: UserUsageRow[]): AggregatedUserUsage[] {
   const map = new Map<string, AggregatedUserUsage>();
 
   for (const row of rows) {
-    const key = row.clerkUserId || row.userId?.toString() || 'unknown';
+    const key = row.clerkUserId || row.userId?.toString() || "unknown";
     const current = map.get(key) || {
-      clerkUserId: row.clerkUserId || 'unknown',
+      clerkUserId: row.clerkUserId || "unknown",
       userId: row.userId ?? null,
       total: 0,
       endpoints: [],
@@ -30,10 +30,3 @@ export function groupUsageByUser(rows: UserUsageRow[]): AggregatedUserUsage[] {
 
   return Array.from(map.values()).sort((a, b) => b.total - a.total);
 }
-
-
-
-
-
-
-

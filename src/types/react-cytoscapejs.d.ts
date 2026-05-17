@@ -1,6 +1,11 @@
-declare module 'react-cytoscapejs' {
-  import { Component } from 'react';
-  import type { Core, Stylesheet, ElementDefinition, LayoutOptions } from 'cytoscape';
+declare module "react-cytoscapejs" {
+  import type {
+    Core,
+    ElementDefinition,
+    LayoutOptions,
+    Stylesheet,
+  } from "cytoscape";
+  import { Component } from "react";
 
   export interface CytoscapeComponentProps {
     elements: ElementDefinition[];
@@ -14,6 +19,5 @@ declare module 'react-cytoscapejs' {
 
   export default class CytoscapeComponent extends Component<CytoscapeComponentProps> {}
 
-  export function getCytoscape(): typeof import('cytoscape') | null;
+  export function getCytoscape(): typeof import("cytoscape") | null;
 }
-
