@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Clock,
   Github,
+  GitFork,
   Globe,
   Search,
   Shield,
@@ -24,16 +25,25 @@ interface Repo {
   id: number;
   name: string;
   full_name: string;
-  owner: {
+  owner: string | {
     login: string;
     avatar_url: string;
   };
   description: string | null;
   default_branch: string;
   private: boolean;
-  stargazers_count: number;
-  open_issues_count: number;
-  updated_at: string;
+  stargazers_count?: number;
+  stars_count?: number;
+  forks_count?: number;
+  open_issues_count?: number;
+  updated_at?: string;
+  metadata?: {
+    description?: string;
+    updatedAt?: string;
+    pushedAt?: string;
+    forks_count?: number;
+    open_issues_count?: number;
+  };
 }
 
 type SortOption = "name" | "stars" | "updated";
@@ -442,8 +452,8 @@ export function RepoSelector() {
                                                           ${selectedRepo === repo.full_name ? "border-accent-main" : "border-border-main group-hover:border-gray-500"}`}
                       >
                         <img
-                          src={repo.owner.avatar_url}
-                          alt={repo.owner.login}
+                          src={typeof repo.owner === "string" ? `https://github.com/${repo.owner}.png` : repo.owner.avatar_url}
+                          alt={typeof repo.owner === "string" ? repo.owner : repo.owner.login}
                           className="w-full h-full object-cover"
                         />
                       </div>
@@ -454,14 +464,14 @@ export function RepoSelector() {
                           {repo.name}
                         </h4>
                         <p className="text-xs text-text-sub truncate opacity-70 font-medium">
-                          {repo.owner.login}
+                          {typeof repo.owner === "string" ? repo.owner : repo.owner?.login}
                         </p>
                       </div>
                     </div>
 
                     {/* Description */}
                     <p className="text-sm text-text-sub line-clamp-3 mb-6 flex-1 font-medium leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">
-                      {repo.description || "No description provided."}
+                      {repo.description || repo.metadata?.description || "No description provided."}
                     </p>
 
                     {/* Metadata Footer */}
@@ -475,7 +485,25 @@ export function RepoSelector() {
                       >
                         <Star className="w-4 h-4 text-yellow-500/80" />
                         <span className="text-xs font-bold tabular-nums">
-                          {repo.stargazers_count || 0}
+                          {(repo.stars_count ?? repo.stargazers_count) || 0}
+                        </span>
+                      </div>
+                      <div
+                        className="flex items-center gap-1.5 text-text-sub group-hover:text-text-main transition-colors"
+                        title="Forks"
+                      >
+                        <GitFork className="w-4 h-4 text-blue-500/80" />
+                        <span className="text-xs font-bold tabular-nums">
+                          {(repo.forks_count ?? repo.metadata?.forks_count) || 0}
+                        </span>
+                      </div>
+                      <div
+                        className="flex items-center gap-1.5 text-text-sub group-hover:text-text-main transition-colors"
+                        title="Issues"
+                      >
+                        <AlertCircle className="w-4 h-4 text-orange-500/80" />
+                        <span className="text-xs font-bold tabular-nums">
+                          {(repo.open_issues_count ?? repo.metadata?.open_issues_count) || 0}
                         </span>
                       </div>
                       <div
@@ -484,10 +512,15 @@ export function RepoSelector() {
                       >
                         <Clock className="w-4 h-4 text-accent-main/80" />
                         <span className="text-xs font-bold whitespace-nowrap">
-                          {new Date(repo.updated_at).toLocaleDateString(
-                            undefined,
-                            { month: "short", day: "numeric" },
-                          )}
+                          {(() => {
+                            const dateStr = repo.updated_at || repo.metadata?.updatedAt || repo.metadata?.pushedAt;
+                            if (!dateStr) return "N/A";
+                            const date = new Date(dateStr);
+                            return isNaN(date.getTime()) ? "N/A" : date.toLocaleDateString(
+                              undefined,
+                              { month: "short", day: "numeric" },
+                            );
+                          })()}
                         </span>
                       </div>
                       <div className="ml-auto flex items-center gap-1.5 text-text-sub">
