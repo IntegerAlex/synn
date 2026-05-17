@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { GitHubContributionGraph } from '@/components/profile/GitHubContributionGraph';
-import { Mail, Calendar, User, HelpCircle, ChevronLeft, Github } from 'lucide-react';
+import { Mail, Calendar, User, HelpCircle, ChevronLeft, Github, BarChart3 } from 'lucide-react';
 import { useState, useRef } from 'react';
 import { ShareModal } from '@/components/profile/ShareModal';
 import { SharePopover } from '@/components/profile/SharePopover';
@@ -180,6 +180,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-// Add missing import
-import { BarChart3 } from 'lucide-react';

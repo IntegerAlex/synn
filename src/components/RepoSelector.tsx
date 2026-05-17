@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useSetRepo } from '@/hooks/useGitData';
 import { useAppStore } from '@/store/useAppStore';
 import { SignedIn, SignedOut, SignInButton, useAuth, UserButton } from '@clerk/nextjs';
-import { Github, Sparkles, Search, History } from 'lucide-react';
+import { Github, Sparkles, Search, History, Star, AlertCircle, ArrowRight } from 'lucide-react';
 
 interface Repo {
     id: number;
