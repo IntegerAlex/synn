@@ -123,4 +123,4 @@ Please see [SECURITY.md](./SECURITY.md) for our vulnerability reporting guidelin
 
 © 2026 Synn. All rights reserved. 
 - Created by [Akshat Kotpalliwar](https://www.akshatkotpalliwar.in/)
-- Supported by [GOSSORG](https://gossorg.in/)
+- Supported by [GOSSORG](https://wwww.gossorg.in/)
