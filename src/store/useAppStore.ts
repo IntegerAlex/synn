@@ -90,6 +90,7 @@ export const useAppStore = create<AppStore>()(
           sidebarCollapsed: initialState.sidebarCollapsed,
           sidebarWidth: initialState.sidebarWidth,
           detailsPanelWidth: initialState.detailsPanelWidth,
+          graphFilters: { ...initialState.graphFilters },
         }),
       setShowMergeCommits: (show) =>
         set((state) => ({

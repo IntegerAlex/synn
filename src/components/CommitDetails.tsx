@@ -143,11 +143,11 @@ export function CommitDetails() {
     if (!selectedHash) {
         return (
             <aside
-                className="w-80 h-full bg-[#161b22] border-l border-[#30363d] flex flex-col"
+                className="w-80 h-full bg-bg-card border-l border-border-main flex flex-col"
                 role="complementary"
                 aria-label="Commit details"
             >
-                <div className="flex-1 flex items-center justify-center text-gray-500 text-sm" role="status" aria-live="polite">
+                <div className="flex-1 flex items-center justify-center text-text-sub text-sm" role="status" aria-live="polite">
                     Select a commit to view details
                 </div>
             </aside>
@@ -157,12 +157,12 @@ export function CommitDetails() {
     if (isLoading) {
         return (
             <aside
-                className="w-80 h-full bg-[#161b22] border-l border-[#30363d] flex flex-col"
+                className="w-80 h-full bg-bg-card border-l border-border-main flex flex-col"
                 role="complementary"
                 aria-label="Commit details"
             >
                 <div className="flex-1 flex items-center justify-center" role="status" aria-live="polite">
-                    <div className="w-5 h-5 border-2 border-t-transparent border-[#ef4444] rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2 border-t-transparent border-accent-main rounded-full animate-spin" />
                 </div>
             </aside>
         );
@@ -171,7 +171,7 @@ export function CommitDetails() {
     if (error || !details) {
         return (
             <aside
-                className="w-80 h-full bg-[#161b22] border-l border-[#30363d] flex flex-col"
+                className="w-80 h-full bg-bg-card border-l border-border-main flex flex-col"
                 role="complementary"
                 aria-label="Commit details"
             >
@@ -184,16 +184,16 @@ export function CommitDetails() {
 
     return (
         <aside
-            className="w-80 h-full bg-[#161b22] border-l border-[#30363d] flex flex-col relative"
+            className="w-80 h-full bg-bg-card border-l border-border-main flex flex-col relative text-text-main"
             role="complementary"
             aria-label="Commit details"
         >
             {/* Header */}
-            <div className="px-4 py-3 border-b border-[#30363d] flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-gray-200">Commit Details</h2>
+            <div className="px-4 py-3 border-b border-border-main flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-text-main">Commit Details</h2>
                 <button
                     onClick={() => setSelectedCommitHash(null)}
-                    className="text-gray-400 hover:text-white"
+                    className="text-text-sub hover:text-text-main"
                     aria-label="Close commit details"
                 >
                     ✕
@@ -203,54 +203,54 @@ export function CommitDetails() {
             {/* Content */}
             <div className="flex-1 overflow-y-auto">
                 {/* Commit info */}
-                <div className="p-4 border-b border-[#30363d]">
+                <div className="p-4 border-b border-border-main">
                     <div className="flex items-center gap-2 mb-2">
-                        <span className="px-2 py-0.5 bg-[#21262d] rounded text-xs font-mono text-[#ef4444]">
+                        <span className="px-2 py-0.5 bg-bg-hover rounded text-xs font-mono text-accent-main">
                             {details.shortHash}
                         </span>
                         <button
                             type="button"
                             onClick={() => copyToClipboard(details.hash, 'Copied commit hash')}
-                            className="p-1 rounded hover:bg-[#21262d] transition-colors"
+                            className="p-1 rounded hover:bg-bg-hover transition-colors"
                             aria-label="Copy commit hash"
                             title="Copy commit hash"
                         >
-                            <Copy className="w-4 h-4 text-gray-400" />
+                            <Copy className="w-4 h-4 text-text-sub" />
                         </button>
                         {getGitHubCommitUrl(repoInfo?.path, details.hash) && (
                             <a
                                 href={getGitHubCommitUrl(repoInfo?.path, details.hash)!}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="p-1 rounded hover:bg-[#21262d] transition-colors"
+                                className="p-1 rounded hover:bg-bg-hover transition-colors"
                                 aria-label="Open commit on GitHub"
                                 title="Open commit on GitHub"
                             >
-                                <ExternalLink className="w-4 h-4 text-gray-400" />
+                                <ExternalLink className="w-4 h-4 text-text-sub" />
                             </a>
                         )}
                     </div>
                     <div className="flex items-start justify-between gap-2 mb-2">
-                        <p className="text-sm text-gray-200 font-medium">{details.message}</p>
+                        <p className="text-sm text-text-main font-medium">{details.message}</p>
                         <button
                             type="button"
                             onClick={() => copyToClipboard(details.message, 'Copied commit message')}
-                            className="p-1 rounded hover:bg-[#21262d] transition-colors shrink-0"
+                            className="p-1 rounded hover:bg-bg-hover transition-colors shrink-0"
                             aria-label="Copy commit message"
                             title="Copy commit message"
                         >
-                            <Copy className="w-4 h-4 text-gray-400" />
+                            <Copy className="w-4 h-4 text-text-sub" />
                         </button>
                     </div>
                     {details.body && (
-                        <p className="text-xs text-gray-400 whitespace-pre-wrap">{details.body}</p>
+                        <p className="text-xs text-text-sub whitespace-pre-wrap">{details.body}</p>
                     )}
                 </div>
 
                 <CollapsibleSection title="Author">
-                    <div className="text-sm text-gray-200">{details.author.name}</div>
-                    <div className="text-xs text-gray-400">{details.author.email}</div>
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-sm text-text-main">{details.author.name}</div>
+                    <div className="text-xs text-text-sub">{details.author.email}</div>
+                    <div className="text-xs text-text-sub mt-1">
                         {new Date(details.date).toLocaleString()}
                     </div>
                 </CollapsibleSection>
@@ -260,12 +260,12 @@ export function CommitDetails() {
                     <div className="flex items-center gap-4 text-sm">
                         <span className="text-[#3fb950]">+{details.stats.additions}</span>
                         <span className="text-[#f85149]">-{details.stats.deletions}</span>
-                        <span className="text-gray-400">{details.stats.totalFiles} files</span>
+                        <span className="text-text-sub">{details.stats.totalFiles} files</span>
                         </div>
                         {details.diff && (
                             <button
                                 onClick={() => setIsBetterDiffOpen(true)}
-                                className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-linear-to-r from-[#ef4444] to-[#f97316] text-white rounded-md hover:from-[#f87171] hover:to-[#fb923c] transition-all shadow-sm"
+                                className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-linear-to-r from-blue-600 to-indigo-600 text-white rounded-md hover:from-blue-500 hover:to-indigo-500 transition-all shadow-sm"
                                 aria-label="Open Better Diff view"
                             >
                                 <Sparkles className="w-3 h-3" />
@@ -292,7 +292,7 @@ export function CommitDetails() {
                                 {selectedFile && (
                                     <button
                                         onClick={() => setSelectedFile(null)}
-                                        className="text-xs text-gray-400 hover:text-gray-300"
+                                        className="text-xs text-text-sub hover:text-text-main"
                                         aria-label="Show all files"
                                     >
                                         Show All Files
@@ -300,7 +300,7 @@ export function CommitDetails() {
                                 )}
                                 <button
                                     onClick={() => setShowFullDiff(!showFullDiff)}
-                                    className="text-xs text-[#ef4444] hover:text-[#f87171]"
+                                    className="text-xs text-accent-main hover:text-blue-400"
                                     aria-pressed={showFullDiff}
                                     aria-label={showFullDiff ? 'Show diff summary' : 'Show full diff'}
                                 >
@@ -309,7 +309,7 @@ export function CommitDetails() {
                             </div>
                         }
                     >
-                        <div className="bg-[#0d1117] border border-[#30363d] rounded overflow-hidden">
+                        <div className="bg-bg-main border border-border-main rounded overflow-hidden">
                             <div className="text-xs font-mono p-3 overflow-x-auto max-h-[400px] overflow-y-auto leading-relaxed">
                                 {renderDiff(displayDiff, showFullDiff, selectedFile ?? undefined)}
                             </div>

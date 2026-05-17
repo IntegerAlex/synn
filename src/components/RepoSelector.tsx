@@ -68,7 +68,7 @@ export function RepoSelector() {
 
         let animationId: number;
         const animate = () => {
-            ctx.fillStyle = '#0d1117';
+            ctx.fillStyle = 'var(--bg-primary)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             nodes.forEach((node, i) => {
@@ -88,7 +88,7 @@ export function RepoSelector() {
                         ctx.beginPath();
                         ctx.moveTo(node.x, node.y);
                         ctx.lineTo(other.x, other.y);
-                        ctx.strokeStyle = `rgba(59, 130, 246, ${0.05 * (1 - dist / 180)})`;
+                        ctx.strokeStyle = `var(--accent-primary)${Math.floor(0.1 * (1 - dist / 180) * 255).toString(16).padStart(2, '0')}`;
                         ctx.lineWidth = 0.5;
                         ctx.stroke();
                     }
@@ -96,7 +96,7 @@ export function RepoSelector() {
 
                 ctx.beginPath();
                 ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(59, 130, 246, 0.15)';
+                ctx.fillStyle = 'var(--accent-primary)33';
                 ctx.fill();
             });
 
@@ -181,7 +181,7 @@ export function RepoSelector() {
     };
 
     return (
-        <div className="relative min-h-screen flex items-center justify-center bg-[#0d1117] overflow-hidden">
+        <div className="relative min-h-screen flex items-center justify-center bg-bg-main overflow-hidden text-text-main">
             <canvas ref={canvasRef} className="absolute inset-0" />
             
             <div className="relative z-10 w-full max-w-2xl mx-auto px-6 lg:px-8 py-12">
@@ -196,23 +196,23 @@ export function RepoSelector() {
                             priority
                         />
                     </div>
-                    <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-3">
-                        Synn <span className="text-blue-500 text-3xl font-medium ml-2 opacity-80 italic">v2.0</span>
+                    <h1 className="text-4xl sm:text-5xl font-bold text-text-main tracking-tight mb-3">
+                        Synn <span className="text-accent-main text-3xl font-medium ml-2 opacity-80 italic">v2.0</span>
                     </h1>
-                    <p className="text-gray-400 text-center max-w-md text-lg">
+                    <p className="text-text-sub text-center max-w-md text-lg">
                         Visualize your development journey
                     </p>
                 </div>
 
                 <div className="space-y-6">
                     <SignedOut>
-                        <div className="text-center py-12 bg-[#161b22]/80 backdrop-blur-xl border border-[#30363d] rounded-2xl p-8 shadow-2xl">
-                            <Github className="w-16 h-16 text-gray-500 mx-auto mb-6" />
-                            <h2 className="text-2xl font-bold text-white mb-2">Connect GitHub</h2>
-                            <p className="text-gray-400 mb-8 max-w-sm mx-auto font-medium">Sync your repositories to start visualizing your commit patterns and branch history.</p>
+                        <div className="text-center py-12 bg-bg-card/80 backdrop-blur-xl border border-border-main rounded-2xl p-8 shadow-2xl">
+                            <Github className="w-16 h-16 text-text-sub mx-auto mb-6" />
+                            <h2 className="text-2xl font-bold text-text-main mb-2">Connect GitHub</h2>
+                            <p className="text-text-sub mb-8 max-w-sm mx-auto font-medium">Sync your repositories to start visualizing your commit patterns and branch history.</p>
                             <SignInButton mode="modal">
                                 <button className="w-full flex items-center justify-center gap-3 py-4 px-8 
-                                             bg-white hover:bg-gray-100 text-black font-bold rounded-xl
+                                             bg-text-main hover:opacity-90 text-bg-main font-bold rounded-xl
                                              transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]
                                              shadow-xl">
                                     <Github className="w-5 h-5" />
@@ -223,11 +223,11 @@ export function RepoSelector() {
                     </SignedOut>
 
                     <SignedIn>
-                        <div className="bg-[#161b22]/90 backdrop-blur-xl border border-[#30363d] rounded-2xl p-8 shadow-2xl">
-                            <div className="flex justify-between items-center mb-8 bg-[#0d1117]/50 p-4 rounded-xl border border-[#30363d]">
+                        <div className="bg-bg-card/90 backdrop-blur-xl border border-border-main rounded-2xl p-8 shadow-2xl">
+                            <div className="flex justify-between items-center mb-8 bg-bg-main/50 p-4 rounded-xl border border-border-main">
                                 <div className="flex items-center gap-3">
                                     <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] animate-pulse" />
-                                    <span className="text-sm font-semibold text-gray-300 tracking-wide uppercase">GitHub Connected</span>
+                                    <span className="text-sm font-semibold text-text-sub tracking-wide uppercase">GitHub Connected</span>
                                 </div>
                                 <UserButton />
                             </div>
@@ -236,8 +236,8 @@ export function RepoSelector() {
                                 {recentRepos.length > 0 && !searchQuery && (
                                     <div>
                                         <div className="flex items-center gap-2 mb-3 px-1">
-                                            <History className="w-4 h-4 text-blue-500" />
-                                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Recently Viewed</h3>
+                                            <History className="w-4 h-4 text-accent-main" />
+                                            <h3 className="text-xs font-bold text-text-sub uppercase tracking-widest">Recently Viewed</h3>
                                         </div>
                                         <div className="grid grid-cols-1 gap-2">
                                             {recentRepos.map((repoName) => (
@@ -246,8 +246,8 @@ export function RepoSelector() {
                                                     onClick={() => setSelectedRepo(repoName)}
                                                     className={`text-left px-4 py-3.5 rounded-xl border transition-all duration-200 group
                                                                ${selectedRepo === repoName 
-                                                                 ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-900/40' 
-                                                                 : 'bg-[#0d1117] border-[#30363d] text-gray-400 hover:border-gray-500 hover:bg-[#161b22]'}`}
+                                                                 ? 'bg-accent-main border-accent-main text-white shadow-lg shadow-accent-main/20' 
+                                                                 : 'bg-bg-main border-border-main text-text-sub hover:border-gray-500 hover:bg-bg-card'}`}
                                                 >
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-sm font-semibold truncate">{repoName}</span>
@@ -261,8 +261,8 @@ export function RepoSelector() {
 
                                 <div>
                                     <div className="flex items-center gap-2 mb-3 px-1">
-                                        <Search className="w-4 h-4 text-gray-500" />
-                                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                                        <Search className="w-4 h-4 text-text-sub" />
+                                        <h3 className="text-xs font-bold text-text-sub uppercase tracking-widest">
                                             {searchQuery ? 'Search Results' : 'Select Repository'}
                                         </h3>
                                     </div>
@@ -272,21 +272,21 @@ export function RepoSelector() {
                                             placeholder="Type to search your repos..."
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="w-full pl-6 pr-4 py-4 bg-[#0d1117] border border-[#30363d] rounded-2xl 
-                                                     text-white font-medium text-base
-                                                     focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500
-                                                     transition-all duration-200 placeholder-gray-700 shadow-inner"
+                                            className="w-full pl-6 pr-4 py-4 bg-bg-main border border-border-main rounded-2xl 
+                                                     text-text-main font-medium text-base
+                                                     focus:outline-none focus:ring-2 focus:ring-accent-main/50 focus:border-accent-main
+                                                     transition-all duration-200 placeholder-text-sub/50 shadow-inner"
                                         />
                                     </div>
 
-                                    <div role="listbox" className="max-h-64 overflow-y-auto rounded-2xl border border-[#30363d] bg-[#0d1117] custom-scrollbar">
+                                    <div role="listbox" className="max-h-64 overflow-y-auto rounded-2xl border border-border-main bg-bg-main custom-scrollbar">
                                         {loadingRepos ? (
                                             <div className="py-16 flex flex-col items-center gap-4">
-                                                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                                                <span className="text-sm text-gray-500 font-bold tracking-tight">Accessing GitHub Vault...</span>
+                                                <div className="w-8 h-8 border-2 border-accent-main border-t-transparent rounded-full animate-spin" />
+                                                <span className="text-sm text-text-sub font-bold tracking-tight">Accessing GitHub Vault...</span>
                                             </div>
                                         ) : filteredRepos.length === 0 ? (
-                                            <div className="py-16 text-center text-sm text-gray-500 font-medium">
+                                            <div className="py-16 text-center text-sm text-text-sub font-medium">
                                                 {searchQuery ? 'No matches found' : 'No repositories available'}
                                             </div>
                                         ) : (
@@ -297,15 +297,15 @@ export function RepoSelector() {
                                                     role="option"
                                                     aria-selected={selectedRepo === repo.full_name}
                                                     onClick={() => setSelectedRepo(repo.full_name)}
-                                                    className={`w-full text-left px-6 py-4.5 border-b border-[#30363d]/30 last:border-b-0
-                                                               hover:bg-blue-500/5 transition-all duration-200
-                                                               ${selectedRepo === repo.full_name ? 'bg-blue-500/10' : ''}`}
+                                                    className={`w-full text-left px-6 py-4.5 border-b border-border-main/30 last:border-b-0
+                                                               hover:bg-bg-hover transition-all duration-200
+                                                               ${selectedRepo === repo.full_name ? 'bg-accent-main/10' : ''}`}
                                                 >
                                                     <div className="flex items-center justify-between">
-                                                        <span className={`text-sm font-bold transition-colors ${selectedRepo === repo.full_name ? 'text-blue-400' : 'text-gray-300'}`}>
+                                                        <span className={`text-sm font-bold transition-colors ${selectedRepo === repo.full_name ? 'text-accent-main' : 'text-text-main'}`}>
                                                             {repo.full_name}
                                                         </span>
-                                                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-[#161b22] text-gray-600 border border-[#30363d]">
+                                                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-bg-card text-text-sub border border-border-main">
                                                             {repo.private ? 'Private' : 'Public'}
                                                         </span>
                                                     </div>
@@ -318,11 +318,11 @@ export function RepoSelector() {
                                 <button
                                     onClick={handleGithubSubmit}
                                     disabled={downloading || !selectedRepo || setRepo.isPending}
-                                    className="w-full py-5 px-6 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800
-                                             disabled:text-gray-600 disabled:cursor-not-allowed
+                                    className="w-full py-5 px-6 bg-accent-main hover:opacity-90 disabled:bg-bg-tertiary
+                                             disabled:text-text-sub disabled:cursor-not-allowed
                                              text-white font-black uppercase tracking-widest rounded-2xl 
-                                             transition-all duration-300 shadow-xl shadow-blue-900/20
-                                             transform hover:scale-[1.01] active:scale-[0.98] border border-blue-400/20"
+                                             transition-all duration-300 shadow-xl shadow-accent-main/20
+                                             transform hover:scale-[1.01] active:scale-[0.99] border border-white/10"
                                 >
                                     {downloading || setRepo.isPending ? (
                                         <div className="flex items-center justify-center gap-3">

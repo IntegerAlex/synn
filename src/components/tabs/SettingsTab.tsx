@@ -44,11 +44,11 @@ function SettingsSection({
 	children: React.ReactNode;
 }) {
 	return (
-		<div className="bg-[#161b22] border border-[#30363d] rounded-lg overflow-hidden">
-			<div className="px-4 py-3 border-b border-[#30363d]">
-				<h3 className="text-sm font-semibold text-gray-200">{title}</h3>
+		<div className="bg-bg-card border border-border-main rounded-xl overflow-hidden shadow-sm">
+			<div className="px-4 py-3 border-b border-border-main bg-bg-card/50">
+				<h3 className="text-sm font-bold text-text-main tracking-tight uppercase tracking-widest text-[10px]">{title}</h3>
 			</div>
-			<div className="p-4">{children}</div>
+			<div className="p-5">{children}</div>
 		</div>
 	);
 }
@@ -65,43 +65,51 @@ export function SettingsTab() {
 	const repoInfo = useAppStore((state) => state.repoInfo);
 
 	return (
-		<div className="h-full overflow-y-auto bg-[#0d1117] p-6">
-			<div className="max-w-2xl mx-auto space-y-6">
+		<div className="h-full overflow-y-auto bg-bg-main p-6 sm:p-8">
+			<div className="max-w-3xl mx-auto space-y-8">
+                <div className="mb-2">
+                    <h1 className="text-2xl font-black text-text-main">Settings</h1>
+                    <p className="text-text-sub text-sm">Manage your workspace preferences and theme</p>
+                </div>
+
 				{/* Theme Settings */}
 				<SettingsSection title="Appearance">
-					<div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
 						{THEMES.map(({ id, label, icon: Icon, description }) => (
 							<button
 								key={id}
 								type="button"
 								onClick={() => setTheme(id)}
-								className={`flex flex-col items-start gap-2 p-3 rounded-lg border transition-all ${
+								className={`flex flex-col items-start gap-2 p-4 rounded-xl border transition-all duration-200 group ${
 									theme === id
-										? "border-blue-500 bg-blue-500/10"
-										: "border-[#30363d] hover:border-[#484f58] bg-[#0d1117]"
+										? "border-accent-main bg-accent-main/5 ring-1 ring-accent-main"
+										: "border-border-main hover:border-text-sub bg-bg-main"
 								}`}
 							>
-								<div className="flex items-center gap-2">
-									<Icon className={`w-4 h-4 ${theme === id ? "text-blue-400" : "text-gray-500"}`} />
-									<span
-										className={`text-sm font-medium ${theme === id ? "text-blue-400" : "text-gray-300"}`}
-									>
-										{label}
-									</span>
+								<div className="flex items-center justify-between w-full">
+									<div className="flex items-center gap-2">
+										<Icon className={`w-4 h-4 ${theme === id ? "text-accent-main" : "text-text-sub group-hover:text-text-main"}`} />
+										<span
+											className={`text-sm font-bold ${theme === id ? "text-accent-main" : "text-text-sub group-hover:text-text-main"}`}
+										>
+											{label}
+										</span>
+									</div>
+									{theme === id && <div className="w-1.5 h-1.5 rounded-full bg-accent-main animate-pulse" />}
 								</div>
-								<span className="text-xs text-gray-500">{description}</span>
+								<span className="text-[10px] text-text-sub font-medium leading-tight">{description}</span>
 							</button>
 						))}
 					</div>
 				</SettingsSection>
 
 				{/* Layout Settings */}
-				<SettingsSection title="Layout">
-					<div className="space-y-4">
+				<SettingsSection title="Workspace">
+					<div className="space-y-6">
 						<div className="flex items-center justify-between">
 							<div>
-								<div className="text-sm text-gray-300">Sidebar</div>
-								<div className="text-xs text-gray-500">
+								<div className="text-sm font-bold text-text-main">Sidebar</div>
+								<div className="text-xs text-text-sub">
 									Toggle the left sidebar visibility
 								</div>
 							</div>
@@ -110,13 +118,13 @@ export function SettingsTab() {
 								role="switch"
 								aria-checked={!sidebarCollapsed}
 								onClick={toggleSidebar}
-								className={`relative w-10 h-5 rounded-full transition-colors ${
-									!sidebarCollapsed ? "bg-blue-500" : "bg-[#30363d]"
+								className={`relative w-11 h-6 rounded-full transition-all duration-300 ${
+									!sidebarCollapsed ? "bg-accent-main shadow-lg shadow-accent-main/20" : "bg-bg-tertiary"
 								}`}
 							>
 								<span
-									className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-										!sidebarCollapsed ? "left-5" : "left-0.5"
+									className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 shadow-sm ${
+										!sidebarCollapsed ? "left-6" : "left-1"
 									}`}
 								/>
 							</button>
@@ -124,8 +132,8 @@ export function SettingsTab() {
 
 						<div className="flex items-center justify-between">
 							<div>
-								<div className="text-sm text-gray-300">Show merge commits</div>
-								<div className="text-xs text-gray-500">
+								<div className="text-sm font-bold text-text-main">Show merge commits</div>
+								<div className="text-xs text-text-sub">
 									Display merge commits in the graph
 								</div>
 							</div>
@@ -134,13 +142,13 @@ export function SettingsTab() {
 								role="switch"
 								aria-checked={graphFilters.showMergeCommits}
 								onClick={toggleShowMergeCommits}
-								className={`relative w-10 h-5 rounded-full transition-colors ${
-									graphFilters.showMergeCommits ? "bg-blue-500" : "bg-[#30363d]"
+								className={`relative w-11 h-6 rounded-full transition-all duration-300 ${
+									graphFilters.showMergeCommits ? "bg-accent-main shadow-lg shadow-accent-main/20" : "bg-bg-tertiary"
 								}`}
 							>
 								<span
-									className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-										graphFilters.showMergeCommits ? "left-5" : "left-0.5"
+									className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 shadow-sm ${
+										graphFilters.showMergeCommits ? "left-6" : "left-1"
 									}`}
 								/>
 							</button>
@@ -148,8 +156,8 @@ export function SettingsTab() {
 
 						<div className="flex items-center justify-between">
 							<div>
-								<div className="text-sm text-gray-300">Show tags</div>
-								<div className="text-xs text-gray-500">
+								<div className="text-sm font-bold text-text-main">Show tags</div>
+								<div className="text-xs text-text-sub">
 									Display tags in the graph visualization
 								</div>
 							</div>
@@ -158,72 +166,68 @@ export function SettingsTab() {
 								role="switch"
 								aria-checked={graphFilters.showTags}
 								onClick={toggleShowTags}
-								className={`relative w-10 h-5 rounded-full transition-colors ${
-									graphFilters.showTags ? "bg-blue-500" : "bg-[#30363d]"
+								className={`relative w-11 h-6 rounded-full transition-all duration-300 ${
+									graphFilters.showTags ? "bg-accent-main shadow-lg shadow-accent-main/20" : "bg-bg-tertiary"
 								}`}
 							>
 								<span
-									className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-										graphFilters.showTags ? "left-5" : "left-0.5"
+									className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 shadow-sm ${
+										graphFilters.showTags ? "left-6" : "left-1"
 									}`}
 								/>
 							</button>
 						</div>
 
-						<button
-							type="button"
-							onClick={resetLayout}
-							className="flex items-center gap-2 px-4 py-2 text-sm text-gray-400 hover:text-white border border-[#30363d] hover:border-[#484f58] rounded-md transition-colors"
-						>
-							<RotateCcw className="w-4 h-4" />
-							Reset layout to defaults
-						</button>
+                        <div className="pt-2">
+						    <button
+							    type="button"
+							    onClick={resetLayout}
+							    className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-text-sub hover:text-text-main border border-border-main hover:border-text-sub rounded-xl transition-all"
+						    >
+							    <RotateCcw className="w-3.5 h-3.5" />
+							    Reset layout to defaults
+						    </button>
+                        </div>
 					</div>
 				</SettingsSection>
 
 				{/* Repository Info */}
 				{repoInfo && (
-					<SettingsSection title="Repository">
-						<dl className="space-y-3">
-							<div className="flex items-center justify-between">
-								<dt className="text-sm text-gray-500">Name</dt>
-								<dd className="text-sm text-gray-300 font-mono">{repoInfo.name}</dd>
+					<SettingsSection title="Current Repository">
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="p-3 bg-bg-main rounded-xl border border-border-main/50">
+								<div className="text-[10px] font-black text-text-sub uppercase mb-1">Name</div>
+								<div className="text-sm font-bold text-text-main font-mono">{repoInfo.name}</div>
 							</div>
-							<div className="flex items-center justify-between">
-								<dt className="text-sm text-gray-500">Path</dt>
-								<dd className="text-sm text-gray-300 font-mono truncate max-w-xs">
-									{repoInfo.path}
-								</dd>
+                            <div className="p-3 bg-bg-main rounded-xl border border-border-main/50">
+								<div className="text-[10px] font-black text-text-sub uppercase mb-1">Path</div>
+								<div className="text-sm font-bold text-text-main font-mono truncate">{repoInfo.path}</div>
 							</div>
-							<div className="flex items-center justify-between">
-								<dt className="text-sm text-gray-500">Branch</dt>
-								<dd className="text-sm text-gray-300 font-mono">{repoInfo.currentBranch}</dd>
+                            <div className="p-3 bg-bg-main rounded-xl border border-border-main/50">
+								<div className="text-[10px] font-black text-text-sub uppercase mb-1">Branch</div>
+								<div className="text-sm font-bold text-accent-main font-mono">{repoInfo.currentBranch}</div>
 							</div>
-							<div className="flex items-center justify-between">
-								<dt className="text-sm text-gray-500">Clean</dt>
-								<dd className="text-sm text-gray-300">{repoInfo.isClean ? "Yes" : "No"}</dd>
+                            <div className="p-3 bg-bg-main rounded-xl border border-border-main/50">
+								<div className="text-[10px] font-black text-text-sub uppercase mb-1">Status</div>
+								<div className={`text-sm font-bold ${repoInfo.isClean ? "text-green-500" : "text-yellow-500"}`}>
+                                    {repoInfo.isClean ? "Clean" : "Uncommitted changes"}
+                                </div>
 							</div>
-							{repoInfo.remotes.length > 0 && (
-								<div className="flex items-center justify-between">
-									<dt className="text-sm text-gray-500">Remotes</dt>
-									<dd className="text-sm text-gray-300">{repoInfo.remotes.join(", ")}</dd>
-								</div>
-							)}
-						</dl>
+						</div>
 					</SettingsSection>
 				)}
 
 				{/* Keyboard Shortcuts */}
 				<SettingsSection title="Keyboard Shortcuts">
-					<div className="space-y-2 text-xs">
+					<div className="space-y-3">
 						{[
 							["j / k", "Navigate between changes"],
 							["n / p", "Next / previous file"],
 							["Esc", "Close modals"],
 						].map(([key, desc]) => (
 							<div key={key} className="flex items-center justify-between">
-								<span className="text-gray-400">{desc}</span>
-								<kbd className="px-2 py-0.5 bg-[#21262d] border border-[#30363d] rounded text-gray-300 font-mono">
+								<span className="text-sm text-text-sub font-medium">{desc}</span>
+								<kbd className="px-3 py-1 bg-bg-hover border border-border-main rounded-lg text-text-main font-mono text-xs font-bold shadow-sm">
 									{key}
 								</kbd>
 							</div>

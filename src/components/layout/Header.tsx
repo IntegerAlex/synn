@@ -27,7 +27,7 @@ export function Header() {
     const showRepoInfo = repoInfo && !isProfilePage;
 
     return (
-        <header className="bg-[#161b22] border-b border-[#30363d] flex flex-col" role="banner" aria-label="Application header">
+        <header className="bg-bg-card border-b border-border-main flex flex-col" role="banner" aria-label="Application header">
             {/* Top bar */}
             <div className="h-12 flex items-center justify-between px-4">
                 {/* Left: App name and repo */}
@@ -44,8 +44,8 @@ export function Header() {
                     </Link>
                     {showRepoInfo && (
                         <div className="flex items-center gap-2 text-sm">
-                            <span className="text-gray-400">{repoInfo.name}</span>
-                            <span className="px-2 py-0.5 bg-[#21262d] rounded text-xs text-blue-500">
+                            <span className="text-text-sub">{repoInfo.name}</span>
+                            <span className="px-2 py-0.5 bg-bg-hover rounded text-xs text-accent-main">
                                 {repoInfo.currentBranch}
                             </span>
                             {!repoInfo.isClean && (
@@ -64,12 +64,12 @@ export function Header() {
                             onClick={() => {
                                 window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
                             }}
-                            className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 text-sm text-gray-500 bg-[#0d1117] border border-[#30363d] rounded-lg hover:border-[#484f58] transition-colors"
+                            className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 text-sm text-text-sub bg-bg-main border border-border-main rounded-lg hover:border-gray-500 transition-colors"
                             aria-label="Open command palette"
                         >
                             <Search className="w-3.5 h-3.5" />
                             <span>Search or jump to...</span>
-                            <kbd className="ml-2 px-1.5 py-0.5 text-xs bg-[#21262d] rounded border border-[#30363d]">⌘K</kbd>
+                            <kbd className="ml-2 px-1.5 py-0.5 text-xs bg-bg-hover rounded border border-border-main text-text-main">⌘K</kbd>
                         </button>
                     )}
 
@@ -77,7 +77,7 @@ export function Header() {
                     {isProfilePage && (
                         <Link
                             href="/app"
-                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-[#21262d] rounded-lg border border-[#30363d] hover:border-blue-500/50 bg-[#0d1117]/50 backdrop-blur-sm transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/10 group"
+                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-text-sub hover:text-text-main hover:bg-bg-hover rounded-lg border border-border-main hover:border-accent-main/50 bg-bg-main/50 backdrop-blur-sm transition-all duration-200 hover:shadow-lg hover:shadow-accent-main/10 group"
                         >
                             <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
                             <span>Back to App</span>
@@ -88,7 +88,7 @@ export function Header() {
                     {!isProfilePage && (
                         <Link
                             href="/profile"
-                            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-[#21262d] rounded-lg border border-[#30363d] hover:border-blue-500/50 bg-[#0d1117]/50 backdrop-blur-sm transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/10 group"
+                            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-text-sub hover:text-text-main hover:bg-bg-hover rounded-lg border border-border-main hover:border-accent-main/50 bg-bg-main/50 backdrop-blur-sm transition-all duration-200 hover:shadow-lg hover:shadow-accent-main/10 group"
                             title="View Profile"
                         >
                             <User className="w-4 h-4 transition-transform group-hover:scale-110" />
@@ -101,7 +101,7 @@ export function Header() {
                         <button
                             type="button"
                             onClick={closeRepo}
-                            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-[#21262d] rounded-lg border border-[#30363d] hover:border-blue-500/50 bg-[#0d1117]/50 backdrop-blur-sm transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/10"
+                            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-text-sub hover:text-text-main hover:bg-bg-hover rounded-lg border border-border-main hover:border-accent-main/50 bg-bg-main/50 backdrop-blur-sm transition-all duration-200 hover:shadow-lg hover:shadow-accent-main/10"
                             aria-label="Close repository"
                         >
                             Close Repo
@@ -120,8 +120,8 @@ export function Header() {
                             onClick={() => setActiveTab(id)}
                             className={`flex items-center gap-1.5 px-3 py-2 text-sm border-b-2 transition-colors ${
                                 activeTab === id
-                                    ? 'border-blue-500 text-white font-medium'
-                                    : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-[#30363d]'
+                                    ? 'border-accent-main text-text-main font-medium'
+                                    : 'border-transparent text-text-sub hover:text-text-main hover:border-border-main'
                             }`}
                             aria-current={activeTab === id ? 'page' : undefined}
                         >

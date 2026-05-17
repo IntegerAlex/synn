@@ -48,7 +48,7 @@ export default function Home() {
   }
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#0d1117] overflow-hidden">
+    <div className="h-screen w-screen flex flex-col bg-bg-main overflow-hidden text-text-main">
       {/* Document title - uses TanStack Query instead of useEffect */}
       <DocumentTitle />
 
@@ -57,12 +57,12 @@ export default function Home() {
 
       {/* Main content */}
       <div className="flex-1 flex min-h-0">
-        {/* Code tab: original layout with sidebar + graph + details */}
+        {/* Left sidebar - Branches & Files (always available) */}
+        <Sidebar />
+
+        {/* Code tab: original layout with graph + details */}
         {activeTab === "code" && (
           <>
-            {/* Left sidebar - Branches & Files */}
-            <Sidebar />
-
             {/* Graph takes remaining space */}
             <main className="flex-1 min-w-0">
               <CytoscapeGraph />
