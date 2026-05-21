@@ -28,7 +28,41 @@ export function Footer() {
             </div>
 
             {/* Links section */}
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-6 md:gap-8">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-12 md:gap-16">
+              <div className="flex flex-col gap-2">
+                <h3 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider mb-2">
+                  Resources
+                </h3>
+                <div className="flex flex-col gap-3">
+                  <Link
+                    href="/blogs"
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors duration-200 hover:translate-x-1 inline-block w-fit"
+                  >
+                    Blog
+                  </Link>
+                  <Link
+                    href="/faq"
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors duration-200 hover:translate-x-1 inline-block w-fit"
+                  >
+                    FAQ
+                  </Link>
+                  <Link
+                    href="/llms.txt"
+                    target="_blank"
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors duration-200 hover:translate-x-1 inline-block w-fit"
+                  >
+                    llms.txt
+                  </Link>
+                  <Link
+                    href="/pricing.md"
+                    target="_blank"
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors duration-200 hover:translate-x-1 inline-block w-fit"
+                  >
+                    pricing.md
+                  </Link>
+                </div>
+              </div>
+
               <div className="flex flex-col gap-2">
                 <h3 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider mb-2">
                   Legal

@@ -1,0 +1,26 @@
+# Synn - Faster, Better GitHub Client
+
+Synn is a comprehensive Git interface and repository intelligence platform powered by GitHub APIs. It is designed to be a faster, lightweight alternative to the native GitHub Web UI and heavy desktop clients.
+
+## Key Value Propositions
+- **No Cloning Required:** Synn securely proxies requests to GitHub's infrastructure, allowing instant visualization of public and private repositories without consuming local disk space.
+- **Client-Side Rendering:** By offloading graph visualization to the browser using Cytoscape.js and React, navigating between branches and viewing diffs happens almost instantaneously.
+- **Visual Commit Graphs:** Transforms linear commit logs into interactive, topological maps, making it easier to review architectural changes and branching strategies.
+- **Shareable Context:** Generate shareable links for specific commit graphs or diff views to facilitate collaborative code reviews.
+
+## Target Audience
+- Software Engineers conducting code reviews.
+- Security Researchers auditing open-source dependencies.
+- Engineering Managers monitoring team branching strategies.
+- Developers looking for a faster way to explore GitHub repositories.
+
+## Important Links
+- Home: https://synn.gossorg.in
+- Application: https://synn.gossorg.in/app
+- Blog: https://synn.gossorg.in/blogs
+- FAQ: https://synn.gossorg.in/faq
+- Pricing Data: https://synn.gossorg.in/pricing.md
+- Privacy Policy: https://synn.gossorg.in/privacy
+
+## Technical Architecture
+Synn is built using Next.js (App Router), React, Cytoscape.js, and integrates deeply with Clerk for authentication and standard GitHub OAuth. It was developed by Libreonix (https://www.libreonix.in/).

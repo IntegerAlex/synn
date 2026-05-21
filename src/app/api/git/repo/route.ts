@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
             .from(usersTable)
             .where(eq(usersTable.clerkUserId, clerkUserId))
             .limit(1)
-        : Promise.resolve([] as typeof usersTable.$inferSelect[]),
+        : Promise.resolve([] as (typeof usersTable.$inferSelect)[]),
       visitorId
         ? db
             .select()
@@ -48,14 +48,16 @@ export async function GET(request: NextRequest) {
             .limit(1)
             .catch((dbError: unknown) => {
               if (
-                (dbError instanceof Error && dbError.message?.includes("does not exist")) ||
-                (dbError instanceof Error && dbError.message?.includes("relation"))
+                (dbError instanceof Error &&
+                  dbError.message?.includes("does not exist")) ||
+                (dbError instanceof Error &&
+                  dbError.message?.includes("relation"))
               ) {
-                return [] as typeof fingerprintsTable.$inferSelect[];
+                return [] as (typeof fingerprintsTable.$inferSelect)[];
               }
               throw dbError;
             })
-        : Promise.resolve([] as typeof fingerprintsTable.$inferSelect[]),
+        : Promise.resolve([] as (typeof fingerprintsTable.$inferSelect)[]),
     ]);
 
     if (userResult.length > 0) {
@@ -152,7 +154,7 @@ export async function POST(request: Request) {
             .from(usersTable)
             .where(eq(usersTable.clerkUserId, clerkUserId))
             .limit(1)
-        : Promise.resolve([] as typeof usersTable.$inferSelect[]),
+        : Promise.resolve([] as (typeof usersTable.$inferSelect)[]),
       visitorId
         ? db
             .select()
@@ -161,14 +163,16 @@ export async function POST(request: Request) {
             .limit(1)
             .catch((dbError: unknown) => {
               if (
-                (dbError instanceof Error && dbError.message?.includes("does not exist")) ||
-                (dbError instanceof Error && dbError.message?.includes("relation"))
+                (dbError instanceof Error &&
+                  dbError.message?.includes("does not exist")) ||
+                (dbError instanceof Error &&
+                  dbError.message?.includes("relation"))
               ) {
-                return [] as typeof fingerprintsTable.$inferSelect[];
+                return [] as (typeof fingerprintsTable.$inferSelect)[];
               }
               throw dbError;
             })
-        : Promise.resolve([] as typeof fingerprintsTable.$inferSelect[]),
+        : Promise.resolve([] as (typeof fingerprintsTable.$inferSelect)[]),
     ]);
 
     if (userResult.length > 0) {
