@@ -33,7 +33,16 @@ export async function GET(
 
     const githubService = await getGitHubService(repoFullName);
     const details = await githubService.getCommitDetails(hash);
-    return NextResponse.json({ data: details });
+    // Commit objects are immutable – cache for the authenticated user.
+    return NextResponse.json(
+      { data: details },
+      {
+        headers: {
+          "Cache-Control":
+            "private, max-age=86400, stale-while-revalidate=604800",
+        },
+      },
+    );
   } catch (error) {
     const response = formatErrorResponse(error);
     return NextResponse.json(response, { status: 400 });

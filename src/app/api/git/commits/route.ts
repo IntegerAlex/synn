@@ -27,7 +27,14 @@ export async function GET(request: NextRequest) {
       branch || undefined,
       Math.min(Math.max(limit, 1), 10000),
     );
-    return NextResponse.json({ data: commits });
+    return NextResponse.json(
+      { data: commits },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
+        },
+      },
+    );
   } catch (error) {
     const response = formatErrorResponse(error);
     return NextResponse.json(response, { status: 400 });

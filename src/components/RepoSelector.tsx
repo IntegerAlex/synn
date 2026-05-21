@@ -1,7 +1,7 @@
 "use client";
 
 import { Show, SignInButton, useAuth } from "@clerk/nextjs";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
   ArrowRight,
@@ -56,6 +56,7 @@ type VisibilityFilter = "all" | "public" | "private";
 export function RepoSelector() {
   const [error, setError] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const prefetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // GitHub State
   const [selectedRepo, setSelectedRepo] = useState("");
@@ -67,6 +68,57 @@ export function RepoSelector() {
   const setRepoInfoStore = useAppStore((state) => state.setRepoInfo);
   const setRepo = useSetRepo();
   const { isLoaded, isSignedIn } = useAuth();
+  const queryClient = useQueryClient();
+
+  const clearPrefetchTimeout = () => {
+    if (prefetchTimeoutRef.current) {
+      clearTimeout(prefetchTimeoutRef.current);
+      prefetchTimeoutRef.current = null;
+    }
+  };
+
+  // Prefetch graph + branches on deliberate repo card hover so data is ready before the click
+  const handleRepoPrefetch = (repoFullName: string) => {
+    clearPrefetchTimeout();
+    prefetchTimeoutRef.current = setTimeout(() => {
+      queryClient.prefetchQuery({
+        queryKey: ["graph", repoFullName, 10000, 0],
+        queryFn: async () => {
+          const params = new URLSearchParams({
+            repo: repoFullName,
+            limit: "10000",
+          });
+          const res = await fetch(`/api/git/graph?${params}`);
+          if (!res.ok) throw new Error("prefetch failed");
+          const json = await res.json();
+          return json.data;
+        },
+        staleTime: 2 * 60 * 1000,
+      });
+      queryClient.prefetchQuery({
+        queryKey: ["branches", repoFullName],
+        queryFn: async () => {
+          const params = new URLSearchParams({ repo: repoFullName });
+          const res = await fetch(`/api/git/branches?${params}`);
+          if (!res.ok) throw new Error("prefetch failed");
+          const json = await res.json();
+          return json.data;
+        },
+        staleTime: 30 * 1000,
+      });
+      prefetchTimeoutRef.current = null;
+    }, 150);
+  };
+
+  const handleRepoPrefetchLeave = () => {
+    clearPrefetchTimeout();
+  };
+
+  useEffect(() => {
+    return () => {
+      clearPrefetchTimeout();
+    };
+  }, []);
 
   // Canvas animation matching home screen
   useEffect(() => {
@@ -442,6 +494,8 @@ export function RepoSelector() {
                       className={`rounded-md p-2 bg-bg-card border h-full flex flex-col transition-all duration-300 shadow-xl
                         ${selectedRepo === repo.full_name ? "border-accent-main ring-1 ring-accent-main shadow-accent-main/10" : "border-border-main hover:border-gray-500"}
                       `}
+                      onMouseEnter={() => handleRepoPrefetch(repo.full_name)}
+                      onMouseLeave={handleRepoPrefetchLeave}
                     >
                       <div
                         className="cursor-pointer flex-1 flex flex-col"

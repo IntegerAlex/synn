@@ -49,42 +49,42 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Get user ID if authenticated
+    // Run auth and fingerprint header read together, then fan out DB queries in parallel
     const { userId: clerkUserId } = await auth();
-    if (clerkUserId) {
-      const user = await db
-        .select()
-        .from(usersTable)
-        .where(eq(usersTable.clerkUserId, clerkUserId))
-        .limit(1);
-      if (user.length > 0) {
-        userId = user[0].id;
-      }
-    }
-
-    // Get fingerprint ID from header (set by client)
     const visitorId = request.headers.get("x-visitor-id");
-    if (visitorId) {
-      try {
-        const fingerprint = await db
-          .select()
-          .from(fingerprintsTable)
-          .where(eq(fingerprintsTable.visitorId, visitorId))
-          .limit(1);
-        if (fingerprint.length > 0) {
-          fingerprintId = fingerprint[0].id;
-        }
-      } catch (dbError: any) {
-        // Table might not exist - just continue without fingerprintId
-        if (
-          dbError.message?.includes("does not exist") ||
-          dbError.message?.includes("relation")
-        ) {
-          // Silently continue - fingerprint tracking is optional
-        } else {
-          throw dbError;
-        }
-      }
+
+    // Parallel DB lookups – user and fingerprint are independent
+    const [userResult, fingerprintResult] = await Promise.all([
+      clerkUserId
+        ? db
+            .select()
+            .from(usersTable)
+            .where(eq(usersTable.clerkUserId, clerkUserId))
+            .limit(1)
+        : Promise.resolve([] as typeof usersTable.$inferSelect[]),
+      visitorId
+        ? db
+            .select()
+            .from(fingerprintsTable)
+            .where(eq(fingerprintsTable.visitorId, visitorId))
+            .limit(1)
+            .catch((dbError: unknown) => {
+              if (
+                (dbError instanceof Error && dbError.message?.includes("does not exist")) ||
+                (dbError instanceof Error && dbError.message?.includes("relation"))
+              ) {
+                return [] as typeof fingerprintsTable.$inferSelect[];
+              }
+              throw dbError;
+            })
+        : Promise.resolve([] as typeof fingerprintsTable.$inferSelect[]),
+    ]);
+
+    if (userResult.length > 0) {
+      userId = userResult[0].id;
+    }
+    if (fingerprintResult.length > 0) {
+      fingerprintId = fingerprintResult[0].id;
     }
 
     const { searchParams } = new URL(request.url);

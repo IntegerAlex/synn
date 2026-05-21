@@ -33,7 +33,18 @@ export async function GET(request: NextRequest) {
 
     const githubService = await getGitHubService(repoFullName);
     const fileContents = await githubService.getFileContents(filePath, ref);
-    return NextResponse.json({ data: fileContents });
+
+    // File contents at a full commit SHA are immutable – cache aggressively.
+    // For branch refs (mutable) use a shorter TTL.
+    const isCommitSha = ref && /^[0-9a-f]{40}$/i.test(ref);
+    const cacheControl = isCommitSha
+      ? "private, max-age=86400, stale-while-revalidate=604800"
+      : "private, max-age=60, stale-while-revalidate=300";
+
+    return NextResponse.json(
+      { data: fileContents },
+      { headers: { "Cache-Control": cacheControl } },
+    );
   } catch (error) {
     const response = formatErrorResponse(error);
     return NextResponse.json(response, { status: 400 });
