@@ -23,7 +23,14 @@ export async function GET(request: NextRequest) {
 
     const githubService = await getGitHubService(repoFullName);
     const files = await githubService.getFiles(ref);
-    return NextResponse.json({ data: files });
+    return NextResponse.json(
+      { data: files },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=60, stale-while-revalidate=300",
+        },
+      },
+    );
   } catch (error) {
     const response = formatErrorResponse(error);
     return NextResponse.json(response, { status: 400 });

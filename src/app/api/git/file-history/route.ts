@@ -39,7 +39,14 @@ export async function GET(request: NextRequest) {
       ref,
       Number.isFinite(limit) ? limit : 50,
     );
-    return NextResponse.json({ data: history });
+    return NextResponse.json(
+      { data: history },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=60, stale-while-revalidate=300",
+        },
+      },
+    );
   } catch (error) {
     const response = formatErrorResponse(error);
     return NextResponse.json(response, { status: 400 });

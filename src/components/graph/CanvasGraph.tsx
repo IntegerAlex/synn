@@ -196,24 +196,35 @@ export function CanvasGraph() {
     });
   }, [graphData, ensureRenderer]);
 
-  // Handle resize
+  // Handle resize – debounced via requestAnimationFrame to prevent layout thrashing
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+
+    let rafId: number | null = null;
 
     const resizeObserver = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (!entry) return;
 
-      const { width, height } = entry.contentRect;
-      if (width > 0 && height > 0 && rendererRef.current) {
-        rendererRef.current.setViewport({ width, height });
-        setViewport((prev) => ({ ...prev, width, height }));
-      }
+      // Cancel any pending frame so we only process the last resize event
+      if (rafId !== null) cancelAnimationFrame(rafId);
+
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0 && rendererRef.current) {
+          rendererRef.current.setViewport({ width, height });
+          setViewport((prev) => ({ ...prev, width, height }));
+        }
+      });
     });
 
     resizeObserver.observe(container);
-    return () => resizeObserver.disconnect();
+    return () => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      resizeObserver.disconnect();
+    };
   }, []);
 
   // Update theme

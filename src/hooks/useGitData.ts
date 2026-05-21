@@ -57,7 +57,7 @@ export function useGraph(limit = 100, offset = 0, shareId?: string) {
     queryKey: queryKeys.graph(limit, offset),
     queryFn: () => gitApi.getGraph(repoInfo, limit, offset, shareId),
     enabled: !!repoInfo,
-    staleTime: 10000,
+    staleTime: 2 * 60 * 1000, // Graph data rarely changes mid-session; 2 min reduces redundant refetches
     placeholderData: (previousData) => previousData,
   });
 }
@@ -115,23 +115,28 @@ export function useRepoFiles(ref?: string) {
 // File contents
 export function useFileContents(filePath: string | null, ref?: string) {
   const repoInfo = useAppStore((state) => state.repoInfo);
+  // Content at a full commit SHA is immutable – cache it for the session.
+  const isCommitSha = ref ? /^[0-9a-f]{40}$/i.test(ref) : false;
 
   return useQuery({
     queryKey: ["fileContents", filePath, ref || "HEAD"],
     queryFn: () => gitApi.getFileContents(repoInfo, filePath!, ref),
     enabled: !!filePath && !!repoInfo,
-    staleTime: 60_000,
+    staleTime: isCommitSha ? Number.POSITIVE_INFINITY : 60_000,
+    gcTime: isCommitSha ? 30 * 60 * 1000 : 10 * 60 * 1000,
   });
 }
 
 // File blame
 export function useFileBlame(filePath: string | null, ref?: string) {
   const repoInfo = useAppStore((state) => state.repoInfo);
+  const isCommitSha = ref ? /^[0-9a-f]{40}$/i.test(ref) : false;
 
   return useQuery({
     queryKey: ["fileBlame", filePath, ref || "HEAD"],
     queryFn: () => gitApi.getFileBlame(repoInfo, filePath!, ref),
     enabled: !!filePath && !!repoInfo,
-    staleTime: 60_000,
+    staleTime: isCommitSha ? Number.POSITIVE_INFINITY : 60_000,
+    gcTime: isCommitSha ? 30 * 60 * 1000 : 10 * 60 * 1000,
   });
 }

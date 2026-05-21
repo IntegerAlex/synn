@@ -33,7 +33,17 @@ export async function GET(request: NextRequest) {
 
     const githubService = await getGitHubService(repoFullName);
     const blameInfo = await githubService.getBlame(filePath, ref);
-    return NextResponse.json({ data: blameInfo });
+
+    // Blame at a full commit SHA is immutable.
+    const isCommitSha = ref && /^[0-9a-f]{40}$/i.test(ref);
+    const cacheControl = isCommitSha
+      ? "public, s-maxage=86400, stale-while-revalidate=604800"
+      : "private, max-age=60, stale-while-revalidate=300";
+
+    return NextResponse.json(
+      { data: blameInfo },
+      { headers: { "Cache-Control": cacheControl } },
+    );
   } catch (error) {
     const response = formatErrorResponse(error);
     return NextResponse.json(response, { status: 400 });

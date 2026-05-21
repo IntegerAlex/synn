@@ -22,7 +22,14 @@ export async function GET(request: NextRequest) {
 
     const githubService = await getGitHubService(repoFullName);
     const branches = await githubService.getBranches();
-    return NextResponse.json({ data: branches });
+    return NextResponse.json(
+      { data: branches },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
+        },
+      },
+    );
   } catch (error) {
     const response = formatErrorResponse(error);
     return NextResponse.json(response, { status: 400 });
