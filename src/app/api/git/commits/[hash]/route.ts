@@ -33,13 +33,13 @@ export async function GET(
 
     const githubService = await getGitHubService(repoFullName);
     const details = await githubService.getCommitDetails(hash);
-    // Commit objects are immutable – cache aggressively at the browser and CDN level
+    // Commit objects are immutable – cache for the authenticated user.
     return NextResponse.json(
       { data: details },
       {
         headers: {
           "Cache-Control":
-            "public, s-maxage=86400, stale-while-revalidate=604800",
+            "private, max-age=86400, stale-while-revalidate=604800",
         },
       },
     );

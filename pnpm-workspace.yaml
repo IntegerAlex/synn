@@ -1,6 +1,22 @@
+packages:
+  - "."
+
+overrides:
+  d3-color: 3.1.0
+  vite: 7.3.2
+  esbuild: 0.25.0
+  postcss: 8.5.10
+
+onlyBuiltDependencies:
+  - "@clerk/shared"
+  - core-js
+  - esbuild
+  - protobufjs
+  - sharp
+
 allowBuilds:
-  '@clerk/shared': set this to true or false
-  core-js: set this to true or false
-  esbuild: set this to true or false
-  protobufjs: set this to true or false
-  sharp: set this to true or false
+  '@clerk/shared': true
+  core-js: true
+  esbuild: true
+  protobufjs: true
+  sharp: true

@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     // Blame at a full commit SHA is immutable.
     const isCommitSha = ref && /^[0-9a-f]{40}$/i.test(ref);
     const cacheControl = isCommitSha
-      ? "public, s-maxage=86400, stale-while-revalidate=604800"
+      ? "private, max-age=86400, stale-while-revalidate=604800"
       : "private, max-age=60, stale-while-revalidate=300";
 
     return NextResponse.json(
