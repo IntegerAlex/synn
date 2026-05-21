@@ -148,7 +148,7 @@ export function Header() {
           </div>
 
           <div className="h-6 w-px bg-border-main mx-1" />
-          <UserButton  />
+          <UserButton />
         </div>
       </div>
 

@@ -15,6 +15,7 @@ import {
   Star,
   X,
 } from "lucide-react";
+import { motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
@@ -34,6 +35,7 @@ interface Repo {
   description: string | null;
   default_branch: string;
   private: boolean;
+  language?: string;
   stargazers_count?: number;
   stars_count?: number;
   forks_count?: number;
@@ -435,152 +437,110 @@ export function RepoSelector() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
                 {filteredAndSortedRepos.map((repo: Repo) => (
-                  <button
-                    key={repo.id}
-                    type="button"
-                    onClick={() => setSelectedRepo(repo.full_name)}
-                    onDoubleClick={() => handleGithubSubmit(repo.full_name)}
-                    className={`group relative text-left p-6 rounded-3xl border transition-all duration-300 flex flex-col h-full
-                                                   ${
-                                                     selectedRepo ===
-                                                     repo.full_name
-                                                       ? "bg-accent-main/5 border-accent-main ring-1 ring-accent-main shadow-2xl shadow-accent-main/10 scale-[1.02]"
-                                                       : "bg-bg-card border-border-main hover:border-gray-500 hover:bg-bg-hover hover:scale-[1.01] shadow-lg shadow-black/10"
-}`}
-                  >
-                    {/* Selection Active Indicator */}
-                    {selectedRepo === repo.full_name && (
-                      <div className="absolute top-4 right-4 flex items-center gap-2">
-                        <span className="text-[10px] font-black uppercase text-accent-main tracking-tighter">
-                          Selected
-                        </span>
-                        <div className="w-2.5 h-2.5 rounded-full bg-accent-main shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
-                      </div>
-                    )}
-
-                    {/* Visibility Badge */}
-                    {!selectedRepo && (
-                      <div className="absolute top-4 right-4">
-                        {repo.private ? (
-                          <Shield className="w-3.5 h-3.5 text-orange-500/50" />
-                        ) : (
-                          <Globe className="w-3.5 h-3.5 text-green-500/50" />
-                        )}
-                      </div>
-                    )}
-
-                    {/* Repo Header */}
-                    <div className="flex items-start gap-4 mb-5">
-                      <div
-                        className={`shrink-0 w-12 h-12 rounded-2xl overflow-hidden border-2 transition-all duration-300
-                                                          ${selectedRepo === repo.full_name ? "border-accent-main" : "border-border-main group-hover:border-gray-500"}`}
-                      >
-                        <img
-                          src={
-                            typeof repo.owner === "string"
-                              ? `https://github.com/${repo.owner}.png`
-                              : repo.owner.avatar_url
-                          }
-                          alt={
-                            typeof repo.owner === "string"
-                              ? repo.owner
-                              : repo.owner.login
-                          }
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="min-w-0 flex-1 pt-1">
-                        <h4
-                          className={`text-lg font-bold truncate transition-colors ${selectedRepo === repo.full_name ? "text-accent-main" : "text-text-main"}`}
-                        >
-                          {repo.name}
-                        </h4>
-                        <p className="text-xs text-text-sub truncate opacity-70 font-medium">
-                          {typeof repo.owner === "string"
-                            ? repo.owner
-                            : repo.owner?.login}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Description */}
-                    <p className="text-sm text-text-sub line-clamp-3 mb-6 flex-1 font-medium leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">
-                      {repo.description ||
-                        repo.metadata?.description ||
-                        "No description provided."}
-                    </p>
-
-                    {/* Metadata Footer */}
+                  <div key={repo.id} className="w-[300px] mx-auto h-full">
                     <div
-                      className={`flex flex-wrap items-center gap-x-5 gap-y-2 pt-5 border-t transition-colors mt-auto
-                                                       ${selectedRepo === repo.full_name ? "border-accent-main/20" : "border-border-main/50"}`}
+                      className={`rounded-md p-2 bg-bg-card border h-full flex flex-col transition-all duration-300 shadow-xl
+                        ${selectedRepo === repo.full_name ? "border-accent-main ring-1 ring-accent-main shadow-accent-main/10" : "border-border-main hover:border-gray-500"}
+                      `}
                     >
                       <div
-                        className="flex items-center gap-1.5 text-text-sub group-hover:text-text-main transition-colors"
-                        title="Stars"
+                        className="cursor-pointer flex-1 flex flex-col"
+                        onClick={() => setSelectedRepo(repo.full_name)}
+                        onDoubleClick={() => handleGithubSubmit(repo.full_name)}
                       >
-                        <Star className="w-4 h-4 text-yellow-500/80" />
-                        <span className="text-xs font-bold tabular-nums">
-                          {(repo.stars_count ?? repo.stargazers_count) || 0}
-                        </span>
-                      </div>
-                      <div
-                        className="flex items-center gap-1.5 text-text-sub group-hover:text-text-main transition-colors"
-                        title="Forks"
-                      >
-                        <GitFork className="w-4 h-4 text-blue-500/80" />
-                        <span className="text-xs font-bold tabular-nums">
-                          {(repo.forks_count ?? repo.metadata?.forks_count) ||
-                            0}
-                        </span>
-                      </div>
-                      <div
-                        className="flex items-center gap-1.5 text-text-sub group-hover:text-text-main transition-colors"
-                        title="Issues"
-                      >
-                        <AlertCircle className="w-4 h-4 text-orange-500/80" />
-                        <span className="text-xs font-bold tabular-nums">
-                          {(repo.open_issues_count ??
-                            repo.metadata?.open_issues_count) ||
-                            0}
-                        </span>
-                      </div>
-                      <div
-                        className="flex items-center gap-1.5 text-text-sub group-hover:text-text-main transition-colors"
-                        title="Last Updated"
-                      >
-                        <Clock className="w-4 h-4 text-accent-main/80" />
-                        <span className="text-xs font-bold whitespace-nowrap">
-                          {(() => {
-                            const dateStr =
-                              repo.updated_at ||
-                              repo.metadata?.updatedAt ||
-                              repo.metadata?.pushedAt;
-                            if (!dateStr) return "N/A";
-                            const date = new Date(dateStr);
-                            return isNaN(date.getTime())
-                              ? "N/A"
-                              : date.toLocaleDateString(undefined, {
-                                  month: "short",
-                                  day: "numeric",
-                                });
-                          })()}
-                        </span>
-                      </div>
-                      <div className="ml-auto flex items-center gap-1.5 text-text-sub">
-                        <div
-                          className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-tighter border
-                                                              ${
-                                                                repo.private
-                                                                  ? "bg-orange-500/5 text-orange-500/70 border-orange-500/20"
-                                                                  : "bg-green-500/5 text-green-500/70 border-green-500/20"
-                                                              }`}
-                        >
-                          {repo.private ? "Private" : "Public"}
+                        <div className="relative group/img overflow-hidden rounded-md h-52 shrink-0">
+                          <img
+                            src={`https://opengraph.githubassets.com/1/${typeof repo.owner === "string" ? repo.owner : repo.owner?.login}/${repo.name}`}
+                            alt={repo.name}
+                            className="h-full w-full object-cover transition-transform duration-700 group-hover/img:scale-105"
+                            style={{
+                              clipPath:
+                                "polygon(0 0, 100% 0, 100% 100%, 0% 100%)",
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover/img:opacity-100 transition-opacity duration-300" />
+                          <div className="absolute bottom-2 left-2 flex gap-1">
+                            {repo.private ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-orange-500/80 text-white shadow-md backdrop-blur-md">
+                                Private
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-500/80 text-white shadow-md backdrop-blur-md">
+                                Public
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="pt-3 flex flex-col flex-1">
+                          <div className="flex justify-between items-start mb-2">
+                            <h1 className="font-semibold text-xl text-foreground truncate pr-2">
+                              {repo.name}
+                            </h1>
+                            <motion.button
+                              className="text-yellow-500 shrink-0 hover:text-yellow-400 z-10 relative"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                              }}
+                              whileHover={{ scale: 1.2 }}
+                              whileTap={{ scale: 0.9 }}
+                              transition={{
+                                type: "spring",
+                                stiffness: 400,
+                                damping: 10,
+                              }}
+                            >
+                              <Star className="w-5 h-5 fill-current" />
+                            </motion.button>
+                          </div>
+
+                          <p className="text-xs text-muted-foreground line-clamp-2 min-h-[32px] mb-4 opacity-80">
+                            {repo.description ||
+                              repo.metadata?.description ||
+                              "No description provided."}
+                          </p>
+
+                          <div className="flex items-center justify-between py-1 mt-auto">
+                            <span className="font-semibold text-lg flex items-center gap-1 text-text-sub">
+                              <GitFork className="w-4 h-4 text-blue-500/80" />
+                              {(repo.forks_count ??
+                                repo.metadata?.forks_count) ||
+                                0}
+                            </span>
+                            <div className="flex gap-2 items-center">
+                              {repo.language ? (
+                                <div className="flex items-center gap-1.5 px-2 py-1 rounded-full border border-border-main">
+                                  <span
+                                    className="w-3 h-3 rounded-full"
+                                    style={{ backgroundColor: "#e34c26" }}
+                                  ></span>
+                                  <span className="text-[10px] font-bold uppercase text-muted-foreground">
+                                    {repo.language}
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="flex gap-1 items-center px-2 py-1 rounded-full border border-border-main">
+                                  <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+                                  <span className="w-3 h-3 rounded-full bg-purple-500"></span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedRepo(repo.full_name);
+                          handleGithubSubmit(repo.full_name);
+                        }}
+                        className="text-bg-main w-full bg-text-main hover:bg-accent-main transition-colors py-3 rounded-md mt-4 font-medium"
+                      >
+                        Explore Repository
+                      </button>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             )}
