@@ -93,7 +93,7 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
-  
+
   --color-bg-main: var(--bg-primary);
   --color-bg-card: var(--bg-secondary);
   --color-bg-hover: var(--bg-tertiary);
@@ -101,7 +101,7 @@
   --color-text-sub: var(--text-secondary);
   --color-border-main: var(--border-primary);
   --color-accent-main: var(--accent-primary);
-  
+
   --font-sans: var(--font-sans), "Plus Jakarta Sans", system-ui, sans-serif;
   --font-mono: var(--font-mono), "JetBrains Mono", monospace;
 }

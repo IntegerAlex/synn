@@ -1,7 +1,7 @@
 {
   "name": "port",
   "version": "0.1.0",
-  "private": true,
+  "license": "AGPL-3.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -16,7 +16,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@clerk/nextjs": "^6.12.1",
+    "@clerk/nextjs": "^7.3.7",
     "@neondatabase/serverless": "^1.1.0",
     "@radix-ui/react-slot": "^1.2.4",
     "@tanstack/react-query": "^5.100.10",

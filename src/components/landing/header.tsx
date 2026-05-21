@@ -18,7 +18,10 @@ export function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const navLinks = [{ href: "", label: "" }];
+  const navLinks = [
+    { href: "/blogs", label: "Blogs" },
+    { href: "/faq", label: "FAQ" },
+  ];
 
   return (
     <header
@@ -60,7 +63,7 @@ export function Header() {
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-4">
-            <Link href="https://github.com/IntegerAlex" target="_blank">
+            <Link href="https://github.com/IntegerAlex/synn" target="_blank">
               <Button
                 variant="ghost"
                 size="sm"
@@ -109,7 +112,10 @@ export function Header() {
                 </Link>
               ))}
               <div className="flex flex-col gap-2 pt-4 border-t border-border">
-                <Link href="https://github.com/IntegerAlex" target="_blank">
+                <Link
+                  href="https://github.com/IntegerAlex/synn"
+                  target="_blank"
+                >
                   <Button
                     variant="ghost"
                     size="sm"

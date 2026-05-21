@@ -205,12 +205,8 @@
           "name": "activity_logs_userId_users_id_fk",
           "tableFrom": "activity_logs",
           "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -218,12 +214,8 @@
           "name": "activity_logs_fingerprintId_fingerprints_id_fk",
           "tableFrom": "activity_logs",
           "tableTo": "fingerprints",
-          "columnsFrom": [
-            "fingerprintId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["fingerprintId"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -429,12 +421,8 @@
           "name": "api_requests_userId_users_id_fk",
           "tableFrom": "api_requests",
           "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -442,12 +430,8 @@
           "name": "api_requests_fingerprintId_fingerprints_id_fk",
           "tableFrom": "api_requests",
           "tableTo": "fingerprints",
-          "columnsFrom": [
-            "fingerprintId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["fingerprintId"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -648,12 +632,8 @@
           "name": "commits_userId_users_id_fk",
           "tableFrom": "commits",
           "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -661,12 +641,8 @@
           "name": "commits_repoId_repos_id_fk",
           "tableFrom": "commits",
           "tableTo": "repos",
-          "columnsFrom": [
-            "repoId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["repoId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -838,12 +814,8 @@
           "name": "contributions_userId_users_id_fk",
           "tableFrom": "contributions",
           "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -851,12 +823,8 @@
           "name": "contributions_repoId_repos_id_fk",
           "tableFrom": "contributions",
           "tableTo": "repos",
-          "columnsFrom": [
-            "repoId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["repoId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1022,12 +990,8 @@
           "name": "fingerprints_userId_users_id_fk",
           "tableFrom": "fingerprints",
           "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1037,9 +1001,7 @@
         "fingerprints_visitorId_unique": {
           "name": "fingerprints_visitorId_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "visitorId"
-          ]
+          "columns": ["visitorId"]
         }
       },
       "policies": {},
@@ -1177,12 +1139,8 @@
           "name": "github_api_usage_userId_users_id_fk",
           "tableFrom": "github_api_usage",
           "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1420,12 +1378,8 @@
           "name": "repos_userId_users_id_fk",
           "tableFrom": "repos",
           "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1579,12 +1533,8 @@
           "name": "shared_views_userId_users_id_fk",
           "tableFrom": "shared_views",
           "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1594,9 +1544,7 @@
         "shared_views_shareId_unique": {
           "name": "shared_views_shareId_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "shareId"
-          ]
+          "columns": ["shareId"]
         }
       },
       "policies": {},
@@ -1731,16 +1679,12 @@
         "users_clerkUserId_unique": {
           "name": "users_clerkUserId_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "clerkUserId"
-          ]
+          "columns": ["clerkUserId"]
         },
         "users_githubId_unique": {
           "name": "users_githubId_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "githubId"
-          ]
+          "columns": ["githubId"]
         }
       },
       "policies": {},

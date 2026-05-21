@@ -1,5 +1,7 @@
 # Synn 
 
+[![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-blue?logo=github)](https://github.com/IntegerAlex/synn)
+
 ![Synn Header](public/logo.png) <!-- Update with actual banner if available -->
 
 > A comprehensive Git interface and repository intelligence platform powered by GitHub APIs.
@@ -121,6 +123,8 @@ Please see [SECURITY.md](./SECURITY.md) for our vulnerability reporting guidelin
 
 ## 📜 License & Credits
 
-© 2026 Synn. All rights reserved. 
+Synn is open-source software licensed under the [GNU Affero General Public License v3.0 (AGPL-3.0)](./LICENSE).
+
+© 2026 Akshat Kotpalliwar (alias IntegerAlex on GitHub). All rights reserved. 
 - Created by [Akshat Kotpalliwar](https://www.akshatkotpalliwar.in/)
 - Supported by [GOSSORG](https://www.gossorg.in/)

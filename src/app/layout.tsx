@@ -15,13 +15,15 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Synn",
+  title: "Synn: Lightweight GitHub Alternative & Fast Git Client",
   description:
-    "Visualize your Git history like never before. Track branches, explore commits, and master your repository with Synn.",
+    "The best lightweight GitHub alternative for visualizing Git history. A fast GitHub client to explore repositories, track activity & audit code without cloning.",
   keywords: [
-    "git",
-    "visualization",
     "github",
+    "github alternative",
+    "lightweight github",
+    "fast git client",
+    "git visualization",
     "version control",
     "git graph",
     "commit history",
@@ -39,9 +41,9 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://synn.gossorg.in",
     siteName: "Synn",
-    title: "Synn - Git Visualization for Modern Developers",
+    title: "Synn: Lightweight GitHub Alternative & Fast Git Client",
     description:
-      "Visualize your Git history like never before. Track branches, explore commits, and master your repository with Synn.",
+      "The best lightweight GitHub alternative for visualizing Git history. A fast GitHub client to explore repositories, track activity & audit code without cloning.",
     images: [
       {
         url: "/logo.png",
@@ -53,9 +55,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Synn - Git Visualization for Modern Developers",
+    title: "Synn: Lightweight GitHub Alternative & Fast Git Client",
     description:
-      "Visualize your Git history like never before. Track branches, explore commits, and master your repository with Synn.",
+      "The best lightweight GitHub alternative for visualizing Git history. A fast GitHub client to explore repositories, track activity & audit code without cloning.",
     images: ["/logo.png"],
   },
   robots: {

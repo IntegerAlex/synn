@@ -1,6 +1,6 @@
 "use client";
 
-import { SignedIn, SignedOut, SignInButton, useAuth } from "@clerk/nextjs";
+import { Show, SignInButton, useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
@@ -25,10 +25,12 @@ interface Repo {
   id: number;
   name: string;
   full_name: string;
-  owner: string | {
-    login: string;
-    avatar_url: string;
-  };
+  owner:
+    | string
+    | {
+        login: string;
+        avatar_url: string;
+      };
   description: string | null;
   default_branch: string;
   private: boolean;
@@ -186,24 +188,26 @@ export function RepoSelector() {
     // Sorting
     result.sort((a, b) => {
       if (sortBy === "name") return a.name.localeCompare(b.name);
-      
+
       if (sortBy === "stars") {
         const aStars = (a.stars_count ?? a.stargazers_count) || 0;
         const bStars = (b.stars_count ?? b.stargazers_count) || 0;
         return bStars - aStars;
       }
-      
+
       if (sortBy === "updated") {
-        const aDateStr = a.updated_at || a.metadata?.updatedAt || a.metadata?.pushedAt || 0;
-        const bDateStr = b.updated_at || b.metadata?.updatedAt || b.metadata?.pushedAt || 0;
-        
+        const aDateStr =
+          a.updated_at || a.metadata?.updatedAt || a.metadata?.pushedAt || 0;
+        const bDateStr =
+          b.updated_at || b.metadata?.updatedAt || b.metadata?.pushedAt || 0;
+
         const aTime = aDateStr ? new Date(aDateStr).getTime() : 0;
         const bTime = bDateStr ? new Date(bDateStr).getTime() : 0;
-        
+
         // Handle invalid dates
         const finalA = isNaN(aTime) ? 0 : aTime;
         const finalB = isNaN(bTime) ? 0 : bTime;
-        
+
         return finalB - finalA;
       }
       return 0;
@@ -268,7 +272,7 @@ export function RepoSelector() {
       <Header />
 
       <main className="flex-1 relative z-10 w-full max-w-[1600px] mx-auto px-6 py-8 flex flex-col gap-8 min-h-0">
-        <SignedOut>
+        <Show when="signed-out">
           <div className="flex-1 flex items-center justify-center">
             <div className="max-w-md w-full text-center py-12 bg-bg-card/80 backdrop-blur-xl border border-border-main rounded-2xl p-8 shadow-2xl">
               <Github className="w-16 h-16 text-text-sub mx-auto mb-6" />
@@ -292,9 +296,9 @@ export function RepoSelector() {
               </SignInButton>
             </div>
           </div>
-        </SignedOut>
+        </Show>
 
-        <SignedIn>
+        <Show when="signed-in">
           {/* Header Section */}
           <div className="flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -378,7 +382,9 @@ export function RepoSelector() {
                 <div className="flex items-center gap-3 bg-bg-main border border-border-main rounded-2xl px-4 py-2.5 shadow-inner hover:border-text-sub/30 transition-colors">
                   <SortAsc className="w-4.5 h-4.5 text-accent-main" />
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-black uppercase text-text-sub leading-none mb-0.5 tracking-tighter">Sort by</span>
+                    <span className="text-[9px] font-black uppercase text-text-sub leading-none mb-0.5 tracking-tighter">
+                      Sort by
+                    </span>
                     <select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value as SortOption)}
@@ -470,8 +476,16 @@ export function RepoSelector() {
                                                           ${selectedRepo === repo.full_name ? "border-accent-main" : "border-border-main group-hover:border-gray-500"}`}
                       >
                         <img
-                          src={typeof repo.owner === "string" ? `https://github.com/${repo.owner}.png` : repo.owner.avatar_url}
-                          alt={typeof repo.owner === "string" ? repo.owner : repo.owner.login}
+                          src={
+                            typeof repo.owner === "string"
+                              ? `https://github.com/${repo.owner}.png`
+                              : repo.owner.avatar_url
+                          }
+                          alt={
+                            typeof repo.owner === "string"
+                              ? repo.owner
+                              : repo.owner.login
+                          }
                           className="w-full h-full object-cover"
                         />
                       </div>
@@ -482,14 +496,18 @@ export function RepoSelector() {
                           {repo.name}
                         </h4>
                         <p className="text-xs text-text-sub truncate opacity-70 font-medium">
-                          {typeof repo.owner === "string" ? repo.owner : repo.owner?.login}
+                          {typeof repo.owner === "string"
+                            ? repo.owner
+                            : repo.owner?.login}
                         </p>
                       </div>
                     </div>
 
                     {/* Description */}
                     <p className="text-sm text-text-sub line-clamp-3 mb-6 flex-1 font-medium leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">
-                      {repo.description || repo.metadata?.description || "No description provided."}
+                      {repo.description ||
+                        repo.metadata?.description ||
+                        "No description provided."}
                     </p>
 
                     {/* Metadata Footer */}
@@ -512,7 +530,8 @@ export function RepoSelector() {
                       >
                         <GitFork className="w-4 h-4 text-blue-500/80" />
                         <span className="text-xs font-bold tabular-nums">
-                          {(repo.forks_count ?? repo.metadata?.forks_count) || 0}
+                          {(repo.forks_count ?? repo.metadata?.forks_count) ||
+                            0}
                         </span>
                       </div>
                       <div
@@ -521,7 +540,9 @@ export function RepoSelector() {
                       >
                         <AlertCircle className="w-4 h-4 text-orange-500/80" />
                         <span className="text-xs font-bold tabular-nums">
-                          {(repo.open_issues_count ?? repo.metadata?.open_issues_count) || 0}
+                          {(repo.open_issues_count ??
+                            repo.metadata?.open_issues_count) ||
+                            0}
                         </span>
                       </div>
                       <div
@@ -531,13 +552,18 @@ export function RepoSelector() {
                         <Clock className="w-4 h-4 text-accent-main/80" />
                         <span className="text-xs font-bold whitespace-nowrap">
                           {(() => {
-                            const dateStr = repo.updated_at || repo.metadata?.updatedAt || repo.metadata?.pushedAt;
+                            const dateStr =
+                              repo.updated_at ||
+                              repo.metadata?.updatedAt ||
+                              repo.metadata?.pushedAt;
                             if (!dateStr) return "N/A";
                             const date = new Date(dateStr);
-                            return isNaN(date.getTime()) ? "N/A" : date.toLocaleDateString(
-                              undefined,
-                              { month: "short", day: "numeric" },
-                            );
+                            return isNaN(date.getTime())
+                              ? "N/A"
+                              : date.toLocaleDateString(undefined, {
+                                  month: "short",
+                                  day: "numeric",
+                                });
                           })()}
                         </span>
                       </div>
@@ -559,7 +585,7 @@ export function RepoSelector() {
               </div>
             )}
           </div>
-        </SignedIn>
+        </Show>
       </main>
 
       {/* Sticky Action Footer for Selection */}
