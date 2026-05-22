@@ -166,6 +166,15 @@ export interface BranchCompare {
   stats: { filesChanged: number; additions: number; deletions: number };
 }
 
+export interface BranchComparison {
+  base: string;
+  target: string;
+  ahead: number;
+  behind: number;
+  commits: Commit[];
+  diffs: FileChange[];
+}
+
 export interface HotspotFile {
   path: string;
   changeCount: number;

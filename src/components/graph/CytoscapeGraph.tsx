@@ -4,6 +4,7 @@ import type cytoscape from "cytoscape";
 import {
   ChevronDown,
   ChevronUp,
+  ArrowLeftRight,
   Maximize2,
   RotateCcw,
   ZoomIn,
@@ -15,6 +16,7 @@ import { useGraph } from "@/hooks/useGitData";
 import { useAppStore } from "@/store/useAppStore";
 import type { GraphData, GraphNode } from "@/types/git";
 import { BranchesModal } from "./BranchesModal";
+import { BranchCompareDrawer } from "./BranchCompareDrawer";
 import { CommitActivityChart } from "./CommitActivityChart";
 import { CommitsModal } from "./CommitsModal";
 import { CommitTooltip } from "./CommitTooltip";
@@ -154,6 +156,7 @@ export function CytoscapeGraph({
 }: CytoscapeGraphProps = {}) {
   const [isCommitsModalOpen, setIsCommitsModalOpen] = useState(false);
   const [isBranchesModalOpen, setIsBranchesModalOpen] = useState(false);
+  const [isCompareDrawerOpen, setIsCompareDrawerOpen] = useState(false);
   const cyRef = useRef<cytoscape.Core | null>(null);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
@@ -712,6 +715,16 @@ export function CytoscapeGraph({
                 branches={graphData.branches}
                 currentBranch={graphData.currentBranch}
               />
+              <button
+                type="button"
+                onClick={() => setIsCompareDrawerOpen(true)}
+                className="flex items-center gap-1 px-2 py-1 rounded-md text-xs border border-[#30363d] bg-transparent text-gray-400 hover:bg-[#21262d] hover:text-gray-200 transition-colors"
+                title="Compare branches"
+                aria-label="Compare branches"
+              >
+                <ArrowLeftRight className="w-3.5 h-3.5" />
+                Compare
+              </button>
               <ShareButton graphLimit={graphLimit} />
             </>
           )}
@@ -851,6 +864,11 @@ export function CytoscapeGraph({
         isOpen={isBranchesModalOpen}
         onClose={() => setIsBranchesModalOpen(false)}
         totalBranches={graphData.branches.length}
+      />
+      <BranchCompareDrawer
+        isOpen={isCompareDrawerOpen}
+        onClose={() => setIsCompareDrawerOpen(false)}
+        defaultBase={graphData.currentBranch}
       />
     </div>
   );
