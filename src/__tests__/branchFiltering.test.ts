@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { GitHubBranchInfo } from "@/hooks/useGitHubData";
+import {
+  calculateAheadBehindPct,
+  calculateDivergence,
+} from "@/lib/utils/branchComparison";
 
 /**
  * Test the branch filtering and sorting logic used in BranchSelector.
@@ -107,49 +111,6 @@ describe("branch sorting", () => {
 });
 
 // ============ Ahead/Behind Calculation Tests ============
-
-/**
- * Pure helper that derives a human-readable divergence summary from raw
- * ahead_by / behind_by values returned by the GitHub compare API.
- */
-function calculateDivergence(
-  aheadBy: number,
-  behindBy: number,
-): { status: string; label: string } {
-  if (aheadBy === 0 && behindBy === 0) {
-    return { status: "identical", label: "Branches are identical" };
-  }
-  if (aheadBy > 0 && behindBy === 0) {
-    return {
-      status: "ahead",
-      label: `Target is ${aheadBy} commit${aheadBy !== 1 ? "s" : ""} ahead`,
-    };
-  }
-  if (aheadBy === 0 && behindBy > 0) {
-    return {
-      status: "behind",
-      label: `Target is ${behindBy} commit${behindBy !== 1 ? "s" : ""} behind`,
-    };
-  }
-  return {
-    status: "diverged",
-    label: `Branches have diverged: ${aheadBy} ahead, ${behindBy} behind`,
-  };
-}
-
-/**
- * Derive a percentage split for the ahead/behind progress bar.
- * Returns values that always sum to 100.
- */
-function calculateAheadBehindPct(
-  ahead: number,
-  behind: number,
-): { aheadPct: number; behindPct: number } {
-  const total = ahead + behind;
-  if (total === 0) return { aheadPct: 0, behindPct: 0 };
-  const aheadPct = Math.round((ahead / total) * 100);
-  return { aheadPct, behindPct: 100 - aheadPct };
-}
 
 describe("calculateDivergence", () => {
   it("returns identical when both are zero", () => {

@@ -12,6 +12,10 @@ import {
 } from "lucide-react";
 import { memo, useMemo, useState } from "react";
 import { useBranchComparison, useGitHubBranches } from "@/hooks/useGitHubData";
+import {
+  calculateAheadBehindPct,
+  calculateDivergence,
+} from "@/lib/utils/branchComparison";
 import { useAppStore } from "@/store/useAppStore";
 
 interface BranchCompareDrawerProps {
@@ -119,7 +123,7 @@ export const BranchCompareDrawer = memo(function BranchCompareDrawer({
     const tmp = base;
     setBase(target);
     setTarget(tmp);
-    setComparisonTarget(base);
+    setComparisonTarget(tmp);
   };
 
   const handleTargetChange = (v: string) => {
@@ -341,6 +345,16 @@ function OverviewTab({
   base: string;
   target: string;
 }) {
+  const divergence = calculateDivergence(result.ahead_by, result.behind_by);
+  const statusColorClass =
+    divergence.status === "ahead"
+      ? "text-[#3fb950]"
+      : divergence.status === "behind"
+        ? "text-red-400"
+        : divergence.status === "diverged"
+          ? "text-yellow-400"
+          : "text-[#8b949e]";
+
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-[#30363d] bg-[#161b22] p-4">
@@ -356,24 +370,14 @@ function OverviewTab({
           </div>
           <div className="flex justify-between">
             <span>Status</span>
-            <span
-              className={`font-medium ${
-                result.status === "ahead"
-                  ? "text-[#3fb950]"
-                  : result.status === "behind"
-                    ? "text-red-400"
-                    : result.status === "diverged"
-                      ? "text-yellow-400"
-                      : "text-[#8b949e]"
-              }`}
-            >
-              {result.status}
+            <span className={`font-medium ${statusColorClass}`}>
+              {divergence.status}
             </span>
           </div>
         </div>
       </div>
 
-      {result.ahead_by === 0 && result.behind_by === 0 ? (
+      {divergence.status === "identical" ? (
         <p className="text-sm text-[#8b949e] text-center py-4">
           These branches are identical.
         </p>
@@ -417,8 +421,7 @@ function AheadBehindBar({
   total: number;
 }) {
   if (total === 0) return null;
-  const aheadPct = Math.round((ahead / total) * 100);
-  const behindPct = 100 - aheadPct;
+  const { aheadPct, behindPct } = calculateAheadBehindPct(ahead, behind);
 
   return (
     <div
