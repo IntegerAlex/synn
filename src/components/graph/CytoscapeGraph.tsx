@@ -247,14 +247,7 @@ export function CytoscapeGraph({
     const paddingX = 50;
     const paddingY = 30;
 
-    const dimMode = highlightedBranches.size > 0;
-    const nodeIsHighlighted = new Map<string, boolean>();
-
     const nodes = filteredGraphData.nodes.map((node) => {
-      const isHighlighted = dimMode
-        ? nodeMatchesHighlightedBranches(node, highlightedCommits)
-        : false;
-      nodeIsHighlighted.set(node.hash, isHighlighted);
       return {
         data: {
           id: node.hash,
@@ -268,8 +261,8 @@ export function CytoscapeGraph({
           row: node.row,
           refs: node.refs,
           color: node.color,
-          __dim: dimMode ? "1" : "0",
-          __highlight: isHighlighted ? "1" : "0",
+          __dim: "0",
+          __highlight: "0",
         },
         position: {
           x: paddingX + node.column * laneWidth,
@@ -299,7 +292,6 @@ export function CytoscapeGraph({
         const sourceCol = edge.sourceColumn;
         const targetCol = edge.targetColumn;
         const colDiff = Math.abs(sourceCol - targetCol);
-        const _rowDiff = Math.abs(sourceNode.row - targetNode.row);
 
         if (edge.type === "merge") {
           // For merge edges, create a horizontal curve first, then vertical
@@ -324,19 +316,48 @@ export function CytoscapeGraph({
           targetColumn: edge.targetColumn,
           controlPointDistance,
           controlPointWeight,
-          __dim: dimMode ? "1" : "0",
-          __highlight:
-            dimMode &&
-            (nodeIsHighlighted.get(edge.source) ||
-              nodeIsHighlighted.get(edge.target))
-              ? "1"
-              : "0",
+          __dim: "0",
+          __highlight: "0",
         },
       };
     });
 
     return [...nodes, ...edges];
-  }, [filteredGraphData, highlightedBranches, highlightedCommits]);
+  }, [filteredGraphData]);
+
+  // Handle highlighting separately to avoid layout resets or flickering
+  useEffect(() => {
+    const cy = cyRef.current;
+    if (!cy || !filteredGraphData) return;
+
+    const dimMode = highlightedBranches.size > 0;
+
+    cy.batch(() => {
+      // Update nodes
+      cy.nodes().forEach((node) => {
+        const hash = node.data("hash");
+        const isHighlighted = dimMode
+          ? nodeMatchesHighlightedBranches(
+              { hash } as GraphNode,
+              highlightedCommits,
+            )
+          : false;
+        node.data("__dim", dimMode ? "1" : "0");
+        node.data("__highlight", isHighlighted ? "1" : "0");
+      });
+
+      // Update edges
+      cy.edges().forEach((edge) => {
+        const source = edge.data("source");
+        const target = edge.data("target");
+        const isHighlighted =
+          dimMode &&
+          (highlightedCommits.has(source) || highlightedCommits.has(target));
+        edge.data("__dim", dimMode ? "1" : "0");
+        edge.data("__highlight", isHighlighted ? "1" : "0");
+      });
+    });
+  }, [highlightedBranches, highlightedCommits, filteredGraphData]);
 
   // Cytoscape stylesheet
   const stylesheet = useMemo(

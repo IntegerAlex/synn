@@ -9,17 +9,19 @@ import { useAppStore } from "@/store/useAppStore";
 import type { Branch } from "@/types/git";
 
 export function Sidebar() {
-  const setSelectedBranch = useAppStore((state) => state.setSelectedBranch);
+  const toggleBranchHighlight = useAppStore(
+    (state) => state.toggleBranchHighlight,
+  );
+  const { highlightedBranches } = useAppStore((state) => state.graphFilters);
   const { data: branches, isLoading } = useBranches();
   const checkout = useCheckoutBranch();
-  const selectedBranch = useAppStore((state) => state.selectedBranch);
   const repoInfo = useAppStore((state) => state.repoInfo);
   const sidebarCollapsed = useAppStore((state) => state.sidebarCollapsed);
   const toggleSidebar = useAppStore((state) => state.toggleSidebar);
   const [tab, setTab] = useState<"branches" | "files">("files");
 
   const handleBranchClick = (branchName: string) => {
-    setSelectedBranch(branchName);
+    toggleBranchHighlight(branchName);
   };
 
   const handleCheckout = async (branchName: string) => {
@@ -159,11 +161,11 @@ export function Sidebar() {
                   onClick={() => handleBranchClick(branch.name)}
                   onDoubleClick={() => handleCheckout(branch.name)}
                   className={`w-full px-4 py-1.5 text-left text-sm flex items-center gap-2 hover:bg-bg-hover transition-colors
-                                        ${selectedBranch === branch.name ? "bg-bg-hover text-text-main" : "text-text-sub"}
+                                        ${highlightedBranches.has(branch.name) ? "bg-bg-hover text-text-main" : "text-text-sub"}
                                         ${branch.isCurrent ? "font-medium" : ""}`}
                   aria-label={`Branch ${branch.name}${branch.isCurrent ? " (current)" : ""}`}
                   aria-current={
-                    selectedBranch === branch.name ? "true" : undefined
+                    highlightedBranches.has(branch.name) ? "true" : undefined
                   }
                 >
                   {branch.isCurrent && (
@@ -184,10 +186,10 @@ export function Sidebar() {
                       key={branch.name}
                       onClick={() => handleBranchClick(branch.name)}
                       className={`w-full px-4 py-1.5 text-left text-sm truncate hover:bg-bg-hover transition-colors
-                                                ${selectedBranch === branch.name ? "bg-bg-hover text-text-main" : "text-text-sub"}`}
+                                                ${highlightedBranches.has(branch.name) ? "bg-bg-hover text-text-main" : "text-text-sub"}`}
                       aria-label={`Remote branch ${branch.name}`}
                       aria-current={
-                        selectedBranch === branch.name ? "true" : undefined
+                        highlightedBranches.has(branch.name) ? "true" : undefined
                       }
                     >
                       {branch.name}
@@ -227,11 +229,11 @@ export function Sidebar() {
                             : () => handleCheckout(row.branch.name)
                         }
                         className={`w-full px-4 py-1.5 text-left text-sm flex items-center gap-2 hover:bg-bg-hover transition-colors
-                                                    ${selectedBranch === row.branch.name ? "bg-bg-hover text-text-main" : "text-text-sub"}
+                                                    ${highlightedBranches.has(row.branch.name) ? "bg-bg-hover text-text-main" : "text-text-sub"}
                                                     ${row.branch.isCurrent ? "font-medium" : ""}`}
                         aria-label={`${row.isRemote ? "Remote" : "Local"} branch ${row.branch.name}${row.branch.isCurrent ? " (current)" : ""}`}
                         aria-current={
-                          selectedBranch === row.branch.name
+                          highlightedBranches.has(row.branch.name)
                             ? "true"
                             : undefined
                         }
