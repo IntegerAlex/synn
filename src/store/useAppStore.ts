@@ -10,6 +10,7 @@ export interface AppStoreState {
   repoInfo: RepoInfo | null;
   selectedCommitHash: string | null;
   selectedBranch: string | null;
+  comparisonTarget: string | null;
   activeTab: AppTab;
   theme: Theme;
   sidebarCollapsed: boolean;
@@ -27,6 +28,7 @@ export interface AppStoreActions {
   closeRepo: () => void;
   setSelectedCommitHash: (hash: string | null) => void;
   setSelectedBranch: (branch: string | null) => void;
+  setComparisonTarget: (branch: string | null) => void;
   setActiveTab: (tab: AppTab) => void;
   setTheme: (theme: Theme) => void;
   toggleSidebar: () => void;
@@ -45,6 +47,7 @@ const initialState: AppStoreState = {
   repoInfo: null,
   selectedCommitHash: null,
   selectedBranch: null,
+  comparisonTarget: null,
   activeTab: "code",
   theme: "github-dark",
   sidebarCollapsed: false,
@@ -79,6 +82,7 @@ export const useAppStore = create<AppStore>()(
         }),
       setSelectedCommitHash: (hash) => set({ selectedCommitHash: hash }),
       setSelectedBranch: (branch) => set({ selectedBranch: branch }),
+      setComparisonTarget: (branch) => set({ comparisonTarget: branch }),
       setActiveTab: (tab) => set({ activeTab: tab }),
       setTheme: (theme) => set({ theme }),
       toggleSidebar: () =>

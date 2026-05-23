@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { GitHubBranchInfo } from "@/hooks/useGitHubData";
+import {
+  calculateAheadBehindPct,
+  calculateDivergence,
+} from "@/lib/utils/branchComparison";
 
 /**
  * Test the branch filtering and sorting logic used in BranchSelector.
@@ -103,5 +107,84 @@ describe("branch sorting", () => {
   it("handles empty array", () => {
     const result = sortBranches([]);
     expect(result).toEqual([]);
+  });
+});
+
+// ============ Ahead/Behind Calculation Tests ============
+
+describe("calculateDivergence", () => {
+  it("returns identical when both are zero", () => {
+    const result = calculateDivergence(0, 0);
+    expect(result.status).toBe("identical");
+  });
+
+  it("returns ahead when only ahead_by > 0", () => {
+    const result = calculateDivergence(3, 0);
+    expect(result.status).toBe("ahead");
+    expect(result.label).toContain("3 commits ahead");
+  });
+
+  it("uses singular commit when ahead_by is 1", () => {
+    const result = calculateDivergence(1, 0);
+    expect(result.label).toContain("1 commit ahead");
+    expect(result.label).not.toContain("commits");
+  });
+
+  it("returns behind when only behind_by > 0", () => {
+    const result = calculateDivergence(0, 5);
+    expect(result.status).toBe("behind");
+    expect(result.label).toContain("5 commits behind");
+  });
+
+  it("uses singular commit when behind_by is 1", () => {
+    const result = calculateDivergence(0, 1);
+    expect(result.label).toContain("1 commit behind");
+    expect(result.label).not.toContain("commits");
+  });
+
+  it("returns diverged when both ahead and behind", () => {
+    const result = calculateDivergence(4, 2);
+    expect(result.status).toBe("diverged");
+    expect(result.label).toContain("4 ahead");
+    expect(result.label).toContain("2 behind");
+  });
+});
+
+describe("calculateAheadBehindPct", () => {
+  it("returns zeros when both are zero", () => {
+    const result = calculateAheadBehindPct(0, 0);
+    expect(result.aheadPct).toBe(0);
+    expect(result.behindPct).toBe(0);
+  });
+
+  it("returns 100% ahead when only ahead", () => {
+    const result = calculateAheadBehindPct(5, 0);
+    expect(result.aheadPct).toBe(100);
+    expect(result.behindPct).toBe(0);
+  });
+
+  it("returns 100% behind when only behind", () => {
+    const result = calculateAheadBehindPct(0, 8);
+    expect(result.aheadPct).toBe(0);
+    expect(result.behindPct).toBe(100);
+  });
+
+  it("percentages always sum to 100", () => {
+    const cases = [
+      [3, 1],
+      [1, 3],
+      [10, 7],
+      [1, 1],
+    ] as const;
+    for (const [a, b] of cases) {
+      const { aheadPct, behindPct } = calculateAheadBehindPct(a, b);
+      expect(aheadPct + behindPct).toBe(100);
+    }
+  });
+
+  it("50/50 split for equal values", () => {
+    const result = calculateAheadBehindPct(5, 5);
+    expect(result.aheadPct).toBe(50);
+    expect(result.behindPct).toBe(50);
   });
 });
