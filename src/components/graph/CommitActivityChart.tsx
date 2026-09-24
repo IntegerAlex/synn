@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import { type AxisOptions, Chart } from "react-charts";
 import type { GraphNode } from "@/types/git";
 
 interface CommitActivityChartProps {
@@ -13,14 +12,9 @@ type DailyCommitData = {
   commits: number;
 };
 
-type Series = {
-  label: string;
-  data: DailyCommitData[];
-};
-
 export function CommitActivityChart({ nodes }: CommitActivityChartProps) {
   // Group commits by day/week/month based on repository age
-  const chartData = useMemo((): Series[] => {
+  const data = useMemo((): DailyCommitData[] => {
     if (!nodes || nodes.length === 0) return [];
 
     // Group commits by date
@@ -73,39 +67,13 @@ export function CommitActivityChart({ nodes }: CommitActivityChartProps) {
       a.localeCompare(b),
     );
 
-    const data: DailyCommitData[] = sortedDates.map(([dateStr, count]) => ({
+    return sortedDates.map(([dateStr, count]) => ({
       date: new Date(dateStr),
       commits: count,
     }));
-
-    return [
-      {
-        label: "Commits",
-        data,
-      },
-    ];
   }, [nodes]);
 
-  const primaryAxis = useMemo(
-    (): AxisOptions<DailyCommitData> => ({
-      getValue: (datum) => datum.date,
-      scaleType: "time",
-    }),
-    [],
-  );
-
-  const secondaryAxes = useMemo(
-    (): AxisOptions<DailyCommitData>[] => [
-      {
-        getValue: (datum) => datum.commits,
-        elementType: "area",
-        min: 0,
-      },
-    ],
-    [],
-  );
-
-  if (chartData.length === 0 || chartData[0].data.length === 0) {
+  if (data.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-gray-500 text-sm">
         No commit activity data
@@ -113,17 +81,29 @@ export function CommitActivityChart({ nodes }: CommitActivityChartProps) {
     );
   }
 
+  const max = Math.max(...data.map((d) => d.commits), 1);
+
   return (
-    <div className="w-full h-full">
-      <Chart
-        options={{
-          data: chartData,
-          primaryAxis,
-          secondaryAxes,
-          dark: true,
-          defaultColors: ["#ef4444", "#f97316"],
-        }}
-      />
-    </div>
+    <svg
+      className="w-full h-full"
+      viewBox={`0 0 ${data.length} 100`}
+      preserveAspectRatio="none"
+      role="img"
+      aria-label="Commit activity over time"
+    >
+      {data.map((d, i) => {
+        const height = (d.commits / max) * 100;
+        return (
+          <rect
+            key={d.date.toISOString()}
+            x={i + 0.1}
+            y={100 - height}
+            width={0.8}
+            height={height}
+            fill="#ef4444"
+          />
+        );
+      })}
+    </svg>
   );
 }

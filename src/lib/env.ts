@@ -61,27 +61,10 @@ function validateEnv(): Env {
   // Skip validation during build time (Next.js build process)
   // Validation will happen at runtime when env is first accessed
   if (process.env.NEXT_PHASE === "phase-production-build") {
-    // During build, return a partial env object with defaults
-    // This allows the build to complete, but validation will happen at runtime
+    // During build, skip required-field validation but still apply defaults.
     return {
+      ...optionalEnvSchema.parse(process.env),
       DATABASE_URL: process.env.DATABASE_URL || "",
-      CLERK_WEBHOOK_SECRET: process.env.CLERK_WEBHOOK_SECRET || "",
-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
-        process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
-      CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
-      ADMIN_USER_IDS: process.env.ADMIN_USER_IDS,
-      ENCRYPTION_PUBLIC_KEY_PATH: process.env.ENCRYPTION_PUBLIC_KEY_PATH,
-      LOG_LEVEL:
-        (process.env.LOG_LEVEL as "debug" | "info" | "warn" | "error") ||
-        "info",
-      COMMIT_BATCH_SIZE: process.env.COMMIT_BATCH_SIZE
-        ? parseInt(process.env.COMMIT_BATCH_SIZE, 10)
-        : 100,
-      NODE_ENV: process.env.NODE_ENV as
-        | "development"
-        | "production"
-        | "test"
-        | undefined,
     } as Env;
   }
 

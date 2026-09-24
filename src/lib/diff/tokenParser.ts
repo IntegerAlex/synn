@@ -159,11 +159,3 @@ export function findChangedTokens(
 
   return { oldTokens, newTokens, changedIndices };
 }
-
-/**
- * Extract identifiers (variable/function names) from a line
- */
-export function extractIdentifiers(line: string): string[] {
-  const tokens = parseTokens(line);
-  return tokens.filter((t) => t.type === "identifier").map((t) => t.value);
-}

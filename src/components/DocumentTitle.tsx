@@ -1,21 +1,19 @@
 "use client";
 
-import { useRef } from "react";
-import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { useEffect } from "react";
+import { useAppStore } from "@/store/useAppStore";
 
 /**
- * Component that updates the document title based on repoInfo state
- * Uses TanStack Query instead of useEffect for reactive updates
+ * Component that keeps document.title in sync with the selected repository.
  */
 export function DocumentTitle() {
-  const title = useDocumentTitle();
-  const previousTitleRef = useRef<string>("");
+  const repoInfo = useAppStore((state) => state.repoInfo);
+  const repoName = repoInfo?.path || repoInfo?.name;
+  const title = repoName ? `Synn - ${repoName}` : "Synn";
 
-  // Update title only when it changes (using ref to track previous value)
-  if (typeof document !== "undefined" && title !== previousTitleRef.current) {
+  useEffect(() => {
     document.title = title;
-    previousTitleRef.current = title;
-  }
+  }, [title]);
 
   return null;
 }

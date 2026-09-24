@@ -1,9 +1,4 @@
-import {
-  decryptData,
-  encryptData,
-  hashData,
-  isEncryptionAvailable,
-} from "./encryption";
+import { encryptData, isEncryptionAvailable } from "./encryption";
 
 /**
  * Token encryption service for GitHub OAuth tokens
@@ -45,54 +40,6 @@ export function encryptToken(token: string): string {
 }
 
 /**
- * Decrypt a GitHub access token from database
- * @param encryptedToken - The encrypted token from database
- * @param privateKey - PEM formatted private key
- */
-export function decryptToken(
-  encryptedToken: string,
-  privateKey: string,
-): string {
-  if (!encryptedToken) {
-    return encryptedToken;
-  }
-
-  // Check if token is encrypted
-  if (!encryptedToken.startsWith(ENCRYPTED_PREFIX)) {
-    // Token is not encrypted, return as-is
-    return encryptedToken;
-  }
-
-  try {
-    const encrypted = encryptedToken.slice(ENCRYPTED_PREFIX.length);
-    return decryptData(encrypted, privateKey);
-  } catch (error) {
-    console.error("Failed to decrypt token:", error);
-    throw new Error("Token decryption failed");
-  }
-}
-
-/**
- * Check if a token is encrypted
- */
-export function isTokenEncrypted(token: string): boolean {
-  return token?.startsWith(ENCRYPTED_PREFIX) ?? false;
-}
-
-/**
- * Create a hash of the token for comparison purposes
- * This allows checking if two tokens are the same without decryption
- */
-export function hashToken(token: string): string {
-  // If encrypted, we can't hash the original value
-  // Return a hash of the encrypted value instead
-  if (isTokenEncrypted(token)) {
-    return hashData(token);
-  }
-  return hashData(token);
-}
-
-/**
  * Encrypt refresh token (same process as access token)
  */
 export function encryptRefreshToken(token: string | null): string | null {
@@ -100,17 +47,4 @@ export function encryptRefreshToken(token: string | null): string | null {
     return null;
   }
   return encryptToken(token);
-}
-
-/**
- * Decrypt refresh token
- */
-export function decryptRefreshToken(
-  encryptedToken: string | null,
-  privateKey: string,
-): string | null {
-  if (!encryptedToken) {
-    return null;
-  }
-  return decryptToken(encryptedToken, privateKey);
 }

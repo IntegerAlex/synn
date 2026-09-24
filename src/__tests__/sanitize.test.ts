@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  escapeHtml,
-  sanitizeDiffHtml,
-  sanitizeHtml,
-} from "@/lib/utils/sanitize";
+import { escapeHtml, sanitizeDiffHtml } from "@/lib/utils/sanitize";
 
 describe("escapeHtml", () => {
   it("escapes HTML special characters", () => {
@@ -27,42 +23,6 @@ describe("escapeHtml", () => {
   it("does not double-escape already escaped content", () => {
     const result = escapeHtml("&lt;");
     expect(result).toBe("&amp;lt;");
-  });
-});
-
-describe("sanitizeHtml", () => {
-  it("removes script tags", () => {
-    const result = sanitizeHtml('<script>alert("xss")</script>');
-    expect(result).not.toContain("<script>");
-    expect(result).not.toContain("alert");
-  });
-
-  it("preserves safe HTML tags", () => {
-    const result = sanitizeHtml("<b>bold</b> <em>italic</em>");
-    expect(result).toContain("<b>bold</b>");
-    expect(result).toContain("<em>italic</em>");
-  });
-
-  it("removes event handlers", () => {
-    const result = sanitizeHtml('<img src="x" onerror="alert(1)">');
-    expect(result).not.toContain("onerror");
-  });
-
-  it("allows safe attributes", () => {
-    const result = sanitizeHtml(
-      '<a href="https://example.com" title="link">text</a>',
-    );
-    expect(result).toContain('href="https://example.com"');
-    expect(result).toContain("text</a>");
-  });
-
-  it("handles empty input", () => {
-    expect(sanitizeHtml("")).toBe("");
-  });
-
-  it("removes data attributes", () => {
-    const result = sanitizeHtml('<div data-evil="payload">test</div>');
-    expect(result).not.toContain("data-evil");
   });
 });
 

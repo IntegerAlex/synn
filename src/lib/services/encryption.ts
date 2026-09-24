@@ -22,13 +22,6 @@ UwUuBVTrqO/g0kMqgRO5kBECAwEAAQ==
 -----END PUBLIC KEY-----`;
 
 /**
- * Load public key (embedded in application code)
- */
-function loadPublicKey(): string {
-  return EMBEDDED_PUBLIC_KEY;
-}
-
-/**
  * Generate a random AES key for symmetric encryption
  */
 function generateAESKey(): Buffer {
@@ -51,7 +44,7 @@ function generateIV(): Buffer {
  */
 export function encryptData(data: string): string {
   try {
-    const publicKey = loadPublicKey();
+    const publicKey = EMBEDDED_PUBLIC_KEY;
 
     // Generate AES key and IV
     const aesKey = generateAESKey();
@@ -136,67 +129,9 @@ export function decryptData(
 }
 
 /**
- * Encrypt sensitive fields in an object
- * Only encrypts string values, leaves other types unchanged
- */
-export function encryptSensitiveFields<T extends Record<string, any>>(
-  data: T,
-  fieldsToEncrypt: (keyof T)[],
-): T {
-  const result = { ...data };
-
-  for (const field of fieldsToEncrypt) {
-    if (typeof result[field] === "string" && result[field]) {
-      (result as any)[field] = encryptData(result[field]);
-    } else if (typeof result[field] === "object" && result[field] !== null) {
-      (result as any)[field] = encryptData(JSON.stringify(result[field]));
-    }
-  }
-
-  return result;
-}
-
-/**
- * Decrypt sensitive fields in an object
- */
-export function decryptSensitiveFields<T extends Record<string, any>>(
-  data: T,
-  fieldsToDecrypt: (keyof T)[],
-  privateKeyPem: string,
-): T {
-  const result = { ...data };
-
-  for (const field of fieldsToDecrypt) {
-    if (typeof result[field] === "string" && result[field]) {
-      try {
-        const decrypted = decryptData(result[field], privateKeyPem);
-        // Try to parse as JSON, otherwise keep as string
-        try {
-          (result as any)[field] = JSON.parse(decrypted);
-        } catch {
-          (result as any)[field] = decrypted;
-        }
-      } catch (error) {
-        // Field might not be encrypted, leave as is
-        console.warn(`Failed to decrypt field ${String(field)}:`, error);
-      }
-    }
-  }
-
-  return result;
-}
-
-/**
  * Check if public key is available
  * Always returns true since the key is embedded in the code
  */
 export function isEncryptionAvailable(): boolean {
   return true;
-}
-
-/**
- * Simple hash function for non-reversible data (like tokens for comparison)
- */
-export function hashData(data: string): string {
-  return crypto.createHash("sha256").update(data).digest("hex");
 }

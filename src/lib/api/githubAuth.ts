@@ -32,12 +32,7 @@ export async function getGitHubAuth(rateLimitKey: string) {
     };
   }
 
-  const client = await clerkClient();
-  const tokenResponse = await client.users.getUserOauthAccessToken(
-    userId,
-    "github",
-  );
-  const token = tokenResponse.data[0]?.token;
+  const token = await getGitHubToken(userId);
 
   if (!token) {
     return {
@@ -49,6 +44,18 @@ export async function getGitHubAuth(rateLimitKey: string) {
   }
 
   return { token, userId };
+}
+
+/**
+ * Fetch the user's GitHub OAuth access token from Clerk.
+ */
+export async function getGitHubToken(userId: string): Promise<string | null> {
+  const client = await clerkClient();
+  const tokenResponse = await client.users.getUserOauthAccessToken(
+    userId,
+    "github",
+  );
+  return tokenResponse.data[0]?.token ?? null;
 }
 
 /**

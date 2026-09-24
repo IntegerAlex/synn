@@ -1,6 +1,7 @@
 "use client";
 
 import Prism from "prismjs";
+import { escapeHtml } from "@/lib/utils/sanitize";
 
 // Load common languages we expect in repos.
 import "prismjs/components/prism-markup";
@@ -20,15 +21,6 @@ export type HighlightedDiffLine = {
   html: string; // highlighted (escaped) HTML for the remainder (without prefix)
   className: string;
 };
-
-function escapeHtml(input: string): string {
-  return input
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
 
 export function detectPrismLanguageFromFilePath(filePath?: string): string {
   if (!filePath) return "typescript";

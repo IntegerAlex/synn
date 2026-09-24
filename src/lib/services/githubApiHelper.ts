@@ -1,4 +1,5 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
+import { getGitHubToken } from "@/lib/api/githubAuth";
 import { GitHubApiService } from "./githubApi";
 
 /**
@@ -20,9 +21,7 @@ export async function getGitHubService(
     throw new Error("Unauthorized");
   }
 
-  const client = await clerkClient();
-  const tokenRes = await client.users.getUserOauthAccessToken(userId, "github");
-  const token = tokenRes.data[0]?.token;
+  const token = await getGitHubToken(userId);
 
   if (!token) {
     throw new Error(
@@ -51,12 +50,7 @@ export async function getGitHubServiceForUser(
     throw new Error("Invalid repository format. Expected: owner/repo");
   }
 
-  const client = await clerkClient();
-  const tokenRes = await client.users.getUserOauthAccessToken(
-    clerkUserId,
-    "github",
-  );
-  const token = tokenRes.data[0]?.token;
+  const token = await getGitHubToken(clerkUserId);
 
   if (!token) {
     throw new Error("No GitHub token found for the share creator.");

@@ -11,7 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
-import { logger } from "@/lib/utils/logger";
+import { downloadProfileImage } from "@/lib/utils/profileImage";
 
 interface ShareModalProps {
   isOpen: boolean;
@@ -84,151 +84,15 @@ export function ShareModal({
     setIsGenerating(true);
 
     try {
-      // Get the profile content
       const profileContent = profileContentRef?.current;
       if (!profileContent) {
         throw new Error("Profile content not found");
       }
 
-      // Create a wrapper element with logo and profile content
-      const wrapper = document.createElement("div");
-      wrapper.id = "profile-export-wrapper";
-      wrapper.style.cssText = `
-        position: fixed;
-        left: 0;
-        top: 0;
-        width: 1200px;
-        background-color: #0d1117;
-        padding: 0 40px 40px 40px;
-        font-family: system-ui, -apple-system, sans-serif;
-        z-index: -9999;
-        visibility: visible;
-        opacity: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-      `;
-
-      // Add logo at the top
-      const logoContainer = document.createElement("div");
-      logoContainer.style.cssText =
-        "display: flex; justify-content: flex-start; margin-bottom: 32px; width: 100%;";
-      const logoImg = document.createElement("img");
-      logoImg.src = "/logo.png";
-      logoImg.alt = "Synn Logo";
-      logoImg.style.cssText =
-        "width: 120px; height: 120px; object-fit: contain; display: block;";
-      logoContainer.appendChild(logoImg);
-      wrapper.appendChild(logoContainer);
-
-      // Clone the profile content
-      const clonedContent = profileContent.cloneNode(true) as HTMLElement;
-
-      const headerInClone = clonedContent.querySelector("header");
-      if (headerInClone) {
-        headerInClone.remove();
-      }
-
-      // Copy computed styles
-      const copyStyles = (source: Element, target: Element) => {
-        const computedStyle = window.getComputedStyle(source);
-        const targetEl = target as HTMLElement;
-        Array.from(computedStyle).forEach((key) => {
-          try {
-            targetEl.style.setProperty(
-              key,
-              computedStyle.getPropertyValue(key),
-              computedStyle.getPropertyPriority(key),
-            );
-          } catch (_e) {}
-        });
-      };
-
-      const originalElements = profileContent.querySelectorAll("*");
-      const clonedElements = clonedContent.querySelectorAll("*");
-      originalElements.forEach((original, index) => {
-        if (clonedElements[index]) {
-          copyStyles(original, clonedElements[index]);
-        }
-      });
-
-      copyStyles(profileContent, clonedContent);
-
-      clonedContent.style.cssText += `
-        width: 100%;
-        background-color: transparent;
-        position: relative;
-        margin: 0;
-        padding: 0;
-      `;
-
-      wrapper.appendChild(clonedContent);
-      document.body.appendChild(wrapper);
-
-      await new Promise((resolve) => {
-        if (logoImg.complete && logoImg.naturalWidth > 0) {
-          resolve(true);
-        } else {
-          logoImg.onload = () => resolve(true);
-          logoImg.onerror = () => resolve(true);
-          setTimeout(() => resolve(true), 3000);
-        }
-      });
-
-      const images = clonedContent.querySelectorAll("img");
-      await Promise.all(
-        Array.from(images).map((img) => {
-          if (img.complete) return Promise.resolve();
-          return new Promise((resolve) => {
-            img.onload = resolve;
-            img.onerror = resolve;
-            setTimeout(resolve, 3000);
-          });
-        }),
+      await downloadProfileImage(
+        profileContent,
+        `synn-profile-${user?.username || "user"}-${new Date().toISOString().split("T")[0]}.png`,
       );
-
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      wrapper.offsetHeight;
-
-      const fullWidth = Math.max(
-        wrapper.scrollWidth,
-        wrapper.offsetWidth,
-        1200,
-      );
-      const fullHeight = Math.max(
-        wrapper.scrollHeight,
-        wrapper.offsetHeight,
-        clonedContent.scrollHeight + 200,
-      );
-
-      logger.debug("Capturing wrapper", { fullWidth, fullHeight });
-
-      wrapper.style.width = `${fullWidth}px`;
-      wrapper.style.minHeight = `${fullHeight}px`;
-      wrapper.style.overflow = "visible";
-
-      const htmlToImage = await import("html-to-image");
-      const dataUrl = await htmlToImage.toPng(wrapper, {
-        backgroundColor: "#0d1117",
-        quality: 1,
-        pixelRatio: 2,
-        cacheBust: true,
-        width: fullWidth,
-        height: fullHeight,
-      });
-
-      document.body.removeChild(wrapper);
-
-      if (!dataUrl || dataUrl.length < 100) {
-        throw new Error("Generated image appears to be empty");
-      }
-
-      const link = document.createElement("a");
-      link.download = `synn-profile-${user?.username || "user"}-${new Date().toISOString().split("T")[0]}.png`;
-      link.href = dataUrl;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
     } catch (error) {
       console.error("Error generating PNG:", error);
       alert(

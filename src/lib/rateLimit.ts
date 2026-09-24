@@ -139,41 +139,9 @@ export function checkRateLimit(identifier: string): RateLimitResult {
   return rateLimiter.check(identifier);
 }
 
-// Different rate limit configurations for different endpoints
-export const rateLimitConfigs = {
-  // General API rate limit
-  api: { windowMs: 60 * 1000, maxRequests: 100 }, // 100 requests per minute
-
-  // Stricter limit for auth endpoints
-  auth: { windowMs: 5 * 60 * 1000, maxRequests: 10 }, // 10 requests per 5 minutes
-
-  // Stricter limit for webhook endpoints
-  webhook: { windowMs: 60 * 1000, maxRequests: 30 }, // 30 requests per minute
-
-  // Very strict limit for admin endpoints
-  admin: { windowMs: 15 * 60 * 1000, maxRequests: 5 }, // 5 requests per 15 minutes
-
-  // GitHub API proxy (respect GitHub's rate limits)
-  github: { windowMs: 60 * 1000, maxRequests: 50 }, // 50 requests per minute
-};
-
 // Specialized rate limiters for different endpoints
-export const authRateLimiter = new InMemoryRateLimiter(
-  rateLimitConfigs.auth.windowMs,
-  rateLimitConfigs.auth.maxRequests,
-);
+export const webhookRateLimiter = new InMemoryRateLimiter(60 * 1000, 30); // 30 requests per minute
 
-export const webhookRateLimiter = new InMemoryRateLimiter(
-  rateLimitConfigs.webhook.windowMs,
-  rateLimitConfigs.webhook.maxRequests,
-);
+export const adminRateLimiter = new InMemoryRateLimiter(15 * 60 * 1000, 5); // 5 requests per 15 minutes
 
-export const adminRateLimiter = new InMemoryRateLimiter(
-  rateLimitConfigs.admin.windowMs,
-  rateLimitConfigs.admin.maxRequests,
-);
-
-export const githubRateLimiter = new InMemoryRateLimiter(
-  rateLimitConfigs.github.windowMs,
-  rateLimitConfigs.github.maxRequests,
-);
+export const githubRateLimiter = new InMemoryRateLimiter(60 * 1000, 50); // 50 requests per minute (respect GitHub's rate limits)

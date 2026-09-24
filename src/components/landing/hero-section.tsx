@@ -1,47 +1,19 @@
 "use client";
 
-import { gsap } from "gsap";
+import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0 },
+};
+
 export function HeroSection() {
-  const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
-
-      tl.fromTo(
-        ".hero-badge",
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.6 },
-      )
-        .fromTo(
-          ".hero-title",
-          { opacity: 0, y: 30 },
-          { opacity: 1, y: 0, duration: 0.8 },
-          "-=0.3",
-        )
-        .fromTo(
-          ".hero-subtitle",
-          { opacity: 0, y: 20 },
-          { opacity: 1, y: 0, duration: 0.6 },
-          "-=0.4",
-        )
-        .fromTo(
-          ".hero-cta",
-          { opacity: 0, y: 20 },
-          { opacity: 1, y: 0, duration: 0.6, stagger: 0.1 },
-          "-=0.3",
-        );
-    }, containerRef);
-
-    return () => ctx.revert();
-  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -124,25 +96,24 @@ export function HeroSection() {
   }, []);
 
   return (
-    <section
-      ref={containerRef}
-      className="relative min-h-screen flex items-center justify-center pt-16"
-    >
+    <section className="relative min-h-screen flex items-center justify-center pt-16">
       <canvas ref={canvasRef} className="absolute inset-0 opacity-50" />
 
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background pointer-events-none" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/5 rounded-full blur-3xl" />
 
-      <div className="relative z-10 max-w-5xl mx-auto px-6 lg:px-8 text-center">
-        {/* <div className="hero-badge inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary border border-border mb-8">
-                    <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                    </span>
-                </div> */}
-
+      <motion.div
+        className="relative z-10 max-w-5xl mx-auto px-6 lg:px-8 text-center"
+        initial="hidden"
+        animate="visible"
+        variants={{ visible: { transition: { staggerChildren: 0.15 } } }}
+      >
         {/* Logo */}
-        <div className="hero-title mb-8 flex justify-center">
+        <motion.div
+          variants={fadeUp}
+          transition={{ duration: 0.6 }}
+          className="mb-8 flex justify-center"
+        >
           <div className="relative">
             <Image
               src="/logo.png"
@@ -154,26 +125,38 @@ export function HeroSection() {
               priority
             />
           </div>
-        </div>
+        </motion.div>
 
-        <h1 className="hero-title text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground tracking-tight mb-6">
+        <motion.h1
+          variants={fadeUp}
+          transition={{ duration: 0.8 }}
+          className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground tracking-tight mb-6"
+        >
           <span className="text-balance">
             Visualize your Git history
             <br />
             <span className="text-primary">like never before (for free)</span>
           </span>
-        </h1>
+        </motion.h1>
 
-        <p className="hero-subtitle text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed text-pretty">
+        <motion.p
+          variants={fadeUp}
+          transition={{ duration: 0.6 }}
+          className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed text-pretty"
+        >
           Import repositories from GitHub and explore branches, commits, and
           merges with a beautiful interactive graph.
-        </p>
+        </motion.p>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <motion.div
+          variants={fadeUp}
+          transition={{ duration: 0.6 }}
+          className="flex flex-col sm:flex-row items-center justify-center gap-4"
+        >
           <Link href="/app">
             <Button
               size="lg"
-              className="hero-cta bg-primary hover:bg-primary/90 text-primary-foreground px-8 h-12 text-base font-medium"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 h-12 text-base font-medium"
             >
               Open Synn
               <ArrowRight className="ml-2 w-4 h-4" />
@@ -183,7 +166,7 @@ export function HeroSection() {
             <Button
               variant="outline"
               size="lg"
-              className="hero-cta border-border bg-transparent hover:bg-secondary text-foreground px-8 h-12 text-base font-medium"
+              className="border-border bg-transparent hover:bg-secondary text-foreground px-8 h-12 text-base font-medium"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -203,8 +186,8 @@ export function HeroSection() {
               View Source
             </Button>
           </Link>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent pointer-events-none" />
     </section>
