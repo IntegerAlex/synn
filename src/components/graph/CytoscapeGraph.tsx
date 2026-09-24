@@ -2,9 +2,9 @@
 
 import type cytoscape from "cytoscape";
 import {
+  ArrowLeftRight,
   ChevronDown,
   ChevronUp,
-  ArrowLeftRight,
   Maximize2,
   RotateCcw,
   ZoomIn,
@@ -13,119 +13,16 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CytoscapeComponent from "react-cytoscapejs";
 import { useGraph } from "@/hooks/useGitData";
+import { buildHighlightedCommitsSet } from "@/lib/graph/highlightCommits";
 import { useAppStore } from "@/store/useAppStore";
 import type { GraphData, GraphNode } from "@/types/git";
-import { BranchesModal } from "./BranchesModal";
 import { BranchCompareDrawer } from "./BranchCompareDrawer";
+import { BranchesModal } from "./BranchesModal";
 import { CommitActivityChart } from "./CommitActivityChart";
 import { CommitsModal } from "./CommitsModal";
 import { CommitTooltip } from "./CommitTooltip";
 import { GraphFilters } from "./GraphFilters";
 import { ShareButton } from "./ShareButton";
-
-function normalizeBranchLabel(branch: string): string {
-  return branch
-    .replace("HEAD -> ", "")
-    .replace("origin/", "")
-    .replace("remote/", "")
-    .replace("tag: ", "")
-    .trim();
-}
-
-/**
- * Builds a set of all commit hashes that belong to the highlighted branches
- * by traversing from branch heads through parent commits
- */
-function buildHighlightedCommitsSet(
-  graphData: GraphData,
-  highlightedBranches: Set<string>,
-): Set<string> {
-  const highlightedCommits = new Set<string>();
-  if (highlightedBranches.size === 0) {
-    return highlightedCommits;
-  }
-
-  // Create a map of commit hash -> node for quick lookup
-  const hashToNode = new Map<string, GraphNode>();
-  graphData.nodes.forEach((node) => {
-    hashToNode.set(node.hash, node);
-  });
-
-  // Create a reverse map: normalized branch name -> branch head hash
-  const branchNameToHead = new Map<string, string>();
-
-  // First, try to use branchHeads if available
-  if (graphData.branchHeads) {
-    for (const [branchName, headHash] of Object.entries(
-      graphData.branchHeads,
-    )) {
-      const normalizedBranch = normalizeBranchLabel(branchName);
-      branchNameToHead.set(normalizedBranch, headHash);
-      // Also store the original name in case it matches directly
-      branchNameToHead.set(branchName, headHash);
-    }
-  }
-
-  // Fallback: find branch heads from node refs if branchHeads is not available or incomplete
-  for (const node of graphData.nodes) {
-    if (node.refs && node.refs.length > 0) {
-      for (const ref of node.refs) {
-        if (ref.includes("tag:")) continue;
-        const normalizedBranch = normalizeBranchLabel(ref);
-        // Store both normalized and original ref
-        if (
-          highlightedBranches.has(normalizedBranch) &&
-          !branchNameToHead.has(normalizedBranch)
-        ) {
-          branchNameToHead.set(normalizedBranch, node.hash);
-        }
-        if (highlightedBranches.has(ref) && !branchNameToHead.has(ref)) {
-          branchNameToHead.set(ref, node.hash);
-        }
-      }
-    }
-  }
-
-  // For each highlighted branch, traverse from its head commit
-  for (const highlightedBranch of highlightedBranches) {
-    const headHash = branchNameToHead.get(highlightedBranch);
-    if (!headHash) continue;
-
-    // Only traverse if the branch head exists in the current graph
-    if (!hashToNode.has(headHash)) continue;
-
-    // Traverse from branch head through all parent commits
-    const visited = new Set<string>();
-    const queue: string[] = [headHash];
-
-    while (queue.length > 0) {
-      const currentHash = queue.shift()!;
-      if (visited.has(currentHash)) continue;
-      visited.add(currentHash);
-      highlightedCommits.add(currentHash);
-
-      // Get the node and traverse to its parents
-      const node = hashToNode.get(currentHash);
-      if (node?.parentHashes) {
-        for (const parentHash of node.parentHashes) {
-          // Only traverse to parents that exist in the graph
-          if (!visited.has(parentHash) && hashToNode.has(parentHash)) {
-            queue.push(parentHash);
-          }
-        }
-      }
-    }
-  }
-
-  return highlightedCommits;
-}
-
-function nodeMatchesHighlightedBranches(
-  node: GraphNode,
-  highlightedCommits: Set<string>,
-): boolean {
-  return highlightedCommits.has(node.hash);
-}
 
 // GitLens-style color palette
 const BRANCH_COLORS = [
@@ -222,21 +119,18 @@ export function CytoscapeGraph({
     if (!graphData || highlightedBranches.size === 0) {
       return new Set<string>();
     }
-    const result = buildHighlightedCommitsSet(graphData, highlightedBranches);
-    // Debug logging (remove in production)
-    if (
-      process.env.NODE_ENV === "development" &&
-      highlightedBranches.size > 0
-    ) {
-      console.log("Highlight debug:", {
-        highlightedBranches: Array.from(highlightedBranches),
-        branchHeads: graphData.branchHeads,
-        highlightedCommitsCount: result.size,
-        totalNodes: graphData.nodes.length,
-      });
-    }
-    return result;
+    return buildHighlightedCommitsSet(graphData, highlightedBranches);
   }, [graphData, highlightedBranches]);
+
+  // Index nodes by hash so edge/hover lookups are O(1) instead of O(N).
+  const nodesByHash = useMemo(() => {
+    const map = new Map<string, GraphNode>();
+    const source = filteredGraphData ?? graphData;
+    if (source) {
+      for (const node of source.nodes) map.set(node.hash, node);
+    }
+    return map;
+  }, [filteredGraphData, graphData]);
 
   // Convert graph data to Cytoscape format
   const elements = useMemo(() => {
@@ -272,12 +166,8 @@ export function CytoscapeGraph({
     });
 
     const edges = filteredGraphData.edges.map((edge) => {
-      const sourceNode = filteredGraphData.nodes.find(
-        (n) => n.hash === edge.source,
-      );
-      const targetNode = filteredGraphData.nodes.find(
-        (n) => n.hash === edge.target,
-      );
+      const sourceNode = nodesByHash.get(edge.source);
+      const targetNode = nodesByHash.get(edge.target);
 
       // Improved bezier curve control for merges
       let controlPointDistance = 0;
@@ -323,7 +213,7 @@ export function CytoscapeGraph({
     });
 
     return [...nodes, ...edges];
-  }, [filteredGraphData]);
+  }, [filteredGraphData, nodesByHash]);
 
   // Handle highlighting separately to avoid layout resets or flickering
   useEffect(() => {
@@ -336,12 +226,7 @@ export function CytoscapeGraph({
       // Update nodes
       cy.nodes().forEach((node) => {
         const hash = node.data("hash");
-        const isHighlighted = dimMode
-          ? nodeMatchesHighlightedBranches(
-              { hash } as GraphNode,
-              highlightedCommits,
-            )
-          : false;
+        const isHighlighted = dimMode && highlightedCommits.has(hash);
         node.data("__dim", dimMode ? "1" : "0");
         node.data("__highlight", isHighlighted ? "1" : "0");
       });
@@ -501,8 +386,7 @@ export function CytoscapeGraph({
       const node = evt.target;
       if (node.isNode() && graphData && cyRef.current) {
         const hash = node.data("hash");
-        const source = filteredGraphData ?? graphData;
-        const graphNode = source.nodes.find((n) => n.hash === hash);
+        const graphNode = nodesByHash.get(hash);
         if (graphNode) {
           setHoveredNode(graphNode);
           setIsHoveringNode(true);
@@ -520,7 +404,7 @@ export function CytoscapeGraph({
         }
       }
     },
-    [graphData, filteredGraphData],
+    [graphData, nodesByHash],
   );
 
   const handleNodeMouseOut = useCallback(() => {
@@ -601,23 +485,12 @@ export function CytoscapeGraph({
     }
 
     // Prepare sorted nodes by row (row 0 = newest)
-    const sortedNodes = cy.nodes().sort((a, b) => {
-      const ra = a.data("row") ?? 0;
-      const rb = b.data("row") ?? 0;
-      return ra - rb;
-    });
-
-    // Attach labels to head nodes; if head missing (commit not in current graph),
-    // fall back to the newest node (row 0) so the branch still shows a label.
+    // Attach labels to head nodes. If a branch head is outside the fetched
+    // window it simply gets no label (rather than a misleading one on row 0).
     branchEntries.forEach(({ branch, hash }) => {
-      let cyNode: cytoscape.NodeSingular | undefined;
       const head = cy.getElementById(hash);
-      if (head.length > 0) {
-        cyNode = head[0] as cytoscape.NodeSingular;
-      } else if (sortedNodes.length > 0) {
-        cyNode = sortedNodes[0] as cytoscape.NodeSingular; // fallback to newest commit
-      }
-      if (!cyNode) return;
+      if (head.length === 0) return;
+      const cyNode = head[0] as cytoscape.NodeSingular;
 
       const isCurrentBranch = branch === graphData.currentBranch;
       // If multiple labels land on the same node, concatenate
