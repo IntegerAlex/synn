@@ -1,12 +1,13 @@
 "use client";
 
 import { AlertTriangle, CheckCircle, Info, X, XCircle } from "lucide-react";
+import type { ReactElement } from "react";
 
 export type ToastType = "success" | "error" | "info" | "warning";
 
 const typeStyles: Record<
   ToastType,
-  { bg: string; text: string; icon: JSX.Element }
+  { bg: string; text: string; icon: ReactElement }
 > = {
   success: {
     bg: "bg-[#0f172a]/95 border-[#1d4ed8]/50",

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { Providers } from "@/components/providers/Providers";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -99,7 +99,7 @@ export default function RootLayout({
         className={`font-sans antialiased ${plusJakartaSans.variable} ${jetbrainsMono.variable}`}
       >
         <ErrorBoundary>
-          <Providers>{children}</Providers>
+          <ThemeProvider>{children}</ThemeProvider>
         </ErrorBoundary>
       </body>
     </html>

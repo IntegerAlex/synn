@@ -1,6 +1,5 @@
 "use client";
 
-import userInfo from "fingerprint-oss";
 import { useEffect } from "react";
 
 /**
@@ -11,6 +10,10 @@ export function useFingerprint() {
   useEffect(() => {
     const fetchFingerprint = async () => {
       try {
+        // Lazy-load the fingerprint library (large) so it is not part of the
+        // initial /app bundle. Tracking is optional and can happen after mount.
+        const { default: userInfo } = await import("fingerprint-oss");
+
         // Get fingerprint data from fingerprint-oss
         const data = await userInfo();
 

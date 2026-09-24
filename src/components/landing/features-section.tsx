@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import {
   FileCheck,
   GitBranch,
@@ -64,22 +63,12 @@ export function FeaturesSection() {
           </p>
         </div>
 
-        <motion.div
-          className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
-          variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
-        >
-          {features.map((feature) => (
-            <motion.div
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {features.map((feature, index) => (
+            <div
               key={feature.title}
-              variants={{
-                hidden: { opacity: 0, y: 40 },
-                visible: { opacity: 1, y: 0 },
-              }}
-              transition={{ duration: 0.6 }}
-              className="feature-card group p-6 rounded-xl border border-border bg-card/50 hover:bg-card hover:border-primary/20 transition-all duration-300"
+              className="rise-in-scroll group p-6 rounded-xl border border-border bg-card/50 hover:bg-card hover:border-primary/20 transition-all duration-300"
+              style={{ animationDelay: `${index * 0.1}s` }}
             >
               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors duration-300">
                 <feature.icon className="w-5 h-5 text-primary" />
@@ -90,9 +79,9 @@ export function FeaturesSection() {
               <p className="text-muted-foreground leading-relaxed text-sm">
                 {feature.description}
               </p>
-            </motion.div>
+            </div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );
