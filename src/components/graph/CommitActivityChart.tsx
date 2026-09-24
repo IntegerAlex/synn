@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import type { GraphNode } from "@/types/git";
 
 interface CommitActivityChartProps {
@@ -12,7 +12,9 @@ type DailyCommitData = {
   commits: number;
 };
 
-export function CommitActivityChart({ nodes }: CommitActivityChartProps) {
+export const CommitActivityChart = memo(function CommitActivityChart({
+  nodes,
+}: CommitActivityChartProps) {
   // Group commits by day/week/month based on repository age
   const data = useMemo((): DailyCommitData[] => {
     if (!nodes || nodes.length === 0) return [];
@@ -106,4 +108,4 @@ export function CommitActivityChart({ nodes }: CommitActivityChartProps) {
       })}
     </svg>
   );
-}
+});

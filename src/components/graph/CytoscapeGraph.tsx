@@ -1,6 +1,6 @@
 "use client";
 
-import type cytoscape from "cytoscape";
+import cytoscape from "cytoscape";
 import {
   ArrowLeftRight,
   ChevronDown,
@@ -11,7 +11,6 @@ import {
   ZoomOut,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import CytoscapeComponent from "react-cytoscapejs";
 import { useGraph } from "@/hooks/useGitData";
 import { buildHighlightedCommitsSet } from "@/lib/graph/highlightCommits";
 import { useAppStore } from "@/store/useAppStore";
@@ -54,7 +53,9 @@ export function CytoscapeGraph({
   const [isCommitsModalOpen, setIsCommitsModalOpen] = useState(false);
   const [isBranchesModalOpen, setIsBranchesModalOpen] = useState(false);
   const [isCompareDrawerOpen, setIsCompareDrawerOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
+  const didFitRef = useRef(false);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [isHoveringNode, setIsHoveringNode] = useState(false);
@@ -215,34 +216,95 @@ export function CytoscapeGraph({
     return [...nodes, ...edges];
   }, [filteredGraphData, nodesByHash]);
 
-  // Handle highlighting separately to avoid layout resets or flickering
-  useEffect(() => {
-    const cy = cyRef.current;
-    if (!cy || !filteredGraphData) return;
+  // Handle node click
+  const handleNodeClick = useCallback(
+    (evt: cytoscape.EventObject) => {
+      const node = evt.target as cytoscape.NodeSingular;
+      if (node.isNode()) {
+        setSelectedCommitHash(node.data("hash"));
+      }
+    },
+    [setSelectedCommitHash],
+  );
 
-    const dimMode = highlightedBranches.size > 0;
+  // Handle node hover. Reads everything from the element data so the handler
+  // is stable and never forces a re-render of the graph itself.
+  const handleNodeMouseOver = useCallback((evt: cytoscape.EventObject) => {
+    const node = evt.target as cytoscape.NodeSingular;
+    if (!node.isNode() || !containerRef.current) return;
 
-    cy.batch(() => {
-      // Update nodes
-      cy.nodes().forEach((node) => {
-        const hash = node.data("hash");
-        const isHighlighted = dimMode && highlightedCommits.has(hash);
-        node.data("__dim", dimMode ? "1" : "0");
-        node.data("__highlight", isHighlighted ? "1" : "0");
-      });
-
-      // Update edges
-      cy.edges().forEach((edge) => {
-        const source = edge.data("source");
-        const target = edge.data("target");
-        const isHighlighted =
-          dimMode &&
-          (highlightedCommits.has(source) || highlightedCommits.has(target));
-        edge.data("__dim", dimMode ? "1" : "0");
-        edge.data("__highlight", isHighlighted ? "1" : "0");
-      });
+    const d = node.data();
+    setHoveredNode({
+      id: d.id,
+      hash: d.hash,
+      shortHash: d.shortHash,
+      message: d.message,
+      author: d.author,
+      date: d.date,
+      column: d.column,
+      row: d.row,
+      refs: d.refs,
+      color: d.color,
     });
-  }, [highlightedBranches, highlightedCommits, filteredGraphData]);
+    setIsHoveringNode(true);
+
+    const renderedPos = node.renderedPosition();
+    const rect = containerRef.current.getBoundingClientRect();
+    setTooltipPosition({
+      x: rect.left + renderedPos.x,
+      y: rect.top + renderedPos.y,
+    });
+  }, []);
+
+  const handleNodeMouseOut = useCallback(() => {
+    setIsHoveringNode(false);
+    setHoveredNode(null);
+  }, []);
+
+  // Create the Cytoscape instance once. All interaction is driven imperatively
+  // so hover/selection never re-patch the graph.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || cyRef.current) return;
+
+    const cy = cytoscape({
+      container,
+      elements: [],
+      boxSelectionEnabled: false,
+      minZoom: 0.1,
+      maxZoom: 3,
+      wheelSensitivity: 0.2,
+      pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+      // Viewport interaction performance: render a static texture while
+      // panning/zooming so large graphs stay smooth.
+      textureOnViewport: true,
+      motionBlur: true,
+      motionBlurOpacity: 0.2,
+    });
+    cyRef.current = cy;
+
+    cy.on("tap", "node", handleNodeClick);
+    cy.on("mouseover", "node", handleNodeMouseOver);
+    cy.on("mouseout", "node", handleNodeMouseOut);
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (cy.destroyed()) return;
+      cy.resize();
+      // The container is often 0-sized on first mount; fit once it has size.
+      if (!didFitRef.current && cy.elements().length > 0) {
+        cy.fit(cy.elements(), 50);
+        didFitRef.current = true;
+      }
+    });
+    resizeObserver.observe(container);
+
+    return () => {
+      resizeObserver.disconnect();
+      cy.destroy();
+      cyRef.current = null;
+      didFitRef.current = false;
+    };
+  }, [handleNodeClick, handleNodeMouseOver, handleNodeMouseOut]);
 
   // Cytoscape stylesheet
   const stylesheet = useMemo(
@@ -264,6 +326,12 @@ export function CytoscapeGraph({
           color: isDark ? "#cccccc" : "#333333",
           "text-outline-width": 1,
           "text-outline-color": isDark ? "#0d1117" : "#ffffff",
+          // Don't render text when zoomed out, and don't let labels swallow
+          // pointer events (fewer hover events while panning).
+          "min-zoomed-font-size": 8,
+          "text-events": "no",
+          "overlay-opacity": 0,
+          "overlay-padding": 6,
         },
       },
       {
@@ -368,97 +436,90 @@ export function CytoscapeGraph({
     [isDark],
   );
 
-  // Handle node click
-  const handleNodeClick = useCallback(
-    (evt: any) => {
-      const node = evt.target;
-      if (node.isNode()) {
-        const hash = node.data("hash");
-        setSelectedCommitHash(hash);
-      }
-    },
-    [setSelectedCommitHash],
-  );
-
-  // Handle node hover
-  const handleNodeMouseOver = useCallback(
-    (evt: any) => {
-      const node = evt.target;
-      if (node.isNode() && graphData && cyRef.current) {
-        const hash = node.data("hash");
-        const graphNode = nodesByHash.get(hash);
-        if (graphNode) {
-          setHoveredNode(graphNode);
-          setIsHoveringNode(true);
-
-          // Get rendered position relative to viewport
-          const renderedPos = node.renderedPosition();
-          const container = cyRef.current.container();
-          if (container) {
-            const rect = container.getBoundingClientRect();
-            setTooltipPosition({
-              x: rect.left + renderedPos.x,
-              y: rect.top + renderedPos.y,
-            });
-          }
-        }
-      }
-    },
-    [graphData, nodesByHash],
-  );
-
-  const handleNodeMouseOut = useCallback(() => {
-    setIsHoveringNode(false);
-    setHoveredNode(null);
-  }, []);
-
-  // Update selection when Redux state changes
+  // Apply the stylesheet (and re-apply on theme change).
   useEffect(() => {
-    if (!cyRef.current || !selectedCommitHash) return;
-
     const cy = cyRef.current;
-    cy.nodes().forEach((node: any) => {
-      if (node.data("hash") === selectedCommitHash) {
-        node.select();
-      } else {
-        node.unselect();
+    if (!cy || cy.destroyed()) return;
+    cy.style(stylesheet as unknown as cytoscape.StylesheetJson).update();
+  }, [stylesheet]);
+
+  // Sync elements whenever the data/filters change (not on hover/selection).
+  useEffect(() => {
+    const cy = cyRef.current;
+    if (!cy || cy.destroyed()) return;
+
+    cy.batch(() => {
+      cy.elements().remove();
+      if (elements.length > 0) {
+        cy.add(elements as cytoscape.ElementDefinition[]);
       }
     });
+
+    if (elements.length === 0) return;
+
+    cy.layout({ name: "preset", fit: false, padding: 0 }).run();
+
+    const all = cy.elements();
+    if (all.length === 0) return;
+
+    // Defer the initial fit to the ResizeObserver if the container has no size yet.
+    const container = containerRef.current;
+    const hasSize =
+      container != null &&
+      container.clientWidth > 0 &&
+      container.clientHeight > 0;
+
+    if (didFitRef.current) {
+      cy.animate({ fit: { eles: all, padding: 50 }, duration: 250 });
+    } else if (hasSize) {
+      cy.fit(all, 50);
+      didFitRef.current = true;
+    }
+  }, [elements]);
+
+  // Handle highlighting separately to avoid layout resets or flickering
+  useEffect(() => {
+    const cy = cyRef.current;
+    if (!cy || cy.destroyed() || !filteredGraphData) return;
+
+    const dimMode = highlightedBranches.size > 0;
+
+    cy.batch(() => {
+      // Update nodes
+      cy.nodes().forEach((node) => {
+        const hash = node.data("hash");
+        const isHighlighted = dimMode && highlightedCommits.has(hash);
+        node.data("__dim", dimMode ? "1" : "0");
+        node.data("__highlight", isHighlighted ? "1" : "0");
+      });
+
+      // Update edges
+      cy.edges().forEach((edge) => {
+        const source = edge.data("source");
+        const target = edge.data("target");
+        const isHighlighted =
+          dimMode &&
+          (highlightedCommits.has(source) || highlightedCommits.has(target));
+        edge.data("__dim", dimMode ? "1" : "0");
+        edge.data("__highlight", isHighlighted ? "1" : "0");
+      });
+    });
+  }, [highlightedBranches, highlightedCommits, filteredGraphData]);
+
+  // Update selection when the store changes
+  useEffect(() => {
+    const cy = cyRef.current;
+    if (!cy || cy.destroyed() || !selectedCommitHash) return;
+
+    cy.$("node:selected").unselect();
+    const target = cy.getElementById(selectedCommitHash);
+    if (target.length > 0) target.select();
   }, [selectedCommitHash]);
 
-  // Apply layout and fit view
+  // Add branch labels to head nodes
   useEffect(() => {
-    if (!cyRef.current || !graphData || elements.length === 0) return;
-
     const cy = cyRef.current;
-
-    // Use preset layout with manual positioning
-    // Cytoscape will use the positions we set in elements
-    cy.layout({
-      name: "preset",
-      fit: false,
-      padding: 0,
-    }).run();
-
-    // Fit view after layout completes
-    const timeout = setTimeout(() => {
-      if (!cy.destroyed()) {
-        try {
-          cy.fit(cy.elements(), 50);
-        } catch {
-          // ignore fit errors
-        }
-      }
-    }, 100);
-
-    return () => clearTimeout(timeout);
-  }, [elements, graphData]);
-
-  // Add branch labels and render them on the graph
-  useEffect(() => {
-    if (!cyRef.current || !graphData) return;
-
-    const cy = cyRef.current;
+    if (!cy || cy.destroyed() || !graphData) return;
 
     // Clear existing label data on nodes
     cy.nodes().forEach((n) => {
@@ -484,7 +545,6 @@ export function CytoscapeGraph({
       });
     }
 
-    // Prepare sorted nodes by row (row 0 = newest)
     // Attach labels to head nodes. If a branch head is outside the fetched
     // window it simply gets no label (rather than a misleading one on row 0).
     branchEntries.forEach(({ branch, hash }) => {
@@ -506,6 +566,21 @@ export function CytoscapeGraph({
       cyNode.data("branchLabelIsCurrent", currentFlag);
     });
   }, [graphData, filteredGraphData]);
+
+  const zoomBy = (factor: number) => {
+    const cy = cyRef.current;
+    if (!cy || cy.destroyed()) return;
+    cy.animate(
+      { zoom: cy.zoom() * factor, duration: 150 },
+      { easing: "ease-out" },
+    );
+  };
+
+  const fitView = () => {
+    const cy = cyRef.current;
+    if (!cy || cy.destroyed()) return;
+    cy.animate({ fit: { eles: cy.elements(), padding: 50 }, duration: 250 });
+  };
 
   if (error) {
     return (
@@ -627,55 +702,19 @@ export function CytoscapeGraph({
 
       {/* Cytoscape Graph */}
       <div className="flex-1 relative overflow-hidden">
-        <CytoscapeComponent
-          elements={elements}
-          style={{ width: "100%", height: "100%" }}
-          stylesheet={stylesheet}
-          cy={(cy) => {
-            cyRef.current = cy;
-
-            // Configure Cytoscape
-            cy.boxSelectionEnabled(false);
-            cy.userPanningEnabled(true);
-            cy.userZoomingEnabled(true);
-            cy.minZoom(0.1);
-            cy.maxZoom(3);
-
-            // Event handlers
-            cy.on("tap", "node", handleNodeClick);
-            cy.on("mouseover", "node", handleNodeMouseOver);
-            cy.on("mouseout", "node", handleNodeMouseOut);
-
-            cy.on("ready", () => {
-              if (cy.destroyed()) return;
-              try {
-                cy.fit(cy.elements(), 50);
-              } catch {
-                // ignore fit errors
-              }
-            });
-          }}
-        />
+        <div ref={containerRef} className="w-full h-full" />
 
         {/* Zoom Controls */}
         <div className="absolute top-4 right-4 z-20 flex flex-col gap-2 bg-[#161b22] border border-[#30363d] rounded-lg p-1">
           <button
-            onClick={() => {
-              if (cyRef.current) {
-                cyRef.current.zoom(cyRef.current.zoom() * 1.2);
-              }
-            }}
+            onClick={() => zoomBy(1.2)}
             className="p-2 hover:bg-[#21262d] rounded transition-colors"
             title="Zoom In"
           >
             <ZoomIn className="w-4 h-4 text-gray-400" />
           </button>
           <button
-            onClick={() => {
-              if (cyRef.current) {
-                cyRef.current.zoom(cyRef.current.zoom() * 0.8);
-              }
-            }}
+            onClick={() => zoomBy(0.8)}
             className="p-2 hover:bg-[#21262d] rounded transition-colors"
             title="Zoom Out"
           >
@@ -683,11 +722,7 @@ export function CytoscapeGraph({
           </button>
           <div className="border-t border-[#30363d] my-1" />
           <button
-            onClick={() => {
-              if (cyRef.current) {
-                cyRef.current.fit(undefined, 50);
-              }
-            }}
+            onClick={fitView}
             className="p-2 hover:bg-[#21262d] rounded transition-colors"
             title="Fit View"
           >
@@ -695,10 +730,10 @@ export function CytoscapeGraph({
           </button>
           <button
             onClick={() => {
-              if (cyRef.current) {
-                cyRef.current.reset();
-                cyRef.current.fit(undefined, 50);
-              }
+              const cy = cyRef.current;
+              if (!cy || cy.destroyed()) return;
+              cy.reset();
+              fitView();
             }}
             className="p-2 hover:bg-[#21262d] rounded transition-colors"
             title="Reset View"
