@@ -8,80 +8,10 @@ import {
   Folder,
 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
+import { buildFileTree, type FileTreeNode } from "@/lib/fileTree";
 import type { FileChange } from "@/types/git";
 
-type TreeNode =
-  | {
-      type: "folder";
-      name: string;
-      path: string;
-      children: TreeNode[];
-    }
-  | {
-      type: "file";
-      name: string;
-      path: string;
-      file: FileChange;
-    };
-
-function buildTree(files: FileChange[]): TreeNode[] {
-  const root: { children: TreeNode[] } = { children: [] };
-
-  const getOrCreateFolder = (
-    children: TreeNode[],
-    name: string,
-    path: string,
-  ) => {
-    const existing = children.find(
-      (n) => n.type === "folder" && n.name === name,
-    ) as Extract<TreeNode, { type: "folder" }> | undefined;
-    if (existing) return existing;
-    const folder: Extract<TreeNode, { type: "folder" }> = {
-      type: "folder",
-      name,
-      path,
-      children: [],
-    };
-    children.push(folder);
-    return folder;
-  };
-
-  for (const file of files) {
-    const parts = file.path.split("/").filter(Boolean);
-    let currentChildren = root.children;
-    let currentPath = "";
-
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i]!;
-      currentPath = currentPath ? `${currentPath}/${part}` : part;
-      const isLeaf = i === parts.length - 1;
-      if (isLeaf) {
-        currentChildren.push({
-          type: "file",
-          name: part,
-          path: file.path,
-          file,
-        });
-      } else {
-        const folder = getOrCreateFolder(currentChildren, part, currentPath);
-        currentChildren = folder.children;
-      }
-    }
-  }
-
-  const sortTree = (nodes: TreeNode[]) => {
-    nodes.sort((a, b) => {
-      if (a.type !== b.type) return a.type === "folder" ? -1 : 1;
-      return a.name.localeCompare(b.name);
-    });
-    for (const n of nodes) {
-      if (n.type === "folder") sortTree(n.children);
-    }
-  };
-  sortTree(root.children);
-
-  return root.children;
-}
+type TreeNode = FileTreeNode<FileChange>;
 
 function statusDot(status: FileChange["status"]): string {
   if (status === "added") return "bg-[#3fb950]";
@@ -99,7 +29,10 @@ export function CommitFileTree({
   selectedFile: string | null;
   onSelectFile: (path: string) => void;
 }) {
-  const tree = useMemo(() => buildTree(files), [files]);
+  const tree = useMemo(
+    () => buildFileTree(files, (file) => file.path),
+    [files],
+  );
   const [expanded, setExpanded] = useState<Set<string>>(
     () => new Set<string>(),
   );
@@ -183,7 +116,7 @@ export function CommitFileTree({
                   style={{ paddingLeft: 8 + pad }}
                 >
                   <span
-                    className={`w-1.5 h-1.5 rounded-full ${statusDot(node.file.status)}`}
+                    className={`w-1.5 h-1.5 rounded-full ${statusDot(node.value.status)}`}
                   />
                   <FileIcon
                     className={`w-4 h-4 ${
@@ -208,7 +141,7 @@ export function CommitFileTree({
                         : "text-gray-500"
                     }`}
                   >
-                    +{node.file.additions} -{node.file.deletions}
+                    +{node.value.additions} -{node.value.deletions}
                   </span>
                 </button>
               )}

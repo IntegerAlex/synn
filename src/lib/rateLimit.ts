@@ -18,7 +18,6 @@ interface RateLimitResult {
 
 class InMemoryRateLimiter {
   private requests: Map<string, RateLimitEntry> = new Map();
-  private cleanupInterval: NodeJS.Timeout | null = null;
 
   constructor(
     private windowMs: number = 60 * 1000, // 1 minute default window
@@ -85,7 +84,7 @@ class InMemoryRateLimiter {
    * Start periodic cleanup of expired entries
    */
   private startCleanup(): void {
-    this.cleanupInterval = setInterval(() => {
+    setInterval(() => {
       const now = Date.now();
       const toDelete: string[] = [];
 
@@ -105,26 +104,6 @@ class InMemoryRateLimiter {
       // Remove expired entries
       toDelete.forEach((id) => this.requests.delete(id));
     }, this.cleanupMs);
-  }
-
-  /**
-   * Stop cleanup interval (useful for testing)
-   */
-  stopCleanup(): void {
-    if (this.cleanupInterval) {
-      clearInterval(this.cleanupInterval);
-      this.cleanupInterval = null;
-    }
-  }
-
-  /**
-   * Get current stats (useful for monitoring)
-   */
-  getStats(): { totalIdentifiers: number; memoryUsage: number } {
-    return {
-      totalIdentifiers: this.requests.size,
-      memoryUsage: JSON.stringify(Array.from(this.requests.entries())).length,
-    };
   }
 }
 

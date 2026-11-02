@@ -11,64 +11,9 @@ import {
 import { useMemo, useRef, useState } from "react";
 import { FileViewerModal } from "@/components/FileViewerModal";
 import { useRepoFiles } from "@/hooks/useGitData";
+import { buildFileTree, type FileTreeNode } from "@/lib/fileTree";
 
-type TreeNode =
-  | { type: "folder"; name: string; path: string; children: TreeNode[] }
-  | { type: "file"; name: string; path: string };
-
-function buildTree(paths: string[]): TreeNode[] {
-  const root: { children: TreeNode[] } = { children: [] };
-
-  const getOrCreateFolder = (
-    children: TreeNode[],
-    name: string,
-    path: string,
-  ) => {
-    const existing = children.find(
-      (n) => n.type === "folder" && n.name === name,
-    ) as Extract<TreeNode, { type: "folder" }> | undefined;
-    if (existing) return existing;
-    const folder: Extract<TreeNode, { type: "folder" }> = {
-      type: "folder",
-      name,
-      path,
-      children: [],
-    };
-    children.push(folder);
-    return folder;
-  };
-
-  for (const fullPath of paths) {
-    const parts = fullPath.split("/").filter(Boolean);
-    let currentChildren = root.children;
-    let currentPath = "";
-
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i]!;
-      currentPath = currentPath ? `${currentPath}/${part}` : part;
-      const isLeaf = i === parts.length - 1;
-      if (isLeaf) {
-        currentChildren.push({ type: "file", name: part, path: fullPath });
-      } else {
-        const folder = getOrCreateFolder(currentChildren, part, currentPath);
-        currentChildren = folder.children;
-      }
-    }
-  }
-
-  const sortTree = (nodes: TreeNode[]) => {
-    nodes.sort((a, b) => {
-      if (a.type !== b.type) return a.type === "folder" ? -1 : 1;
-      return a.name.localeCompare(b.name);
-    });
-    for (const n of nodes) {
-      if (n.type === "folder") sortTree(n.children);
-    }
-  };
-  sortTree(root.children);
-
-  return root.children;
-}
+type TreeNode = FileTreeNode<string>;
 
 export function FileTree({ ref }: { ref?: string }) {
   const {
@@ -88,7 +33,10 @@ export function FileTree({ ref }: { ref?: string }) {
     return list.filter((p) => p.toLowerCase().includes(q));
   }, [files, query]);
 
-  const tree = useMemo(() => buildTree(filteredPaths), [filteredPaths]);
+  const tree = useMemo(
+    () => buildFileTree(filteredPaths, (path) => path),
+    [filteredPaths],
+  );
   const [expanded, setExpanded] = useState<Set<string>>(
     () => new Set<string>(),
   );

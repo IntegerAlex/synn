@@ -5,7 +5,7 @@ import {
   apiRequestsTable,
   fingerprintsTable,
 } from "@/db/schema";
-import { encryptData, isEncryptionAvailable } from "./encryption";
+import { encryptData } from "./encryption";
 
 interface LogActivityParams {
   userId?: number;
@@ -55,17 +55,11 @@ const SENSITIVE_API_FIELDS = [
   "metadata",
 ] as const;
 
-/**
- * Encrypt sensitive data if encryption is available
- */
+/** Encrypt sensitive data before it is stored. */
 function encryptSensitiveData<T extends Record<string, any>>(
   data: T,
   sensitiveFields: readonly string[],
 ): T {
-  if (!isEncryptionAvailable()) {
-    return data;
-  }
-
   const result = { ...data };
 
   for (const field of sensitiveFields) {
@@ -196,18 +190,16 @@ export async function storeFingerprint(params: {
     let encryptedIpAddress = geolocation.ip || params.ipAddress || null;
     let encryptedUserAgent = systemInfo.userAgent || params.userAgent || null;
 
-    if (isEncryptionAvailable()) {
-      try {
-        encryptedFingerprintData = encryptData(JSON.stringify(fingerprintData));
-        if (encryptedIpAddress) {
-          encryptedIpAddress = encryptData(encryptedIpAddress);
-        }
-        if (encryptedUserAgent) {
-          encryptedUserAgent = encryptData(encryptedUserAgent);
-        }
-      } catch (error) {
-        console.warn("Failed to encrypt fingerprint data:", error);
+    try {
+      encryptedFingerprintData = encryptData(JSON.stringify(fingerprintData));
+      if (encryptedIpAddress) {
+        encryptedIpAddress = encryptData(encryptedIpAddress);
       }
+      if (encryptedUserAgent) {
+        encryptedUserAgent = encryptData(encryptedUserAgent);
+      }
+    } catch (error) {
+      console.warn("Failed to encrypt fingerprint data:", error);
     }
 
     const fingerprintRecord: any = {

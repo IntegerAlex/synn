@@ -1,4 +1,4 @@
-import { encryptData, isEncryptionAvailable } from "./encryption";
+import { encryptData } from "./encryption";
 
 /**
  * Token encryption service for GitHub OAuth tokens
@@ -18,13 +18,6 @@ export function encryptToken(token: string): string {
 
   // Check if already encrypted
   if (token.startsWith(ENCRYPTED_PREFIX)) {
-    return token;
-  }
-
-  // If encryption is not available, return token as-is
-  // (Not recommended for production)
-  if (!isEncryptionAvailable()) {
-    console.warn("Encryption not available - storing token unencrypted");
     return token;
   }
 

@@ -127,11 +127,3 @@ export function decryptData(
     throw new Error("Failed to decrypt data. Invalid key or corrupted data.");
   }
 }
-
-/**
- * Check if public key is available
- * Always returns true since the key is embedded in the code
- */
-export function isEncryptionAvailable(): boolean {
-  return true;
-}
