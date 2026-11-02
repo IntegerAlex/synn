@@ -52,46 +52,40 @@ function getHeaders(shareId?: string): HeadersInit {
   return headers;
 }
 
+async function request<T>(
+  path: string,
+  init: RequestInit = {},
+  shareId?: string,
+): Promise<T> {
+  return handleResponse(
+    await fetch(`${API_BASE}${path}`, {
+      ...init,
+      headers: getHeaders(shareId),
+    }),
+  );
+}
+
 export const gitApi = {
   // Set repository (now accepts repo_full_name and default_branch)
   setRepo: async (params: {
     repoFullName: string;
     defaultBranch?: string;
-  }): Promise<RepoInfo> => {
-    const response = await fetch(`${API_BASE}/repo`, {
+  }): Promise<RepoInfo> =>
+    request<RepoInfo>("/repo", {
       method: "POST",
-      headers: getHeaders(),
       body: JSON.stringify({
         repo_full_name: params.repoFullName,
         default_branch: params.defaultBranch,
       }),
-    });
-    return handleResponse(response);
-  },
+    }),
 
   // Get repository info
-  getRepoInfo: async (repoInfo: RepoInfo | null): Promise<RepoInfo> => {
-    const repoFullName = getRepoFullName(repoInfo);
-    const response = await fetch(
-      `${API_BASE}/repo?repo=${encodeURIComponent(repoFullName)}`,
-      {
-        headers: getHeaders(),
-      },
-    );
-    return handleResponse(response);
-  },
+  getRepoInfo: async (repoInfo: RepoInfo | null): Promise<RepoInfo> =>
+    request(`/repo?repo=${encodeURIComponent(getRepoFullName(repoInfo))}`),
 
   // Get branches
-  getBranches: async (repoInfo: RepoInfo | null): Promise<BranchesResponse> => {
-    const repoFullName = getRepoFullName(repoInfo);
-    const response = await fetch(
-      `${API_BASE}/branches?repo=${encodeURIComponent(repoFullName)}`,
-      {
-        headers: getHeaders(),
-      },
-    );
-    return handleResponse(response);
-  },
+  getBranches: async (repoInfo: RepoInfo | null): Promise<BranchesResponse> =>
+    request(`/branches?repo=${encodeURIComponent(getRepoFullName(repoInfo))}`),
 
   // Get graph
   getGraph: async (
@@ -99,98 +93,62 @@ export const gitApi = {
     limit = 100,
     offset = 0,
     shareId?: string,
-  ): Promise<GraphData> => {
-    const repoFullName = getRepoFullName(repoInfo);
-    const response = await fetch(
-      `${API_BASE}/graph?repo=${encodeURIComponent(repoFullName)}&limit=${limit}&offset=${offset}`,
-      {
-        headers: getHeaders(shareId),
-      },
-    );
-    return handleResponse(response);
-  },
+  ): Promise<GraphData> =>
+    request(
+      `/graph?repo=${encodeURIComponent(getRepoFullName(repoInfo))}&limit=${limit}&offset=${offset}`,
+      {},
+      shareId,
+    ),
 
   // Get commit details
   getCommitDetails: async (
     repoInfo: RepoInfo | null,
     hash: string,
-  ): Promise<CommitDetails> => {
-    const repoFullName = getRepoFullName(repoInfo);
-    const response = await fetch(
-      `${API_BASE}/commits/${hash}?repo=${encodeURIComponent(repoFullName)}`,
-      {
-        headers: getHeaders(),
-      },
-    );
-    return handleResponse(response);
-  },
+  ): Promise<CommitDetails> =>
+    request(
+      `/commits/${hash}?repo=${encodeURIComponent(getRepoFullName(repoInfo))}`,
+    ),
 
   // Checkout branch
   checkoutBranch: async (
     repoInfo: RepoInfo | null,
     branch: string,
-  ): Promise<RepoInfo> => {
-    const repoFullName = getRepoFullName(repoInfo);
-    const response = await fetch(`${API_BASE}/checkout`, {
+  ): Promise<RepoInfo> =>
+    request<RepoInfo>("/checkout", {
       method: "POST",
-      headers: getHeaders(),
       body: JSON.stringify({
         branch,
-        repo_full_name: repoFullName,
+        repo_full_name: getRepoFullName(repoInfo),
       }),
-    });
-    return handleResponse(response);
-  },
+    }),
 
   // Search
   search: async (
     repoInfo: RepoInfo | null,
     query: string,
-  ): Promise<SearchResponse> => {
-    const repoFullName = getRepoFullName(repoInfo);
-    const response = await fetch(
-      `${API_BASE}/search?repo=${encodeURIComponent(repoFullName)}&q=${encodeURIComponent(query)}`,
-      {
-        headers: getHeaders(),
-      },
-    );
-    return handleResponse(response);
-  },
+  ): Promise<SearchResponse> =>
+    request(
+      `/search?repo=${encodeURIComponent(getRepoFullName(repoInfo))}&q=${encodeURIComponent(query)}`,
+    ),
 
   // List files
   getFiles: async (
     repoInfo: RepoInfo | null,
     ref?: string,
-  ): Promise<string[]> => {
-    const repoFullName = getRepoFullName(repoInfo);
-    const response = await fetch(
-      `${API_BASE}/files?repo=${encodeURIComponent(repoFullName)}${
-        ref ? `&ref=${encodeURIComponent(ref)}` : ""
-      }`,
-      {
-        headers: getHeaders(),
-      },
-    );
-    return handleResponse(response);
-  },
+  ): Promise<string[]> =>
+    request(
+      `/files?repo=${encodeURIComponent(getRepoFullName(repoInfo))}${ref ? `&ref=${encodeURIComponent(ref)}` : ""}`,
+    ),
 
   // Get file contents
   getFileContents: async (
     repoInfo: RepoInfo | null,
     filePath: string,
     ref?: string,
-  ): Promise<{ content: string; encoding: string; size: number }> => {
-    const repoFullName = getRepoFullName(repoInfo);
-    const response = await fetch(
-      `${API_BASE}/file-contents?repo=${encodeURIComponent(repoFullName)}&filepath=${encodeURIComponent(filePath)}${
-        ref ? `&ref=${encodeURIComponent(ref)}` : ""
-      }`,
-      {
-        headers: getHeaders(),
-      },
-    );
-    return handleResponse(response);
-  },
+  ): Promise<{ content: string; encoding: string; size: number }> =>
+    request(
+      `/file-contents?repo=${encodeURIComponent(getRepoFullName(repoInfo))}&filepath=${encodeURIComponent(filePath)}${ref ? `&ref=${encodeURIComponent(ref)}` : ""}`,
+    ),
 
   // Get file blame
   getFileBlame: async (
@@ -206,18 +164,10 @@ export const gitApi = {
       lineNumber: number;
       content: string;
     }>
-  > => {
-    const repoFullName = getRepoFullName(repoInfo);
-    const response = await fetch(
-      `${API_BASE}/blame?repo=${encodeURIComponent(repoFullName)}&filepath=${encodeURIComponent(filePath)}${
-        ref ? `&ref=${encodeURIComponent(ref)}` : ""
-      }`,
-      {
-        headers: getHeaders(),
-      },
-    );
-    return handleResponse(response);
-  },
+  > =>
+    request(
+      `/blame?repo=${encodeURIComponent(getRepoFullName(repoInfo))}&filepath=${encodeURIComponent(filePath)}${ref ? `&ref=${encodeURIComponent(ref)}` : ""}`,
+    ),
 
   // File history
   getFileHistory: async (
@@ -225,17 +175,12 @@ export const gitApi = {
     filepath: string,
     options?: { ref?: string; limit?: number },
   ): Promise<FileHistoryEntry[]> => {
-    const repoFullName = getRepoFullName(repoInfo);
     const ref = options?.ref;
     const limit = options?.limit;
-    const response = await fetch(
-      `${API_BASE}/file-history?repo=${encodeURIComponent(repoFullName)}&filepath=${encodeURIComponent(filepath)}${
+    return request(
+      `/file-history?repo=${encodeURIComponent(getRepoFullName(repoInfo))}&filepath=${encodeURIComponent(filepath)}${
         ref ? `&ref=${encodeURIComponent(ref)}` : ""
       }${typeof limit === "number" ? `&limit=${encodeURIComponent(String(limit))}` : ""}`,
-      {
-        headers: getHeaders(),
-      },
     );
-    return handleResponse(response);
   },
 };

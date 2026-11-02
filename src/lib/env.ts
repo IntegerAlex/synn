@@ -24,9 +24,6 @@ const optionalEnvSchema = z.object({
   // Admin Configuration
   ADMIN_USER_IDS: z.string().optional(),
 
-  // Encryption (Optional - for Production)
-  ENCRYPTION_PUBLIC_KEY_PATH: z.string().optional(),
-
   // Logging
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
 
